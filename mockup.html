@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polishly — UI Prototype</title>
+<style>
+  :root{
+    --bg:#12141c; --panel:#1a1d29; --panel2:#20232f;
+    --text:#e8eaf2; --dim:#8b91a7; --line:#2a2e40;
+    --teal:#008c80; --tealHover:#007a70; --tealLight:#e3f6f2; --amber:#f0a83a;
+    --card:#ffffff; --cardText:#1c2430; --cardDim:#6b7280;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.5 -apple-system,'SF Pro Text',Segoe UI,sans-serif;min-height:100vh}
+
+  /* ---------- fake desktop ---------- */
+  .desktop{min-height:100vh;background:
+    radial-gradient(1000px 500px at 75% -10%, rgba(14,159,142,.08), transparent 60%), var(--bg)}
+  .menubar{height:30px;display:flex;align-items:center;gap:18px;padding:0 14px;font-size:12px;color:var(--dim);
+    background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)}
+  .menubar .logo{color:var(--teal);font-weight:600}
+  .menubar .right{margin-left:auto;display:flex;gap:14px;align-items:center}
+  .rf-glyph{width:15px;height:15px;border-radius:4px;background:var(--teal);display:inline-block}
+
+  .app-switch{max-width:820px;width:92%;margin:26px auto 0;display:flex;gap:8px;align-items:center}
+  .app-switch .lbl{font-size:11px;color:var(--dim);margin-right:2px}
+  .switch-btn{background:var(--panel2);border:1px solid var(--line);color:var(--dim);font-size:12px;padding:6px 12px;
+    border-radius:8px;cursor:pointer;font-family:inherit}
+  .switch-btn.on{color:var(--text);border-color:var(--teal);background:#173230}
+  .switch-btn:hover{color:var(--text)}
+
+  .teams{max-width:820px;width:92%;margin:14px auto 0;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;overflow:visible;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .t-title{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--panel2);border-radius:12px 12px 0 0}
+  .dot{width:11px;height:11px;border-radius:50%}
+  .t-name{margin-left:10px;font-size:12.5px;color:var(--dim)}
+  .chat{padding:20px 26px;display:flex;flex-direction:column;gap:14px}
+  .msg{max-width:70%;padding:10px 14px;border-radius:12px;font-size:13.5px}
+  .them{background:var(--panel2);border:1px solid var(--line);align-self:flex-start}
+  .me{background:#1f3350;align-self:flex-end}
+  .who{font-size:11px;color:var(--dim);margin-bottom:3px}
+  .compose{padding:14px 20px 20px;border-top:1px solid var(--line)}
+  .compose-label{font-size:11px;color:var(--dim);margin-bottom:6px}
+  .box{background:var(--panel2);border:1px solid #333952;border-radius:10px;padding:13px 15px;font-size:13.5px;
+    line-height:1.65;user-select:text;position:relative}
+  .box::selection, .box *::selection{background:rgba(63,131,255,.42)}
+  .misspell{text-decoration:underline wavy #ff6b6b;text-decoration-thickness:1.5px;text-underline-offset:2px}
+  .hint{margin:22px auto 40px;text-align:center;font-size:12px;color:var(--dim);max-width:820px;width:92%}
+  .kbd{background:#232842;border:1px solid #343b57;border-radius:5px;padding:1px 7px;font-size:11px;color:var(--text)}
+
+  /* ---------- Polishly popup — anchored exactly to selection ---------- */
+  .card{position:fixed;z-index:100;width:min(430px,calc(100vw - 24px));opacity:0;transform:translateY(6px) scale(.98);pointer-events:none;
+    transition:opacity .14s ease,transform .14s cubic-bezier(.2,1,.3,1);
+    background:var(--card);border-radius:14px;color:var(--cardText);
+    box-shadow:0 18px 46px rgba(0,0,0,.45), 0 2px 8px rgba(0,0,0,.25);
+    border:1px solid rgba(0,0,0,.06)}
+  .card.show{opacity:1;transform:translateY(0) scale(1);pointer-events:auto}
+  .card::after{content:'';position:absolute;left:var(--arrowLeft,26px);width:14px;height:14px;background:var(--card);
+    transform:rotate(45deg);border-radius:3px;box-shadow:2px 2px 4px rgba(0,0,0,.04)}
+  .card.arrow-bottom::after{bottom:-6px;box-shadow:3px 3px 3px rgba(0,0,0,.04)}
+  .card.arrow-top::after{top:-6px}
+
+  .c-head{display:flex;align-items:center;gap:8px;padding:12px 16px 10px;border-bottom:1px solid #eef0f3}
+  .c-badge{width:16px;height:16px;border-radius:5px;background:var(--teal);flex:none}
+  .c-head b{font-weight:600;font-size:12.5px}
+  .c-usage{color:var(--cardDim);font-size:11.5px}
+  .c-close{margin-left:auto;cursor:pointer;color:var(--cardDim);font-size:16px;line-height:1;padding:2px 5px;border-radius:6px}
+  .c-close:hover{background:#f2f3f5;color:var(--cardText)}
+
+  .c-context{margin:10px 16px 0;padding:7px 9px;border-radius:7px;background:#f7faf9;font-size:11px;color:var(--cardDim);display:flex;align-items:center;gap:6px}
+  .c-context .dot2{width:6px;height:6px;border-radius:50%;background:var(--teal);flex:none}
+
+  .c-strip{display:flex;gap:10px;padding:10px 16px 4px}
+  .c-bar{width:3px;border-radius:2px;background:var(--teal);flex:none}
+  .c-content{flex:1;min-width:0}
+  .c-title{color:var(--teal);font-weight:600;font-size:12.5px;margin-bottom:7px}
+  .c-body{font-size:13.5px;line-height:1.65;min-height:56px;word-wrap:break-word}
+  .del{color:#b0b4bd;text-decoration:line-through;text-decoration-color:#d7a3a3}
+  .ins{background:var(--tealLight);color:#0b6b5f;border-radius:3px}
+  .caret{display:inline-block;width:2px;height:14px;background:var(--teal);vertical-align:text-bottom;animation:blink .8s step-end infinite}
+  @keyframes blink{50%{opacity:0}}
+  .skeleton{display:flex;flex-direction:column;gap:8px;padding:2px 0 6px}
+  .sk{height:10px;border-radius:6px;background:linear-gradient(90deg,#eef0f3 25%,#e4e7eb 50%,#eef0f3 75%);background-size:200% 100%;animation:sh 1.1s infinite}
+  @keyframes sh{to{background-position:-200% 0}}
+
+  .c-revise-row{display:flex;gap:8px;padding:2px 16px 12px;align-items:center}
+  .c-revise-row input{flex:1;border:1px solid #dfe2e7;border-radius:8px;padding:7px 10px;font-size:12.5px;
+    font-family:inherit;color:var(--cardText)}
+  .c-revise-row input:focus{outline:2px solid var(--teal);outline-offset:0;border-color:var(--teal)}
+
+  .c-actions{display:flex;gap:8px;align-items:center;padding:12px 16px}
+  .btn{border:none;cursor:pointer;font-size:12.5px;border-radius:8px;padding:7px 14px;font-family:inherit;font-weight:600;transition:opacity .15s, transform .1s}
+  .btn:active{transform:scale(.97)}
+  .btn.small{padding:7px 12px}
+  .accept{background:var(--teal);color:#fff}
+  .accept:hover{background:var(--tealHover)}
+  .accept:disabled{background:#b7ded8;cursor:default}
+  .revise{background:#f2f3f5;color:var(--cardText);font-weight:500;display:flex;align-items:center;gap:5px}
+  .revise:hover{background:#e9ebee}
+  .revise.on{background:#173230;color:#0b6b5f}
+  .spacer{margin-left:auto}
+  .iconbtn{width:28px;height:28px;border-radius:7px;border:none;background:transparent;color:var(--cardDim);cursor:pointer;font-size:14px}
+  .iconbtn:hover{background:#f2f3f5;color:var(--cardText)}
+
+  .c-tabs{display:flex;gap:18px;padding:0 16px;border-top:1px solid #eef0f3;font-size:12.5px}
+  .tab{padding:11px 0;color:var(--cardDim);cursor:pointer;border-bottom:2px solid transparent;font-weight:500}
+  .tab.on{color:var(--cardText);border-color:var(--teal);font-weight:700}
+  .tab:hover{color:var(--cardText)}
+  .btn:focus-visible,.iconbtn:focus-visible,.tab:focus-visible,.c-close:focus-visible,.c-revise-row input:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+
+  .c-error{margin:2px 0 6px;padding:10px 11px;border-radius:8px;background:#fff7ed;color:#9a3412;font-size:12.5px;line-height:1.45}
+  .c-error b{font-weight:650}
+
+  /* streaming = inputs/actions locked, matches the state model in the plan */
+  .card.streaming .c-actions button,
+  .card.streaming .c-tabs .tab{opacity:.4;pointer-events:none}
+  .card.streaming .c-head::after{content:'generating…';margin-left:6px;font-size:10.5px;color:var(--teal)}
+
+  .toast{position:fixed;top:44px;left:50%;transform:translateX(-50%) translateY(-8px);z-index:120;opacity:0;transition:all .25s;
+    background:var(--panel2);border:1px solid var(--teal);color:#5fd9c4;
+    padding:8px 16px;border-radius:10px;font-size:12.5px}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .applied-flash{animation:flash .8s}
+  @keyframes flash{0%{background:rgba(14,159,142,.18)}100%{background:transparent}}
+</style>
+</head>
+<body>
+<div class="desktop">
+  <div class="menubar">
+    <span class="logo">◆ Polishly</span><span style="color:var(--dim)">running quietly · 0% CPU when idle</span>
+    <span class="right"><span class="rf-glyph"></span><span>Fri Jul 17&ensp;9:41 AM</span></span>
+  </div>
+
+  <div class="app-switch">
+    <span class="lbl">Demo app:</span>
+    <button class="switch-btn on" id="swTeams" onclick="setApp('teams')">Microsoft Teams (thread context available)</button>
+    <button class="switch-btn" id="swNotes" onclick="setApp('notes')">Notes (no thread — draft only)</button>
+  </div>
+
+  <div class="teams" id="appTeams">
+    <div class="t-title">
+      <span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>
+      <span class="t-name">Microsoft Teams — Brad Kellerman</span>
+    </div>
+    <div class="chat">
+      <div class="msg them"><div class="who">Brad · 9:32 AM</div>Hi Kiran — from what Brad said, he is not seeing any SSC on the rx input.</div>
+      <div class="msg them"><div class="who">Brad · 9:33 AM</div>so avery is not doing it</div>
+      <div class="msg me"><div class="who">You · 9:35 AM</div>i will send the mail now</div>
+    </div>
+    <div class="compose">
+      <div class="compose-label">Drag-select any part of your draft below — the popup anchors right there.</div>
+      <div class="box" id="draft-teams">i have sent the <span class="misspell">mail</span> let <span class="misspell">see</span> what he will. On <span class="misspell">shim</span>, i have added the <span class="misspell">shim</span> sequence, found few bugs in the integration and tied of required signals. i gave a branch to Justin to run the shim and fw if he want to look at fw behavior.</div>
+    </div>
+  </div>
+
+  <div class="teams" id="appNotes" style="display:none">
+    <div class="t-title">
+      <span class="dot" style="background:#ff5f57"></span><span class="dot" style="background:#febc2e"></span><span class="dot" style="background:#28c840"></span>
+      <span class="t-name">Notes — Status update</span>
+    </div>
+    <div class="compose" style="border-top:none">
+      <div class="compose-label">Notes has no message thread — Polishly only ever sees the selected draft here.</div>
+      <div class="box" id="draft-notes">i have sent the <span class="misspell">mail</span> let <span class="misspell">see</span> what he will. On <span class="misspell">shim</span>, i have added the <span class="misspell">shim</span> sequence, found few bugs in the integration and tied of required signals. i gave a branch to Justin to run the shim and fw if he want to look at fw behavior.</div>
+    </div>
+  </div>
+
+  <div class="hint">Try it: click-drag to select text in the box above, or press <span class="kbd">⌥</span><span class="kbd">Space</span> after selecting. Switch the demo app above to see the context disclosure change.</div>
+</div>
+
+<!-- Polishly popup -->
+<div class="card" id="card">
+  <div class="c-head">
+    <span class="c-badge"></span><b>Polishly</b>
+    <span class="c-usage">· 2 free rewrites today</span>
+    <span class="c-close" onclick="closeCard()">×</span>
+  </div>
+  <div class="c-context" id="ccontext"><span class="dot2"></span>Using 2 visible Teams messages above as context</div>
+  <div class="c-strip">
+    <div class="c-bar"></div>
+    <div class="c-content">
+      <div class="c-title" id="ctitle">Rewritten for clarity</div>
+      <div class="c-body" id="body"></div>
+    </div>
+  </div>
+  <div class="c-revise-row" id="reviseRow" style="display:none">
+    <input id="reviseInput" placeholder="Tell Polishly what to change — e.g. &quot;less blunt, mention the delay&quot;" />
+    <button class="btn accept small" onclick="submitCustom()">Apply</button>
+    <button class="iconbtn" onclick="cancelCustom()">×</button>
+  </div>
+  <div class="c-actions" id="actions">
+    <button class="btn accept" id="btnAccept" onclick="accept()" disabled>Accept</button>
+    <button class="btn revise" id="btnRevise" onclick="toggleRevise()">✎ Revise with AI</button>
+    <span class="spacer"></span>
+    <button class="iconbtn" id="btnRegen" title="Regenerate this tone" onclick="rerun()">↻</button>
+    <button class="iconbtn" title="Copy" onclick="copyText()">⧉</button>
+  </div>
+  <div class="c-tabs" id="tabs">
+    <span class="tab on" onclick="tone(this,'pro')">Improve</span>
+    <span class="tab" onclick="tone(this,'concise')">Concise</span>
+    <span class="tab" onclick="tone(this,'friendly')">Friendly</span>
+    <span class="tab" onclick="tone(this,'expand')">Expand</span>
+  </div>
+</div>
+
+<div class="toast" id="toast">✓ Text replaced</div>
+
+<script>
+/* ---------- content: original draft + full rewritten targets (plain text) ----------
+   The app never hand-authors a diff — it diffs original vs. rewritten text locally,
+   same as the real product would (model returns clean text, client computes the diff). */
+const ORIGINAL = "i have sent the mail let see what he will. On shim, i have added the shim sequence, found few bugs in the integration and tied of required signals. i gave a branch to Justin to run the shim and fw if he want to look at fw behavior.";
+
+const REWRITES = {
+  pro: "I've sent the email — let's see how he responds. On the shim, I've added the shim sequence, found a few bugs in the integration, and tied off the required signals. I've given Justin a branch to run the shim and firmware, in case he wants to look at the FW behavior.",
+  concise: "Email sent. Shim sequence added; fixed a few integration bugs and tied off required signals. Justin has a branch to run shim + FW if he wants to check FW behavior.",
+  friendly: "Just sent the email — fingers crossed! On the shim side, I added the shim sequence, squashed a few integration bugs, and tied off the required signals. Also gave Justin a branch so he can run the shim and FW whenever he wants to poke at the behavior.",
+  expand: "I've sent the email and will follow up once he responds. Regarding the shim work: I've integrated the shim sequence, identified and fixed a few integration bugs along the way, and tied off all the required signals so the interface is clean. I've also handed Justin a working branch so he can run the shim together with the firmware if he'd like to observe the FW behavior directly."
+};
+const TITLES = { pro:"Rewritten for clarity", concise:"Tightened to the essentials", friendly:"Warmer tone, same content", expand:"Expanded with more detail" };
+
+/* ---------- word-level diff (LCS) — this is what makes deletions real, not hand-drawn ---------- */
+function tokenize(s){ return s.match(/\S+|\s+/g) || []; }
+function diffWords(a,b){
+  const A=tokenize(a), B=tokenize(b), n=A.length, m=B.length;
+  const dp=Array.from({length:n+1},()=>new Int16Array(m+1));
+  for(let i=n-1;i>=0;i--) for(let j=m-1;j>=0;j--)
+    dp[i][j] = A[i]===B[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j],dp[i][j+1]);
+  const out=[]; let i=0,j=0;
+  while(i<n&&j<m){
+    if(A[i]===B[j]){ out.push(['same',A[i]]); i++; j++; }
+    else if(dp[i+1][j] >= dp[i][j+1]){ out.push(['del',A[i]]); i++; }
+    else { out.push(['ins',B[j]]); j++; }
+  }
+  while(i<n){ out.push(['del',A[i]]); i++; }
+  while(j<m){ out.push(['ins',B[j]]); j++; }
+  return out;
+}
+
+/* ---------- custom "Revise with AI" — keyword-routed stand-in for a free-text instruction ---------- */
+function computeCustomText(instruction){
+  const t=instruction.toLowerCase();
+  if(!t.trim()) return REWRITES.pro;
+  if(t.includes('short')||t.includes('concise')||t.includes('brief')) return REWRITES.concise;
+  if(t.includes('friendly')||t.includes('casual')||t.includes('warm')) return REWRITES.friendly;
+  if(t.includes('blunt')||t.includes('direct')) return "Sent the email. Shim sequence is in, integration bugs are fixed, and required signals are tied off. Justin has a branch — he can check FW behavior himself.";
+  return REWRITES.pro; // fallback: in the real app this always goes to the model; mock has no LLM behind it
+}
+
+/* ---------- state ---------- */
+const card=document.getElementById('card'), body=document.getElementById('body'), ctitle=document.getElementById('ctitle'),
+      ccontext=document.getElementById('ccontext'), toast=document.getElementById('toast'),
+      btnAccept=document.getElementById('btnAccept'), btnRevise=document.getElementById('btnRevise'),
+      reviseRow=document.getElementById('reviseRow'), reviseInput=document.getElementById('reviseInput');
+let open=false, streaming=false, cur='pro', timers=[], anchorRect=null, lastAnchorX=0, lastFinalText=null, activeApp='teams';
+
+function activeDraft(){ return document.getElementById(activeApp==='teams' ? 'draft-teams' : 'draft-notes'); }
+function getContextLine(){
+  return activeApp==='teams'
+    ? '<span class="dot2"></span>Using 2 visible Teams messages above as context'
+    : '<span class="dot2" style="background:#c8ccd4"></span>No thread context available in Notes — using only your selected text';
+}
+function setApp(name){
+  activeApp=name;
+  document.getElementById('appTeams').style.display = name==='teams' ? '' : 'none';
+  document.getElementById('appNotes').style.display = name==='notes' ? '' : 'none';
+  document.getElementById('swTeams').classList.toggle('on', name==='teams');
+  document.getElementById('swNotes').classList.toggle('on', name==='notes');
+  closeCard();
+}
+
+function currentSelectionRect(){
+  const sel=window.getSelection();
+  if(!sel||sel.rangeCount===0||sel.isCollapsed) return null;
+  const range=sel.getRangeAt(0);
+  if(!activeDraft().contains(range.commonAncestorContainer)) return null;
+  return range.getBoundingClientRect();
+}
+
+document.addEventListener('mouseup',()=>{
+  setTimeout(()=>{ const r=currentSelectionRect(); if(r && r.width>4) openCard(r); },10);
+});
+document.addEventListener('keydown',e=>{
+  if(e.altKey&&e.code==='Space'){ e.preventDefault(); const r=currentSelectionRect()||activeDraft().getBoundingClientRect(); openCard(r); }
+  if(e.key==='Escape') closeCard();
+  if(e.key==='Enter'&&open&&document.activeElement!==reviseInput&&!streaming&&!btnAccept.disabled){ e.preventDefault(); accept(); }
+});
+document.addEventListener('mousedown',e=>{ if(open && !card.contains(e.target)) closeCard(); });
+window.addEventListener('resize',()=>{ if(open) positionCard(); });
+document.addEventListener('scroll',()=>{ if(open) positionCard(); }, true);
+
+function openCard(rect){
+  open=true; anchorRect=rect; lastFinalText=null; btnAccept.disabled=true;
+  hideRevise();
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  document.querySelector('.tab').classList.add('on'); // Improve
+  cur='pro';
+  card.classList.add('show');
+  requestAnimationFrame(positionCard);
+  applyRewrite(TITLES.pro, REWRITES.pro);
+}
+function closeCard(){ open=false; streaming=false; card.classList.remove('show','streaming'); timers.forEach(clearTimeout); timers=[]; hideRevise(); }
+
+function positionCard(){
+  if(!anchorRect) return;
+  const w=430;
+  const x=Math.min(Math.max(12,anchorRect.left-20), innerWidth-w-16);
+  lastAnchorX=x;
+  card.style.left=x+'px';
+  const h=card.offsetHeight;
+  let top=anchorRect.top-h-14, arrow='arrow-bottom';
+  if(top<46){ top=anchorRect.bottom+14; arrow='arrow-top'; }
+  card.classList.remove('arrow-top','arrow-bottom'); card.classList.add(arrow);
+  const arrowLeft=Math.max(14,Math.min(anchorRect.left-x+8, w-40));
+  card.style.setProperty('--arrowLeft', arrowLeft+'px');
+  card.style.top=Math.max(46,top)+'px';
+}
+
+function skeleton(){ body.innerHTML='<div class="skeleton"><div class="sk" style="width:94%"></div><div class="sk" style="width:82%"></div><div class="sk" style="width:55%"></div></div>'; }
+
+function applyRewrite(titleText, targetText){
+  timers.forEach(clearTimeout); timers=[];
+  streaming=true; card.classList.add('streaming'); btnAccept.disabled=true;
+  lastFinalText=targetText;
+  ctitle.textContent=titleText;
+  ccontext.innerHTML=getContextLine();
+  skeleton();
+  positionCard();
+  timers.push(setTimeout(()=>{
+    const tokens=diffWords(ORIGINAL, targetText);
+    let html='', i=0;
+    body.innerHTML='<span class="caret"></span>';
+    positionCard();
+    const step=()=>{
+      if(i>=tokens.length){
+        body.innerHTML=html;
+        streaming=false; card.classList.remove('streaming'); btnAccept.disabled=false;
+        positionCard();
+        return;
+      }
+      const [type,tokRaw]=tokens[i++];
+      const tok=tokRaw.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      html += type==='same' ? tok : `<span class="${type}">${tok}</span>`;
+      body.innerHTML=html+'<span class="caret"></span>';
+      positionCard();
+      timers.push(setTimeout(step, type==='same' ? 14 : 55));
+    };
+    step();
+  }, 380));
+}
+
+/* An explicit recovery state: the selected draft is untouched and Retry simply repeats
+   the current request. In the production app this is used for offline, network, and API failures. */
+function showError(message='No connection — your original text is still selected.'){
+  timers.forEach(clearTimeout); timers=[];
+  streaming=false; lastFinalText=null; btnAccept.disabled=true;
+  card.classList.remove('streaming');
+  ctitle.textContent='Couldn’t create a rewrite';
+  body.innerHTML=`<div class="c-error"><b>Rewrite unavailable.</b> ${message}</div>`;
+  positionCard();
+}
+
+function tone(el,key){
+  if(streaming) return;
+  document.querySelectorAll('.tab').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  cur=key; hideRevise();
+  applyRewrite(TITLES[key], REWRITES[key]);
+}
+function rerun(){ if(streaming) return; applyRewrite(TITLES[cur]||'Custom instruction, regenerated', REWRITES[cur]||lastFinalText); }
+function toggleRevise(){
+  if(streaming) return;
+  const willShow = reviseRow.style.display==='none';
+  reviseRow.style.display = willShow ? 'flex' : 'none';
+  btnRevise.classList.toggle('on', willShow);
+  if(willShow){ reviseInput.focus(); requestAnimationFrame(positionCard); } else positionCard();
+}
+function hideRevise(){ reviseRow.style.display='none'; reviseInput.value=''; btnRevise.classList.remove('on'); }
+function cancelCustom(){ hideRevise(); positionCard(); }
+function submitCustom(){
+  if(streaming) return;
+  const val=reviseInput.value.trim();
+  if(!val) return;
+  document.querySelectorAll('.tab').forEach(c=>c.classList.remove('on'));
+  cur='custom';
+  const target=computeCustomText(val);
+  hideRevise();
+  applyRewrite('Custom: "'+val+'"', target);
+}
+function copyText(){
+  if(streaming || !lastFinalText) return;
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(lastFinalText).catch(()=>{}); }
+  showToast('✓ Copied to clipboard');
+}
+function accept(){
+  if(streaming || !lastFinalText) return;
+  const final=lastFinalText, d=activeDraft();
+  closeCard();
+  d.textContent=final;
+  d.classList.add('applied-flash');
+  showToast('✓ Text replaced in '+(activeApp==='teams'?'Microsoft Teams':'Notes'));
+  setTimeout(()=>d.classList.remove('applied-flash'),2200);
+}
+function showToast(msg){ toast.textContent=msg; toast.classList.add('show'); setTimeout(()=>toast.classList.remove('show'),2200); }
+
+window.addEventListener('offline',()=>{ if(open) showError(); });
+</script>
+</body>
+</html>
