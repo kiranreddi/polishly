@@ -17,6 +17,15 @@ struct SettingsView: View {
             Section(header: Text("Keyboard Shortcut")) {
                 KeyboardShortcuts.Recorder("Rewrite Selection:", name: .rewrite)
             }
+
+            Section(header: Text("Activation")) {
+                Toggle("Pause Polishly", isOn: $appState.isPaused)
+                Toggle("Enable in Notes", isOn: $appState.notesEnabled)
+                Toggle("Enable in Microsoft Teams", isOn: $appState.teamsEnabled)
+                Text("Thread context is disabled until each app has a separately validated extractor.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
             
             Section(header: Text("Permissions")) {
                 HStack {
@@ -36,6 +45,6 @@ struct SettingsView: View {
             }
         }
         .padding(20)
-        .frame(width: 450, height: 300)
+        .frame(width: 450, height: 410)
     }
 }
