@@ -20,6 +20,7 @@ struct OnboardingView: View {
                         .font(.headline)
                     
                     Button("Open System Settings") {
+                        appState.requestAccessibility()
                         let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
                         NSWorkspace.shared.open(url)
                     }

@@ -1,10 +1,15 @@
 import Cocoa
 import SwiftUI
+import Combine
 
 class PopupController: NSWindowController, NSWindowDelegate {
     static let shared = PopupController()
     
     let viewModel = PopupViewModel()
+    private var capturedText: SelectionEngine.CapturedText?
+    private var updateSubscription: AnyCancellable?
+    private var outsideClickMonitor: Any?
+    private var escapeMonitor: Any?
     
     private init() {
         let panel = NSPanel(
@@ -32,6 +37,10 @@ class PopupController: NSWindowController, NSWindowDelegate {
         viewModel.closeAction = { [weak self] in
             self?.closePanel()
         }
+        updateSubscription = viewModel.objectWillChange.sink { [weak self] in
+            guard let self, let capturedText = self.capturedText, let bounds = capturedText.bounds else { return }
+            DispatchQueue.main.async { self.position(relativeTo: bounds) }
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -39,6 +48,7 @@ class PopupController: NSWindowController, NSWindowDelegate {
     }
     
     func show(for capture: SelectionEngine.CapturedText) {
+        capturedText = capture
         viewModel.configure(with: capture)
         
         if let bounds = capture.bounds {
@@ -52,6 +62,18 @@ class PopupController: NSWindowController, NSWindowDelegate {
         }
         
         window?.makeKeyAndOrderFront(nil)
+        installDismissMonitors()
+    }
+
+    func showPreview() {
+        let preview = SelectionEngine.CapturedText(
+            text: "i have sent the mail let see what he will. i gave a branch to Justin to run the shim and firmware.",
+            method: .accessibility,
+            bounds: nil,
+            axElement: nil,
+            sourceBundleIdentifier: nil
+        )
+        show(for: preview)
     }
     
     private func position(relativeTo rect: CGRect) {
@@ -82,8 +104,24 @@ class PopupController: NSWindowController, NSWindowDelegate {
     }
     
     func closePanel() {
+        removeDismissMonitors()
         window?.orderOut(nil)
     }
-    
-    // Auto-close on deactivate if needed, or close on ESC (handled by SwiftUI or global monitor)
+
+    private func installDismissMonitors() {
+        removeDismissMonitors()
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+            guard let self, let window = self.window else { return }
+            if !window.frame.contains(event.locationInWindow) { self.closePanel() }
+        }
+        escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 53 { self?.closePanel(); return nil }
+            return event
+        }
+    }
+
+    private func removeDismissMonitors() {
+        if let outsideClickMonitor { NSEvent.removeMonitor(outsideClickMonitor); self.outsideClickMonitor = nil }
+        if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor); self.escapeMonitor = nil }
+    }
 }
