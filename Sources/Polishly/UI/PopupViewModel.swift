@@ -29,19 +29,9 @@ class PopupViewModel: ObservableObject {
         self.originalText = capture.text
         self.originalCapture = capture
         
-        // Mock checking context based on app
-        if let app = NSWorkspace.shared.frontmostApplication {
-            if app.bundleIdentifier == "com.microsoft.teams2" {
-                self.hasContext = true
-                self.contextMessage = "Using visible Teams messages as context"
-            } else if app.bundleIdentifier == "com.apple.Notes" {
-                self.hasContext = false
-                self.contextMessage = "No thread context available in Notes"
-            } else {
-                self.hasContext = false
-                self.contextMessage = "Using only your selected text"
-            }
-        }
+        // Promise B stays off until a per-app extractor has passed its own validation.
+        self.hasContext = false
+        self.contextMessage = "No thread context available — using only your selected text"
         
         self.selectTab("improve")
     }
@@ -62,6 +52,12 @@ class PopupViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    func copy() {
+        guard !currentTargetText.isEmpty else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(currentTargetText, forType: .string)
     }
     
     func selectTab(_ tab: String) {
@@ -100,15 +96,13 @@ class PopupViewModel: ObservableObject {
         default: self.rewriteTitle = "Rewritten"
         }
         
-        let contextText = self.hasContext ? "Previous messages as context..." : nil // In a real app we'd fetch actual context from UI
-        
         Task {
             do {
                 try await AnthropicClient.shared.rewriteStream(
                     text: originalText,
                     tone: tone,
                     customInstruction: customInstruction,
-                    context: contextText
+                    context: nil
                 ) { [weak self] currentText in
                     DispatchQueue.main.async {
                         guard let self = self else { return }

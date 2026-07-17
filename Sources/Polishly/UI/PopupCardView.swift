@@ -142,6 +142,15 @@ struct PopupCardView: View {
                 }
                 .buttonStyle(IconButtonStyle())
                 .disabled(viewModel.isStreaming)
+
+                Button(action: {
+                    viewModel.copy()
+                }) {
+                    Text("⧉")
+                        .font(.system(size: 14))
+                }
+                .buttonStyle(IconButtonStyle())
+                .disabled(viewModel.isStreaming || viewModel.diffTokens.isEmpty || viewModel.isError)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)

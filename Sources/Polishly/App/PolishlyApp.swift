@@ -9,6 +9,8 @@ struct PolishlyApp: App {
     
     var body: some Scene {
         MenuBarExtra("Polishly", systemImage: "sparkles") {
+            Toggle("Pause Polishly", isOn: $appState.isPaused)
+            Divider()
             Button("Settings...") {
                 openWindow(id: "settings")
                 NSApp.activate(ignoringOtherApps: true)
@@ -60,6 +62,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     }
     
     func handleRewriteShortcut() {
+        guard AppState.shared.isEnabled(for: NSWorkspace.shared.frontmostApplication?.bundleIdentifier) else { return }
         if let capture = SelectionEngine.shared.capture() {
             PopupController.shared.show(for: capture)
         } else {
@@ -67,4 +70,3 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 }
-
