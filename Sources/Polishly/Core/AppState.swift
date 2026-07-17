@@ -41,10 +41,17 @@ class AppState: ObservableObject {
         }
     }
     
-    func checkAccessibility() {
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-        isAccessibilityTrusted = AXIsProcessTrustedWithOptions(options)
+    /// A passive check never opens a system prompt; the user must explicitly request it.
+    func checkAccessibility(requestPrompt: Bool = false) {
+        if requestPrompt {
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            isAccessibilityTrusted = AXIsProcessTrustedWithOptions(options)
+        } else {
+            isAccessibilityTrusted = AXIsProcessTrusted()
+        }
     }
+
+    func requestAccessibility() { checkAccessibility(requestPrompt: true) }
 
     func isEnabled(for bundleIdentifier: String?) -> Bool {
         guard !isPaused else { return false }

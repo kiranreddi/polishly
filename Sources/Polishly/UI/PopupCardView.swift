@@ -64,12 +64,18 @@ struct PopupCardView: View {
                         .foregroundColor(Color(hex: "008c80"))
                     
                     if viewModel.isError {
-                        Text(viewModel.errorMessage)
-                            .font(.system(size: 12.5))
-                            .foregroundColor(Color(hex: "9a3412"))
-                            .padding(10)
-                            .background(Color(hex: "fff7ed"))
-                            .cornerRadius(8)
+                        HStack(spacing: 8) {
+                            Text(viewModel.errorMessage)
+                                .font(.system(size: 12.5))
+                                .foregroundColor(Color(hex: "9a3412"))
+                            Spacer()
+                            Button("Retry") { viewModel.retry() }
+                                .buttonStyle(.borderless)
+                                .foregroundColor(Color(hex: "0b6b5f"))
+                        }
+                        .padding(10)
+                        .background(Color(hex: "fff7ed"))
+                        .cornerRadius(8)
                     } else if viewModel.isStreaming && viewModel.diffTokens.isEmpty {
                         // Skeleton loading state
                         VStack(alignment: .leading, spacing: 8) {

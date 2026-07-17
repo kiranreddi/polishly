@@ -21,6 +21,7 @@ class PopupViewModel: ObservableObject {
     private var originalText: String = ""
     private var currentTargetText: String = ""
     private var originalCapture: SelectionEngine.CapturedText?
+    private var lastCustomInstruction: String?
     
     // Dependencies
     var closeAction: () -> Void = {}
@@ -73,6 +74,10 @@ class PopupViewModel: ObservableObject {
             requestRewrite(tone: selectedTab)
         }
     }
+
+    func retry() {
+        requestRewrite(tone: selectedTab, customInstruction: lastCustomInstruction)
+    }
     
     func submitRevise() {
         guard !reviseText.isEmpty else { return }
@@ -82,6 +87,7 @@ class PopupViewModel: ObservableObject {
     }
     
     private func requestRewrite(tone: String, customInstruction: String? = nil) {
+        lastCustomInstruction = customInstruction
         self.isStreaming = true
         self.isError = false
         self.diffTokens = []
