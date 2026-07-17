@@ -1,0 +1,27 @@
+name: Polishly
+options:
+  bundleIdPrefix: com.polishly
+  deploymentTarget:
+    macOS: 14.0
+packages:
+  KeyboardShortcuts:
+    url: https://github.com/sindresorhus/KeyboardShortcuts
+    from: 2.0.0
+targets:
+  Polishly:
+    type: application
+    platform: macOS
+    sources: Sources/Polishly
+    dependencies:
+      - package: KeyboardShortcuts
+    info:
+      path: Polishly/Info.plist
+      properties:
+        LSUIElement: true
+        NSHumanReadableCopyright: "Copyright © 2026 Polishly. All rights reserved."
+        NSHighResolutionCapable: true
+        NSServices: []
+        CFBundleURLTypes:
+          - CFBundleURLSchemes:
+              - polishly
+            CFBundleURLName: "com.polishly"
