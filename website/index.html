@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polishly — Free, open-source AI rewriting for macOS</title>
+<meta name="description" content="Select text anywhere on your Mac, press a hotkey, and get a real in-place AI rewrite. Free, open source, bring your own API key. No subscription, no background scanning.">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<nav class="topbar">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <img src="assets/icon-256.png" alt="">
+      Polishly
+    </a>
+    <div class="nav-links">
+      <a href="#how-it-works">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#examples">Examples</a>
+      <a href="#compare">Compare</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-right">
+      <a class="btn btn-ghost btn-sm" href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">★ Star on GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow"><span class="dot"></span>100% free &amp; open source</span>
+      <h1 class="headline">Rewrite anything,<br>anywhere, <span class="accent">on your terms.</span></h1>
+      <p class="hero-sub">Polishly is a macOS menu-bar app that rewrites selected text in place, in any app, using your own API key. No subscription. No background scanning. No middleman between your text and your model.</p>
+
+      <div class="hero-flow">
+        <span class="step">Select text</span>
+        <span class="arrow">→</span>
+        <span class="step">⌃⌥Space</span>
+        <span class="arrow">→</span>
+        <span class="step">review the diff</span>
+        <span class="arrow">→</span>
+        <span class="step">Accept</span>
+      </div>
+
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">Get it on GitHub</a>
+        <a class="btn btn-ghost" href="#how-it-works">See how it works</a>
+      </div>
+      <p class="hero-note">Build from source in under five minutes · macOS 14+ · MIT licensed</p>
+    </div>
+
+    <div class="card-mock-frame">
+      <div class="card-mock" role="img" aria-label="Polishly popup card showing a rewrite with a highlighted diff">
+        <div class="accent-bar"></div>
+        <div class="card-head">
+          <span class="glyph"></span> Polishly
+          <span class="close">×</span>
+        </div>
+        <div class="context-line">No thread context available — using only your selected text</div>
+        <div class="body-text">
+          i have sent the mail <span class="del">let see</span> <span class="ins">let's see</span> what he will
+          <span class="del">say</span> <span class="ins">say back</span> before we
+          <span class="ins">move forward.</span>
+        </div>
+        <div class="actions">
+          <button class="mini-btn accept">Accept</button>
+          <button class="mini-btn ghost">Revise with AI</button>
+          <button class="mini-btn ghost">↻</button>
+          <button class="mini-btn ghost">Copy</button>
+        </div>
+        <div class="tabs">
+          <span class="tab active">Improve</span>
+          <span class="tab">Concise</span>
+          <span class="tab">Friendly</span>
+          <span class="tab">Expand</span>
+        </div>
+      </div>
+      <p class="card-mock-caption">The actual card UI — recreated here, not a screenshot</p>
+    </div>
+  </div>
+</header>
+
+<section id="how-it-works">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">How it works</div>
+      <h2>Three steps. No app switching.</h2>
+      <p>Polishly reads your selection through macOS Accessibility, sends it only when you ask, and writes the result straight back into the field you were already in.</p>
+    </div>
+    <div class="steps">
+      <div class="step-card">
+        <div class="num">1</div>
+        <h3>Select text anywhere</h3>
+        <p>Mail, Notes, Slack, Teams, your browser — anywhere macOS can read a text selection.</p>
+      </div>
+      <div class="step-card">
+        <div class="num">2</div>
+        <h3>Press <code>⌃⌥Space</code></h3>
+        <p>A small card appears anchored to your selection with a streaming rewrite. Pick a tone tab, or type a free-form instruction with <strong>Revise with AI</strong>.</p>
+      </div>
+      <div class="step-card">
+        <div class="num">3</div>
+        <h3>Review, then Accept</h3>
+        <p>A real word-level diff shows exactly what changed. Accept replaces the text in place; Copy leaves it on your clipboard instead.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Why Polishly</div>
+      <h2>Built to be trusted, not just used</h2>
+      <p>Every design decision starts from one question: what would make you comfortable giving an app Accessibility permissions?</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">🆓</div>
+        <h3>$0, forever</h3>
+        <p>The app is free and open source under MIT. No subscription tier, no "pro" paywall, no ads.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔑</div>
+        <h3>Bring your own key</h3>
+        <p>OpenAI, Anthropic, Groq, or Cerebras — use the provider and model you already trust, at the price they charge you directly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🖥️</div>
+        <h3>Local demo mode</h3>
+        <p>No key yet? Try the whole interaction model with zero network calls and zero cost using on-device rule-based rewrites.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🛡️</div>
+        <h3>Explicit invocation only</h3>
+        <p>Nothing is read or sent until you press the hotkey. No continuous scanning of what you type, anywhere, ever.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🔍</div>
+        <h3>A real diff, every time</h3>
+        <p>Rewrites are shown as an actual word-level diff against your original text — computed locally, not model-generated markup.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">🌐</div>
+        <h3>Works system-wide</h3>
+        <p>One app, every app. If macOS Accessibility can see your selection, Polishly can rewrite it in place.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="examples">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">Real output</div>
+      <h2>Genuine, unedited rewrites</h2>
+      <p>These are real "Revise with AI" outputs captured during testing — not curated marketing copy.</p>
+    </div>
+    <div class="example-grid">
+      <div class="example-card">
+        <span class="instr">"translate this to Spanish"</span>
+        <div class="row input"><span class="label">Input</span>I think we should push the meeting to next week.</div>
+        <div class="row output"><span class="label">Output</span>Creo que deberíamos posponer la reunión para la próxima semana.</div>
+      </div>
+      <div class="example-card">
+        <span class="instr">"make it sound apologetic"</span>
+        <div class="row input"><span class="label">Input</span>Sorry I missed your call, I was in a meeting all day.</div>
+        <div class="row output"><span class="label">Output</span>I apologize for missing your call; I was tied up in a meeting all day.</div>
+      </div>
+      <div class="example-card">
+        <span class="instr">"cut it to two sentences"</span>
+        <div class="row input"><span class="label">Input</span>Our Q3 numbers came in below target, mostly because of the delayed product launch. The engineering team hit a few last-minute bugs that pushed the release by three weeks. Marketing had already spent a chunk of the budget on the original launch date…</div>
+        <div class="row output"><span class="label">Output</span>Our Q3 results missed targets due to a delayed product launch caused by last-minute engineering bugs, with marketing budget partially sunk. We're revising the Q4 forecast accordingly and will meet this week to discuss next steps.</div>
+      </div>
+      <div class="example-card">
+        <span class="instr">"rewrite this as a bulleted list"</span>
+        <div class="row input"><span class="label">Input</span>The new onboarding flow requires users to verify their email, set up two-factor authentication, and complete a short profile before they can access the dashboard…</div>
+        <div class="row output"><span class="label">Output</span>
+          • Users must verify their email<br>
+          • Users must set up two-factor authentication<br>
+          • Users must complete a short profile<br>
+          • Access is granted after these steps<br>
+          • ~40% of users drop off during the 2FA step
+        </div>
+      </div>
+    </div>
+    <p class="example-note">Full test set (10 varied instructions, run against real provider APIs) is in the repo's <code>Tests/PolishlyTests/ReviseQualityTests.swift</code>.</p>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">The landscape</div>
+      <h2>How Polishly compares</h2>
+      <p>Grammarly and Apple's Writing Tools solve adjacent problems well. Polishly is built around a different bet: explicit invocation, your own key, and no subscription.</p>
+    </div>
+    <div class="compare-scroll">
+      <table class="compare">
+        <thead>
+          <tr>
+            <th>&nbsp;</th>
+            <th class="highlight">Polishly</th>
+            <th>Grammarly Desktop</th>
+            <th>Apple Intelligence<br>Writing Tools</th>
+            <th>Wordtune / Notion AI</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Price</td>
+            <td class="highlight-col yes">Free forever</td>
+            <td class="no">~$30/mo Pro</td>
+            <td class="yes">Free</td>
+            <td class="no">Subscription</td>
+          </tr>
+          <tr>
+            <td>Open source</td>
+            <td class="highlight-col yes">Yes, MIT</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+          </tr>
+          <tr>
+            <td>Bring your own API key</td>
+            <td class="highlight-col yes">Yes</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+          </tr>
+          <tr>
+            <td>Explicit invocation<br><span style="color:var(--dimmer)">(no background scanning)</span></td>
+            <td class="highlight-col yes">Yes, always</td>
+            <td class="no">Always-on underlining</td>
+            <td class="partial">Mostly on-demand</td>
+            <td class="partial">Varies</td>
+          </tr>
+          <tr>
+            <td>Works in any app system-wide</td>
+            <td class="highlight-col yes">Yes</td>
+            <td class="yes">Yes</td>
+            <td class="no">Only apps that adopt it</td>
+            <td class="no">Own app / extension only</td>
+          </tr>
+          <tr>
+            <td>Free-form custom instructions</td>
+            <td class="highlight-col yes">Revise with AI</td>
+            <td class="partial">Limited</td>
+            <td class="no">Fixed set of tones</td>
+            <td class="partial">Limited</td>
+          </tr>
+          <tr>
+            <td>Local, no-network mode</td>
+            <td class="highlight-col yes">Demo mode</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="compare-note">Competitor details reflect public docs/pricing at time of writing and may change — verify current terms directly with each provider.</p>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="pricing-band">
+      <div class="big">$0</div>
+      <p>Polishly itself never charges you anything. Connect your own OpenAI, Anthropic, Groq, or Cerebras key and pay that provider directly — typically a fraction of a cent per rewrite — or skip the network entirely with local demo mode.</p>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <div class="section-head">
+      <div class="kicker">FAQ</div>
+      <h2>Good to know</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <button aria-expanded="false">Is it actually free, or is there a catch?<span class="plus">+</span></button>
+        <div class="faq-answer"><p>The app is free and open source (MIT license). There's no subscription and no hidden tier. If you use a real AI provider, you pay that provider directly for your own usage — Polishly never sees or marks up that cost.</p></div>
+      </div>
+      <div class="faq-item">
+        <button aria-expanded="false">What happens to my text?<span class="plus">+</span></button>
+        <div class="faq-answer"><p>Nothing is read or sent until you press the hotkey. When you do, your selected text goes directly from your Mac to the provider you configured, using your key — Polishly has no backend server in between. In demo mode, nothing ever leaves your Mac.</p></div>
+      </div>
+      <div class="faq-item">
+        <button aria-expanded="false">Which AI providers can I use?<span class="plus">+</span></button>
+        <div class="faq-answer"><p>OpenAI, Anthropic, Groq, and Cerebras today. The model field is free text, so any model string your provider supports will work.</p></div>
+      </div>
+      <div class="faq-item">
+        <button aria-expanded="false">Do I need an API key to try it?<span class="plus">+</span></button>
+        <div class="faq-answer"><p>No — local demo mode runs entirely on-device with simple rule-based cleanup, so you can try the selection → hotkey → diff → accept flow before connecting a real provider.</p></div>
+      </div>
+      <div class="faq-item">
+        <button aria-expanded="false">Is there a Windows version?<span class="plus">+</span></button>
+        <div class="faq-answer"><p>Not yet. Polishly is built on macOS's Accessibility API; a Windows port would need to rebuild the capture layer on UI Automation.</p></div>
+      </div>
+      <div class="faq-item">
+        <button aria-expanded="false">Where's the code?<span class="plus">+</span></button>
+        <div class="faq-answer"><p>Right here: <a href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener" style="color:var(--teal)">github.com/kiranreddi/polishly</a>. Issues and PRs are welcome.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-band">
+  <div class="wrap">
+    <h2>Rewrite on your terms.</h2>
+    <p>Free, open source, and yours to run however you like.</p>
+    <div class="hero-ctas">
+      <a class="btn btn-primary" href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">Get it on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Polishly — MIT licensed</span>
+    <div class="foot-links">
+      <a href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/kiranreddi/polishly/blob/main/README.md" target="_blank" rel="noopener">Docs</a>
+      <a href="https://github.com/kiranreddi/polishly/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
+    </div>
+  </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
