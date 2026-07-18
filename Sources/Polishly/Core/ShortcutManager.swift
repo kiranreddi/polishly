@@ -27,6 +27,14 @@ final class ShortcutManager {
     func registerGlobalShortcut() {
         guard handler != nil else { return } // Wait until handler is set
 
+        // A modifier-less hotkey would swallow a plain key (e.g. Space) in
+        // every app system-wide. Refuse and keep the current shortcut active.
+        guard AppState.shared.shortcutModifiers != 0 else {
+            logger.error("Refusing to register a modifier-less global shortcut")
+            AppState.shared.hasShortcutConflict = true
+            return
+        }
+
         // Backup the current hotkey just in case the new one fails
         let previousHotKeyRef = self.hotKeyRef
         self.hotKeyRef = nil
@@ -56,10 +64,12 @@ final class ShortcutManager {
             logger.error("Global shortcut registration failed with status: \(status)")
             AppState.shared.hasShortcutConflict = true
 
-            // Re-register the previous working shortcut
+            // Re-register the previous working shortcut. A stored 0 could never have
+            // actually registered, so never trust it as a fallback.
             if previousHotKeyRef != nil,
                let prevKeyCode = AppState.shared.lastWorkingShortcutKeyCode,
-               let prevModifiers = AppState.shared.lastWorkingShortcutModifiers {
+               let prevModifiers = AppState.shared.lastWorkingShortcutModifiers,
+               prevModifiers != 0 {
 
                 let fallbackStatus = RegisterEventHotKey(
                     UInt32(prevKeyCode),

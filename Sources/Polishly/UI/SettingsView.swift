@@ -41,7 +41,7 @@ struct SettingsView: View {
                 }
 
                 if appState.hasShortcutConflict {
-                    Label("Shortcut is already in use by another app or system feature.", systemImage: "exclamationmark.triangle.fill")
+                    Label("Shortcut unavailable — pick at least one modifier, and a combination no other app or system feature already uses.", systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
                         .font(.caption)
                 }

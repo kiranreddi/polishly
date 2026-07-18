@@ -94,9 +94,9 @@ class SelectionEngine {
             completion(.pasteSentUnconfirmable)
         } else {
             // Paste event couldn't even be created. Tell user to press Cmd-V.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
-                _ = ClipboardManager.shared.restore(snapshot: snapshot, expectedChangeCount: polishlyWriteChangeCount)
-            }
+            // Leave the rewritten text on the clipboard: restoring the old
+            // contents on a timer would make a slightly-late Cmd-V paste
+            // stale — possibly sensitive — content instead of the rewrite.
             completion(.unconfirmed)
         }
     }

@@ -4,6 +4,17 @@ enum DiffToken: Equatable {
     case same(String)
     case ins(String)
     case del(String)
+
+    var stringValue: String {
+        switch self {
+        case .same(let s), .ins(let s), .del(let s): return s
+        }
+    }
+
+    /// True for a word (as opposed to a whitespace-only) token.
+    var isWord: Bool {
+        stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
 }
 
 class DiffEngine {

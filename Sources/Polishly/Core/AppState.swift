@@ -137,9 +137,31 @@ class AppState: ObservableObject {
         self.modelName = Self.storedModel(for: savedProvider)
         self.isPaused = UserDefaults.standard.bool(forKey: "isPaused")
 
-        // Default to Cmd+Option+Space (49 is Space, 6144 is Cmd+Option in Carbon)
-        self.shortcutKeyCode = UserDefaults.standard.object(forKey: "shortcutKeyCode") as? Int ?? 49
-        self.shortcutModifiers = UserDefaults.standard.object(forKey: "shortcutModifiers") as? Int ?? 6144
+        // Default to Control+Option+Space (49 is Space, 6144 is controlKey+optionKey in Carbon).
+        // A stored 0 for either value is not a real choice — 0 modifiers can never
+        // register (ShortcutManager refuses a modifier-less shortcut) and keyCode 0
+        // ("A") isn't one of the Picker's own options (Space/Return/R/P) — so both
+        // only appear together from the same corruption. Validate them as a pair and
+        // reset both rather than leave the app with no working shortcut, silently,
+        // on every future launch.
+        let storedModifiers = UserDefaults.standard.object(forKey: "shortcutModifiers") as? Int
+        let storedKeyCode = UserDefaults.standard.object(forKey: "shortcutKeyCode") as? Int
+        let validKeyCodes: Set<Int> = [49, 36, 15, 35] // Space, Return, R, P
+        let isValid = (storedModifiers.map { $0 != 0 } ?? true)
+            && (storedKeyCode.map { validKeyCodes.contains($0) } ?? true)
+        if isValid {
+            self.shortcutKeyCode = storedKeyCode ?? 49
+            self.shortcutModifiers = storedModifiers ?? 6144
+        } else {
+            self.shortcutKeyCode = 49
+            self.shortcutModifiers = 6144
+            UserDefaults.standard.set(49, forKey: "shortcutKeyCode")
+            UserDefaults.standard.set(6144, forKey: "shortcutModifiers")
+            // The "last known working" fallback can carry the same corruption
+            // forward the next time registration fails for a real reason.
+            UserDefaults.standard.removeObject(forKey: "lastWorkingShortcutModifiers")
+            UserDefaults.standard.removeObject(forKey: "lastWorkingShortcutKeyCode")
+        }
 
         if savedProvider != .demo {
             loadStoredAPIKeyAsync(allowInteraction: false, showMissingMessage: false)
@@ -163,11 +185,17 @@ class AppState: ObservableObject {
 
     /// A passive check never opens a system prompt; the user must explicitly request it.
     func checkAccessibility(requestPrompt: Bool = false) {
+        let trusted: Bool
         if requestPrompt {
             let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
-            isAccessibilityTrusted = AXIsProcessTrustedWithOptions(options)
+            trusted = AXIsProcessTrustedWithOptions(options)
         } else {
-            isAccessibilityTrusted = AXIsProcessTrusted()
+            trusted = AXIsProcessTrusted()
+        }
+        // The 1 Hz poll must not republish an unchanged value; every observing
+        // view would re-render each second.
+        if trusted != isAccessibilityTrusted {
+            isAccessibilityTrusted = trusted
         }
     }
 
