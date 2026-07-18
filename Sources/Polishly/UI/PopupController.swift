@@ -32,6 +32,7 @@ class PopupController: NSWindowController, NSWindowDelegate {
         
         let view = PopupCardView(viewModel: viewModel)
         let hostingView = NSHostingView(rootView: view)
+        hostingView.sizingOptions = []
         panel.contentView = hostingView
         
         viewModel.closeAction = { [weak self] in

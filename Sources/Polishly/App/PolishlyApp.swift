@@ -5,7 +5,7 @@ import AppKit
 struct PolishlyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var appState = AppState.shared
-    
+
     var body: some Scene {
         MenuBarExtra("Polishly", systemImage: "sparkles") {
             Toggle("Pause Polishly", isOn: $appState.isPaused)
@@ -14,15 +14,15 @@ struct PolishlyApp: App {
                 SettingsWindowController.shared.show()
             }
             .keyboardShortcut(",", modifiers: .command)
-            
+
             Divider()
-            
+
             Button("Quit Polishly") {
                 NSApplication.shared.terminate(nil)
             }
             .keyboardShortcut("q", modifiers: .command)
         }
-        
+
         Window("Onboarding", id: "onboarding") {
             OnboardingView()
                 .onReceive(appState.$showOnboarding) { show in
@@ -34,7 +34,7 @@ struct PolishlyApp: App {
         .handlesExternalEvents(matching: Set(arrayLiteral: "onboarding"))
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
-        
+
     }
 }
 
@@ -74,15 +74,33 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Hide dock icon entirely (already set in Info.plist, but ensure it behaves as UIElement)
         NSApp.setActivationPolicy(.accessory)
 
+        // Passive check to update state quietly
+        AppState.shared.checkAccessibility(requestPrompt: false)
+
+        // ShortcutManager will now register independently
         ShortcutManager.shared.start { [weak self] in
             self?.handleRewriteShortcut()
         }
-        
-        if AppState.shared.showOnboarding {
+
+        // SelectionObserver manages itself based on trust/settings state unconditionally
+        SelectionObserver.shared.start()
+
+        switch AppDelegate.launchDecision(showOnboarding: AppState.shared.showOnboarding) {
+        case .showOnboarding:
             NSApp.activate(ignoringOtherApps: true)
-        } else {
-            SettingsWindowController.shared.show()
+        case .startSilently:
+            // Close the Onboarding window if SwiftUI opened it by default
+            NSApp.windows.first(where: { $0.title == "Onboarding" })?.close()
         }
+    }
+
+    enum LaunchDecision: Equatable {
+        case showOnboarding
+        case startSilently
+    }
+
+    static func launchDecision(showOnboarding: Bool) -> LaunchDecision {
+        return showOnboarding ? .showOnboarding : .startSilently
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
@@ -92,8 +110,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         ShortcutManager.shared.stop()
+        SelectionObserver.shared.stop()
     }
-    
+
     func handleRewriteShortcut() {
         guard AppState.shared.isEnabled(for: NSWorkspace.shared.frontmostApplication?.bundleIdentifier) else { return }
         if let capture = SelectionEngine.shared.capture() {

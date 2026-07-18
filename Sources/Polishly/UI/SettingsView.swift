@@ -8,19 +8,75 @@ struct SettingsView: View {
             providerSection
 
             Section("Keyboard Shortcut") {
-                LabeledContent("Rewrite Selection") {
-                    Text("Control–Option–Space")
-                        .foregroundStyle(.secondary)
+                LabeledContent("Modifiers") {
+                    HStack {
+                        Toggle("Control", isOn: Binding(
+                            get: { (appState.shortcutModifiers & 4096) != 0 },
+                            set: { if $0 { appState.shortcutModifiers |= 4096 } else { appState.shortcutModifiers &= ~4096 } }
+                        ))
+                        Toggle("Option", isOn: Binding(
+                            get: { (appState.shortcutModifiers & 2048) != 0 },
+                            set: { if $0 { appState.shortcutModifiers |= 2048 } else { appState.shortcutModifiers &= ~2048 } }
+                        ))
+                        Toggle("Command", isOn: Binding(
+                            get: { (appState.shortcutModifiers & 256) != 0 },
+                            set: { if $0 { appState.shortcutModifiers |= 256 } else { appState.shortcutModifiers &= ~256 } }
+                        ))
+                    }
                 }
-                Text("Polishly only reads selected text after you press the shortcut.")
+                LabeledContent("Key") {
+                    Picker("", selection: Binding(
+                        get: { appState.shortcutKeyCode },
+                        set: { appState.shortcutKeyCode = $0 }
+                    )) {
+                        Text("Space").tag(49)
+                        Text("Return").tag(36)
+                        Text("R").tag(15)
+                        Text("P").tag(35)
+                    }
+                    .labelsHidden()
+                }
+                Button("Apply Shortcut") {
+                    ShortcutManager.shared.registerGlobalShortcut()
+                }
+
+                if appState.hasShortcutConflict {
+                    Label("Shortcut is already in use by another app or system feature.", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                        .font(.caption)
+                }
+
+                Text("Polishly locally detects selections, but sends text only after trigger click/hotkey.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Section("Activation") {
-                Toggle("Pause Polishly", isOn: $appState.isPaused)
-                Toggle("Enable in Notes", isOn: $appState.notesEnabled)
-                Toggle("Enable in Microsoft Teams", isOn: $appState.teamsEnabled)
+                Toggle("Pause Polishly globally", isOn: $appState.isPaused)
+            }
+
+            Section("Enabled Apps") {
+                ForEach([
+                    AppCapabilityManager.AppGroup.notes,
+                    .teams,
+                    .mail,
+                    .outlook,
+                    .slack,
+                    .safari,
+                    .chrome,
+                    .edge
+                ], id: \.self) { app in
+                    let defaultsKey = "enabled_\(app.rawValue)"
+                    Toggle(app.displayName, isOn: Binding(
+                        get: { UserDefaults.standard.object(forKey: defaultsKey) as? Bool ?? true },
+                        set: { UserDefaults.standard.set($0, forKey: defaultsKey) }
+                    ))
+                }
+
+                Toggle("Other Apps", isOn: Binding(
+                    get: { UserDefaults.standard.bool(forKey: "enabled_other_apps") },
+                    set: { UserDefaults.standard.set($0, forKey: "enabled_other_apps") }
+                ))
             }
 
             Section("Permissions") {

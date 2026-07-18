@@ -22,3 +22,12 @@ targets:
           - CFBundleURLSchemes:
               - polishly
             CFBundleURLName: "com.polishly"
+  PolishlyTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/PolishlyTests
+    dependencies:
+      - target: Polishly
+    settings:
+      GENERATE_INFOPLIST_FILE: YES

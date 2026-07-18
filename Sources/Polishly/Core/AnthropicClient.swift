@@ -79,13 +79,17 @@ final class RewriteClient {
             context: context
         )
 
-        try await performProviderRewrite(
-            provider: provider,
-            apiKey: apiKey,
-            model: model,
-            prompt: prompt,
-            onUpdate: onUpdate
-        )
+        do {
+            try await performProviderRewrite(
+                provider: provider,
+                apiKey: apiKey,
+                model: model,
+                prompt: prompt,
+                onUpdate: onUpdate
+            )
+        } catch let error as URLError {
+            throw Self.mapNetworkError(error, providerName: provider.displayName)
+        }
     }
 
     private func performProviderRewrite(
@@ -257,21 +261,7 @@ final class RewriteClient {
             for try await line in bytes.lines { body += line }
             let json = Self.jsonObject(body)
 
-            // Authentication failures need an actionable recovery path. Raw
-            // provider messages such as "Wrong API Key" made a successfully
-            // stored credential look like an app failure.
-            if http.statusCode == 401 {
-                throw RewriteError.apiError(
-                    "\(providerName) rejected this API key. Open Settings, enter an active \(providerName) key, and update the remembered key."
-                )
-            }
-
-            let fallback: String
-            switch http.statusCode {
-            case 429: fallback = "\(providerName) rate limit reached (429). Try again shortly."
-            default: fallback = "\(providerName) request failed (\(http.statusCode))."
-            }
-            throw RewriteError.apiError(Self.errorMessage(from: json, fallback: fallback))
+            throw Self.mapHTTPError(statusCode: http.statusCode, providerName: providerName, json: json)
         }
     }
 
@@ -289,6 +279,36 @@ final class RewriteClient {
             streamed += (streamed.isEmpty ? "" : " ") + word
             onUpdate(streamed)
         }
+    }
+
+    // MARK: - Error Mapping Helpers
+
+    internal static func mapNetworkError(_ error: URLError, providerName: String) -> RewriteError {
+        switch error.code {
+        case .notConnectedToInternet:
+            return .apiError("You appear to be offline. Check your internet connection.")
+        case .timedOut:
+            return .apiError("The request to \(providerName) timed out.")
+        default:
+            return .apiError("Network error: \(error.localizedDescription)")
+        }
+    }
+
+    internal static func mapHTTPError(statusCode: Int, providerName: String, json: [String: Any]? = nil) -> RewriteError {
+        let fallback: String
+        switch statusCode {
+        case 401:
+            return .apiError(
+                "\(providerName) rejected this API key. Open Settings, enter an active \(providerName) key, and update the remembered key."
+            )
+        case 429:
+            fallback = "\(providerName) rate limit reached (429). Try again shortly."
+        case 500...599:
+            fallback = "\(providerName) is experiencing server issues (\(statusCode)). Try again later."
+        default:
+            fallback = "\(providerName) request failed (\(statusCode))."
+        }
+        return .apiError(Self.errorMessage(from: json, fallback: fallback))
     }
 
     private static func rewritePrompt(

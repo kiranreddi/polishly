@@ -6,19 +6,22 @@ import SwiftUI
 class PopupViewModel: ObservableObject {
     @Published var hasContext: Bool = false
     @Published var contextMessage: String = "Using selected text"
-    
+
     @Published var rewriteTitle: String = "Rewriting..."
     @Published var diffTokens: [DiffToken] = []
-    
+
     @Published var isStreaming: Bool = false
     @Published var isError: Bool = false
     @Published var errorMessage: String = ""
-    
+
+    @Published var isTierC: Bool = false
+    @Published var isPasteSentUnconfirmable: Bool = false
+
     @Published var showReviseInput: Bool = false
     @Published var reviseText: String = ""
-    
+
     @Published var selectedTab: String = "improve"
-    
+
     private var originalText: String = ""
     private var currentTargetText: String = ""
     private var originalCapture: SelectionEngine.CapturedText?
@@ -30,34 +33,42 @@ class PopupViewModel: ObservableObject {
 
     // Dependencies
     var closeAction: () -> Void = {}
-    
+
     func configure(with capture: SelectionEngine.CapturedText) {
         self.originalText = capture.text
         self.originalCapture = capture
-        
+
+        self.isTierC = false
+        self.isPasteSentUnconfirmable = false
+
         // Promise B stays off until a per-app extractor has passed its own validation.
         self.hasContext = false
         self.contextMessage = "No thread context available — using only your selected text"
-        
+
         self.selectTab("improve")
     }
-    
+
     func close() {
         generation += 1
         rewriteTask?.cancel()
         rewriteTask = nil
         closeAction()
     }
-    
+
     func accept() {
         guard let capture = originalCapture, !currentTargetText.isEmpty else { return }
-        SelectionEngine.shared.inject(text: currentTargetText, originalCapture: capture) { success in
+        SelectionEngine.shared.inject(text: currentTargetText, originalCapture: capture) { result in
             DispatchQueue.main.async {
-                if success {
+                switch result {
+                case .success:
                     self.close()
-                } else {
+                case .failed:
                     self.isError = true
                     self.errorMessage = "Failed to replace text."
+                case .unconfirmed:
+                    self.isTierC = true
+                case .pasteSentUnconfirmable:
+                    self.isPasteSentUnconfirmable = true
                 }
             }
         }
@@ -68,13 +79,13 @@ class PopupViewModel: ObservableObject {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(currentTargetText, forType: .string)
     }
-    
+
     func selectTab(_ tab: String) {
         self.selectedTab = tab
         self.showReviseInput = false
         requestRewrite(tone: tab)
     }
-    
+
     func regenerate() {
         if showReviseInput && !reviseText.isEmpty {
             submitRevise()
@@ -86,14 +97,14 @@ class PopupViewModel: ObservableObject {
     func retry() {
         requestRewrite(tone: selectedTab, customInstruction: lastCustomInstruction)
     }
-    
+
     func submitRevise() {
         guard !reviseText.isEmpty else { return }
         self.selectedTab = "custom"
         self.showReviseInput = false
         requestRewrite(tone: "custom", customInstruction: reviseText)
     }
-    
+
     private func requestRewrite(tone: String, customInstruction: String? = nil) {
         lastCustomInstruction = customInstruction
         rewriteTask?.cancel()
