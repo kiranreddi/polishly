@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 @main
 struct PolishlyApp: App {
@@ -24,7 +25,7 @@ struct PolishlyApp: App {
             .keyboardShortcut("q", modifiers: .command)
         }
         
-        WindowGroup("Onboarding", id: "onboarding") {
+        Window("Onboarding", id: "onboarding") {
             OnboardingView()
                 .onReceive(appState.$showOnboarding) { show in
                     if !show {
@@ -36,7 +37,7 @@ struct PolishlyApp: App {
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
         
-        WindowGroup("Settings", id: "settings") {
+        Window("Settings", id: "settings") {
             SettingsView()
         }
         .handlesExternalEvents(matching: Set(arrayLiteral: "settings"))
@@ -45,13 +46,27 @@ struct PolishlyApp: App {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
+    private var shortcutPermissionSubscription: AnyCancellable?
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Hide dock icon entirely (already set in Info.plist, but ensure it behaves as UIElement)
         NSApp.setActivationPolicy(.accessory)
-        
-        ShortcutManager.shared.start { [weak self] in
-            self?.handleRewriteShortcut()
-        }
+
+        // An event tap cannot be created before Accessibility is granted. Keep
+        // the shortcut listener synchronized with live permission changes so a
+        // user does not have to discover that Polishly needs to be relaunched.
+        shortcutPermissionSubscription = AppState.shared.$isAccessibilityTrusted
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] isTrusted in
+                if isTrusted {
+                    ShortcutManager.shared.start { [weak self] in
+                        self?.handleRewriteShortcut()
+                    }
+                } else {
+                    ShortcutManager.shared.stop()
+                }
+            }
         
         // WindowGroup creates the onboarding window locally. Do not open the
         // app's URL scheme here: a stale development copy with the same scheme

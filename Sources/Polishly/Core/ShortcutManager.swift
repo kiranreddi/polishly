@@ -61,6 +61,18 @@ final class ShortcutManager {
         CGEvent.tapEnable(tap: tap, enable: true)
     }
 
+    func stop() {
+        if let runLoopSource {
+            CFRunLoopRemoveSource(CFRunLoopGetMain(), runLoopSource, .commonModes)
+        }
+        if let eventTap {
+            CFMachPortInvalidate(eventTap)
+        }
+        runLoopSource = nil
+        eventTap = nil
+        handler = nil
+    }
+
     private func reenableEventTap() {
         guard let eventTap else { return }
         CGEvent.tapEnable(tap: eventTap, enable: true)
