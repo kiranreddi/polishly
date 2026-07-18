@@ -1,5 +1,4 @@
 import SwiftUI
-import KeyboardShortcuts
 
 @main
 struct PolishlyApp: App {
@@ -9,11 +8,6 @@ struct PolishlyApp: App {
     
     var body: some Scene {
         MenuBarExtra("Polishly", systemImage: "sparkles") {
-            Button("Preview rewrite") {
-                guard !appState.isPaused else { return }
-                PopupController.shared.showPreview()
-            }
-            Divider()
             Toggle("Pause Polishly", isOn: $appState.isPaused)
             Divider()
             Button("Settings...") {
@@ -55,7 +49,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // Hide dock icon entirely (already set in Info.plist, but ensure it behaves as UIElement)
         NSApp.setActivationPolicy(.accessory)
         
-        KeyboardShortcuts.onKeyUp(for: .rewrite) { [weak self] in
+        ShortcutManager.shared.start { [weak self] in
             self?.handleRewriteShortcut()
         }
         

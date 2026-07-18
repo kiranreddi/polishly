@@ -13,7 +13,7 @@ class AnthropicClient {
     private let endpoint = URL(string: "https://api.anthropic.com/v1/messages")!
     
     func rewriteStream(text: String, tone: String, customInstruction: String?, context: String?, onUpdate: @escaping (String) -> Void) async throws {
-        let apiKey = AppState.shared.apiKey
+        let apiKey = AppState.shared.rewriteAPIKey
         guard !apiKey.isEmpty else {
             let demo = Self.demoRewrite(text: text, tone: tone, instruction: customInstruction)
             var streamed = ""
@@ -89,14 +89,25 @@ class AnthropicClient {
     private static func demoRewrite(text: String, tone: String, instruction: String?) -> String {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return trimmed }
+        var polished = trimmed
+            .replacingOccurrences(of: " let see ", with: " let's see ", options: .caseInsensitive)
+            .replacingOccurrences(of: " im ", with: " I'm ", options: .caseInsensitive)
+        polished = polished.prefix(1).uppercased() + polished.dropFirst()
+        if let last = polished.last, !".!?".contains(last) {
+            polished += "."
+        }
+
         switch tone {
-        case "concise": return "(trimmed)".replacingOccurrences(of: ". ", with: ".")
-        case "friendly": return "Just a quick note: (trimmed)"
-        case "expand": return "(trimmed) Please let me know if you would like any additional detail."
+        case "concise":
+            return polished.replacingOccurrences(of: "I have ", with: "I ")
+        case "friendly":
+            return "Just a quick note: \(polished)"
+        case "expand":
+            return "\(polished) Please let me know if you would like any additional detail."
         case "custom" where !(instruction ?? "").isEmpty:
-            return "(trimmed)"
+            return polished
         default:
-            return trimmed.prefix(1).uppercased() + trimmed.dropFirst()
+            return polished
         }
     }
 }

@@ -1,5 +1,4 @@
 import SwiftUI
-import KeyboardShortcuts
 
 struct SettingsView: View {
     @ObservedObject var appState = AppState.shared
@@ -9,13 +8,34 @@ struct SettingsView: View {
             Section(header: Text("API Configuration")) {
                 SecureField("Anthropic API Key", text: $appState.apiKey)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .onChange(of: appState.apiKey) { _, _ in
+                        appState.useDemoMode = false
+                    }
                 Text("Your key is stored securely in the macOS Keychain and only used for rewriting text when you invoke Polishly.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                if appState.apiKey.isEmpty {
+                    Button("Load stored key…") {
+                        appState.loadStoredAPIKey()
+                    }
+                    Text("This may ask macOS to unlock your login Keychain.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                Toggle("Use local demo rewrites", isOn: $appState.useDemoMode)
+                Text("Demo mode never sends selected text off your Mac.")
                     .font(.caption)
                     .foregroundColor(.secondary)
             }
             
             Section(header: Text("Keyboard Shortcut")) {
-                KeyboardShortcuts.Recorder("Rewrite Selection:", name: .rewrite)
+                LabeledContent("Rewrite Selection") {
+                    Text("Control–Option–Space")
+                        .foregroundColor(.secondary)
+                }
+                Text("This shortcut is consumed before it reaches the active app, so the selected text stays intact.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
 
             Section(header: Text("Activation")) {

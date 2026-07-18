@@ -61,7 +61,9 @@ class PopupController: NSWindowController, NSWindowDelegate {
             }
         }
         
-        window?.makeKeyAndOrderFront(nil)
+        // A nonactivating panel must be explicitly ordered above the source app.
+        // `makeKeyAndOrderFront` is insufficient while Polishly is an accessory app.
+        window?.orderFrontRegardless()
         installDismissMonitors()
     }
 
@@ -82,7 +84,10 @@ class PopupController: NSWindowController, NSWindowDelegate {
         // Size to fit the SwiftUI content
         if let view = window.contentView as? NSHostingView<PopupCardView> {
             let size = view.fittingSize
-            var frame = NSRect(x: 0, y: 0, width: size.width, height: size.height)
+            // A freshly-created hosting view can report a transient zero fitting
+            // height before its first layout pass. Preserve a usable card frame.
+            let cardSize = NSSize(width: max(430, size.width), height: max(240, size.height))
+            var frame = NSRect(x: 0, y: 0, width: cardSize.width, height: cardSize.height)
             
             // CoreGraphics rect (origin top-left) vs AppKit rect (origin bottom-left)
             // rect here is typically in CG coords if derived from AX
@@ -90,12 +95,12 @@ class PopupController: NSWindowController, NSWindowDelegate {
             let appKitRect = NSRect(x: rect.origin.x, y: screenHeight - rect.origin.y - rect.height, width: rect.width, height: rect.height)
             
             // Anchor above
-            frame.origin.x = max(12, min(appKitRect.minX - 20, screen.frame.maxX - size.width - 16))
+            frame.origin.x = max(12, min(appKitRect.minX - 20, screen.frame.maxX - cardSize.width - 16))
             var top = appKitRect.maxY + 14
             
             // If it goes off top of screen, flip below
-            if top + size.height > screen.frame.maxY - 46 {
-                top = appKitRect.minY - size.height - 14
+            if top + cardSize.height > screen.frame.maxY - 46 {
+                top = appKitRect.minY - cardSize.height - 14
             }
             
             frame.origin.y = top
@@ -112,7 +117,9 @@ class PopupController: NSWindowController, NSWindowDelegate {
         removeDismissMonitors()
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
             guard let self, let window = self.window else { return }
-            if !window.frame.contains(event.locationInWindow) { self.closePanel() }
+            // A global monitor's location is not in the panel's coordinate space.
+            // Use the current screen position so any outside click closes reliably.
+            if !window.frame.contains(NSEvent.mouseLocation) { self.closePanel() }
         }
         escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             if event.keyCode == 53 { self?.closePanel(); return nil }

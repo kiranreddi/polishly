@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		394BF9A6EEF0A6B4FFB1969D /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = 7ECC3719641F1D40255CFFB9 /* KeyboardShortcuts */; };
 		64F34B80E0A4752A18EBA7EB /* ClipboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4EEF4C50BFD4DFCB1BA50D /* ClipboardManager.swift */; };
 		6CD63AC9276C49203DCC8F10 /* AnthropicClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0089588A66D203A9DD790354 /* AnthropicClient.swift */; };
 		6F8EC08781AD2763275A7E1D /* PopupViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D82947341A242B8CFCE9374 /* PopupViewModel.swift */; };
@@ -41,17 +40,6 @@
 		DD4EEF4C50BFD4DFCB1BA50D /* ClipboardManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClipboardManager.swift; sourceTree = "<group>"; };
 		EE839393A586FAF2218CECFA /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
-
-/* Begin PBXFrameworksBuildPhase section */
-		F670484F4C8F133D7D1547E3 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				394BF9A6EEF0A6B4FFB1969D /* KeyboardShortcuts in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		0285398D114DCD3DF198A113 /* Polishly */ = {
@@ -124,7 +112,6 @@
 			buildConfigurationList = 398CE001EF753634EA839C0A /* Build configuration list for PBXNativeTarget "Polishly" */;
 			buildPhases = (
 				C9E632DD1AB67AA935A90F8A /* Sources */,
-				F670484F4C8F133D7D1547E3 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -132,7 +119,6 @@
 			);
 			name = Polishly;
 			packageProductDependencies = (
-				7ECC3719641F1D40255CFFB9 /* KeyboardShortcuts */,
 			);
 			productName = Polishly;
 			productReference = 5665805D398D73966AA105E1 /* Polishly.app */;
@@ -157,9 +143,6 @@
 			);
 			mainGroup = 2C6F51C262B0C7983D9B190F;
 			minimizedProjectReferenceProxies = 1;
-			packageReferences = (
-				4A44703B7258E64786D9AC15 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
-			);
 			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
@@ -365,25 +348,6 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		4A44703B7258E64786D9AC15 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		7ECC3719641F1D40255CFFB9 /* KeyboardShortcuts */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4A44703B7258E64786D9AC15 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
-			productName = KeyboardShortcuts;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 0FB264D4C7FB8DBE4119C8AD /* Project object */;
 }

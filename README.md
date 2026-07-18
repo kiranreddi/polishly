@@ -9,11 +9,11 @@ xcodebuild -project Polishly.xcodeproj -scheme Polishly -configuration Debug COD
 open .build/Build/Products/Debug/Polishly.app
 ```
 
-The first launch offers Accessibility setup and an optional Anthropic API key stored in the macOS Keychain. **Use demo mode** keeps rewrites on-device and gives the UI a usable no-key path.
+The first launch checks only Accessibility. Polishly starts in local **demo mode** and never unlocks the login Keychain automatically. Add a key, or explicitly load a stored key, from Settings when you are ready to use the Anthropic API.
 
 ## Manual Phase 1 validation
 
-1. Grant Accessibility access, select text in Notes, and use `Option-Space`.
+1. Grant Accessibility access, select text in Notes, and use `Control-Option-Space`.
 2. Check that the card is anchored to the selection and that tabs, custom revision, copy, Escape, and Accept behave correctly.
 3. Test paste-back in Notes. The app tries an AX write first, then a guarded clipboard transaction only if the originating app still has focus.
 4. Run the Teams checks in `PLAN.md` before treating it as supported; context capture is intentionally not enabled as a shipped Promise B feature.
