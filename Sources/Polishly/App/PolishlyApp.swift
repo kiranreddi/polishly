@@ -53,10 +53,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             self?.handleRewriteShortcut()
         }
         
+        // WindowGroup creates the onboarding window locally. Do not open the
+        // app's URL scheme here: a stale development copy with the same scheme
+        // could otherwise be launched instead of this running build.
         if AppState.shared.showOnboarding {
-            if let url = URL(string: "polishly://onboarding") {
-                NSWorkspace.shared.open(url)
-            }
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
     

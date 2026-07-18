@@ -23,7 +23,11 @@ class PopupViewModel: ObservableObject {
     private var currentTargetText: String = ""
     private var originalCapture: SelectionEngine.CapturedText?
     private var lastCustomInstruction: String?
-    
+    private var rewriteTask: Task<Void, Never>?
+    // Guards against a lingering stream from a previous capture or tab
+    // updating the diff for the current one.
+    private var generation = 0
+
     // Dependencies
     var closeAction: () -> Void = {}
     
@@ -39,6 +43,9 @@ class PopupViewModel: ObservableObject {
     }
     
     func close() {
+        generation += 1
+        rewriteTask?.cancel()
+        rewriteTask = nil
         closeAction()
     }
     
@@ -89,11 +96,15 @@ class PopupViewModel: ObservableObject {
     
     private func requestRewrite(tone: String, customInstruction: String? = nil) {
         lastCustomInstruction = customInstruction
+        rewriteTask?.cancel()
+        generation += 1
+        let requestGeneration = generation
+
         self.isStreaming = true
         self.isError = false
         self.diffTokens = []
         self.currentTargetText = ""
-        
+
         switch tone {
         case "improve": self.rewriteTitle = "Rewritten for clarity"
         case "concise": self.rewriteTitle = "Tightened to the essentials"
@@ -102,29 +113,31 @@ class PopupViewModel: ObservableObject {
         case "custom": self.rewriteTitle = "Custom: \"\(customInstruction ?? "")\""
         default: self.rewriteTitle = "Rewritten"
         }
-        
-        Task {
+
+        rewriteTask = Task {
             do {
-                try await AnthropicClient.shared.rewriteStream(
+                try await RewriteClient.shared.rewriteStream(
                     text: originalText,
                     tone: tone,
                     customInstruction: customInstruction,
                     context: nil
                 ) { [weak self] currentText in
                     Task { @MainActor [weak self] in
-                        guard let self = self else { return }
+                        guard let self, self.generation == requestGeneration else { return }
                         self.currentTargetText = currentText
                         self.diffTokens = DiffEngine.diffWords(original: self.originalText, target: currentText)
                     }
                 }
-                
+
                 Task { @MainActor [weak self] in
-                    guard let self else { return }
+                    guard let self, self.generation == requestGeneration else { return }
                     self.isStreaming = false
                 }
+            } catch is CancellationError {
+                // Superseded by a newer request or the popup closed.
             } catch {
                 Task { @MainActor [weak self] in
-                    guard let self else { return }
+                    guard let self, self.generation == requestGeneration else { return }
                     self.isStreaming = false
                     self.isError = true
                     self.errorMessage = error.localizedDescription

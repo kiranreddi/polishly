@@ -1,89 +1,286 @@
 import Foundation
 
-enum AnthropicError: Error {
-    case invalidURL
-    case missingAPIKey
-    case networkError(Error)
-    case parseError
+enum RewriteError: LocalizedError {
+    case missingAPIKey(String)
+    case invalidConfiguration(String)
     case apiError(String)
+    case emptyResponse
+
+    var errorDescription: String? {
+        switch self {
+        case .missingAPIKey(let provider):
+            return "No \(provider) API key is active. Add one in Settings or choose On-device demo."
+        case .invalidConfiguration(let message), .apiError(let message):
+            return message
+        case .emptyResponse:
+            return "The provider returned no rewritten text. Try again or choose another model."
+        }
+    }
 }
 
-class AnthropicClient {
-    static let shared = AnthropicClient()
-    private let endpoint = URL(string: "https://api.anthropic.com/v1/messages")!
-    
-    func rewriteStream(text: String, tone: String, customInstruction: String?, context: String?, onUpdate: @escaping (String) -> Void) async throws {
-        let apiKey = AppState.shared.rewriteAPIKey
-        guard !apiKey.isEmpty else {
-            let demo = Self.demoRewrite(text: text, tone: tone, instruction: customInstruction)
-            var streamed = ""
-            for word in demo.split(separator: " ") {
-                try await Task.sleep(for: .milliseconds(22))
-                streamed += (streamed.isEmpty ? "" : " ") + word
-                onUpdate(streamed)
-            }
+/// Routes rewrite requests without ever reading Keychain implicitly. The only key
+/// available here is the in-memory value the user entered or explicitly loaded.
+final class RewriteClient {
+    static let shared = RewriteClient()
+
+    private init() {}
+
+    func rewriteStream(
+        text: String,
+        tone: String,
+        customInstruction: String?,
+        context: String?,
+        onUpdate: @escaping (String) -> Void
+    ) async throws {
+        let appState = AppState.shared
+        let provider = appState.selectedProvider
+
+        if provider == .demo {
+            try await streamDemo(text: text, tone: tone, instruction: customInstruction, onUpdate: onUpdate)
             return
         }
-        
+
+        let apiKey = appState.rewriteAPIKey
+        guard !apiKey.isEmpty else {
+            throw RewriteError.missingAPIKey(provider.displayName)
+        }
+
+        let model = appState.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !model.isEmpty else {
+            throw RewriteError.invalidConfiguration("Choose a \(provider.displayName) model in Settings.")
+        }
+
+        let prompt = Self.rewritePrompt(
+            text: text,
+            tone: tone,
+            customInstruction: customInstruction,
+            context: context
+        )
+
+        switch provider {
+        case .openAI:
+            try await streamOpenAI(prompt: prompt, apiKey: apiKey, model: model, onUpdate: onUpdate)
+        case .groq:
+            try await streamChatCompletions(
+                prompt: prompt,
+                apiKey: apiKey,
+                model: model,
+                endpoint: URL(string: "https://api.groq.com/openai/v1/chat/completions")!,
+                providerName: provider.displayName,
+                onUpdate: onUpdate
+            )
+        case .cerebras:
+            try await streamChatCompletions(
+                prompt: prompt,
+                apiKey: apiKey,
+                model: model,
+                endpoint: URL(string: "https://api.cerebras.ai/v1/chat/completions")!,
+                providerName: provider.displayName,
+                onUpdate: onUpdate
+            )
+        case .anthropic:
+            try await streamAnthropic(prompt: prompt, apiKey: apiKey, model: model, onUpdate: onUpdate)
+        case .demo:
+            break
+        }
+    }
+
+    private func streamOpenAI(
+        prompt: String,
+        apiKey: String,
+        model: String,
+        onUpdate: @escaping (String) -> Void
+    ) async throws {
+        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": model,
+            "stream": true,
+            "input": [
+                ["role": "system", "content": "You are a precise writing assistant. Return only the rewritten text."],
+                ["role": "user", "content": prompt]
+            ]
+        ])
+
+        let (bytes, response) = try await URLSession.shared.bytes(for: request)
+        try await validate(response: response, bytes: bytes, providerName: "OpenAI")
+
+        var currentText = ""
+        for try await line in bytes.lines {
+            try Task.checkCancellation()
+            guard line.hasPrefix("data: ") else { continue }
+            let payload = String(line.dropFirst(6))
+            guard let json = Self.jsonObject(payload) else { continue }
+            let type = json["type"] as? String
+            if type == "response.output_text.delta", let delta = json["delta"] as? String {
+                currentText += delta
+                onUpdate(currentText)
+            } else if type == "error" {
+                throw RewriteError.apiError(Self.errorMessage(from: json, fallback: "OpenAI streaming error."))
+            }
+        }
+        guard !currentText.isEmpty else { throw RewriteError.emptyResponse }
+    }
+
+    private func streamChatCompletions(
+        prompt: String,
+        apiKey: String,
+        model: String,
+        endpoint: URL,
+        providerName: String,
+        onUpdate: @escaping (String) -> Void
+    ) async throws {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
-        request.addValue(apiKey, forHTTPHeaderField: "x-api-key")
-        request.addValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
-        request.addValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        var prompt = "Rewrite the following text."
-        if let context = context {
-            prompt += " Here is the context of the conversation:\n<context>\n\(context)\n</context>\n"
+        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": model,
+            "stream": true,
+            "messages": [
+                ["role": "system", "content": "You are a precise writing assistant. Return only the rewritten text."],
+                ["role": "user", "content": prompt]
+            ]
+        ])
+
+        let (bytes, response) = try await URLSession.shared.bytes(for: request)
+        try await validate(response: response, bytes: bytes, providerName: providerName)
+
+        var currentText = ""
+        for try await line in bytes.lines {
+            try Task.checkCancellation()
+            guard line.hasPrefix("data: ") else { continue }
+            let payload = String(line.dropFirst(6))
+            if payload == "[DONE]" { break }
+            guard let json = Self.jsonObject(payload),
+                  let choices = json["choices"] as? [[String: Any]],
+                  let delta = choices.first?["delta"] as? [String: Any],
+                  let content = delta["content"] as? String else { continue }
+            currentText += content
+            onUpdate(currentText)
         }
-        
-        if tone == "custom", let instruction = customInstruction {
-            prompt += " Instruction: \(instruction)\n"
+        guard !currentText.isEmpty else { throw RewriteError.emptyResponse }
+    }
+
+    private func streamAnthropic(
+        prompt: String,
+        apiKey: String,
+        model: String,
+        onUpdate: @escaping (String) -> Void
+    ) async throws {
+        var request = URLRequest(url: URL(string: "https://api.anthropic.com/v1/messages")!)
+        request.httpMethod = "POST"
+        request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
+        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "model": model,
+            "max_tokens": 1024,
+            "stream": true,
+            "messages": [["role": "user", "content": prompt]]
+        ])
+
+        let (bytes, response) = try await URLSession.shared.bytes(for: request)
+        try await validate(response: response, bytes: bytes, providerName: "Anthropic")
+
+        var currentText = ""
+        for try await line in bytes.lines {
+            try Task.checkCancellation()
+            guard line.hasPrefix("data: "),
+                  let json = Self.jsonObject(String(line.dropFirst(6))),
+                  let type = json["type"] as? String else { continue }
+
+            if type == "content_block_delta",
+               let delta = json["delta"] as? [String: Any],
+               let textDelta = delta["text"] as? String {
+                currentText += textDelta
+                onUpdate(currentText)
+            } else if type == "error" {
+                throw RewriteError.apiError(Self.errorMessage(from: json, fallback: "Anthropic streaming error."))
+            } else if type == "message_stop" {
+                break
+            }
+        }
+        guard !currentText.isEmpty else { throw RewriteError.emptyResponse }
+    }
+
+    private func validate(
+        response: URLResponse,
+        bytes: URLSession.AsyncBytes,
+        providerName: String
+    ) async throws {
+        guard let http = response as? HTTPURLResponse else {
+            throw RewriteError.apiError("\(providerName) returned an invalid network response.")
+        }
+        guard (200..<300).contains(http.statusCode) else {
+            var body = ""
+            for try await line in bytes.lines { body += line }
+            let json = Self.jsonObject(body)
+            let fallback: String
+            switch http.statusCode {
+            case 401: fallback = "\(providerName) rejected the API key (401)."
+            case 429: fallback = "\(providerName) rate limit reached (429). Try again shortly."
+            default: fallback = "\(providerName) request failed (\(http.statusCode))."
+            }
+            throw RewriteError.apiError(Self.errorMessage(from: json, fallback: fallback))
+        }
+    }
+
+    private func streamDemo(
+        text: String,
+        tone: String,
+        instruction: String?,
+        onUpdate: @escaping (String) -> Void
+    ) async throws {
+        let demo = Self.demoRewrite(text: text, tone: tone, instruction: instruction)
+        var streamed = ""
+        for word in demo.split(separator: " ") {
+            try Task.checkCancellation()
+            try await Task.sleep(for: .milliseconds(22))
+            streamed += (streamed.isEmpty ? "" : " ") + word
+            onUpdate(streamed)
+        }
+    }
+
+    private static func rewritePrompt(
+        text: String,
+        tone: String,
+        customInstruction: String?,
+        context: String?
+    ) -> String {
+        var prompt = "Rewrite the following text."
+        if let context, !context.isEmpty {
+            prompt += "\nConversation context:\n<context>\n\(context)\n</context>"
+        }
+        if tone == "custom", let customInstruction, !customInstruction.isEmpty {
+            prompt += "\nInstruction: \(customInstruction)"
         } else {
             switch tone {
-            case "improve": prompt += " Make it sound more professional and clear.\n"
-            case "concise": prompt += " Make it concise and to the point.\n"
-            case "friendly": prompt += " Make it friendly and approachable.\n"
-            case "expand": prompt += " Expand on it with more detail.\n"
+            case "improve": prompt += "\nMake it professional, natural, and clear."
+            case "concise": prompt += "\nMake it concise and direct."
+            case "friendly": prompt += "\nMake it warm and approachable."
+            case "expand": prompt += "\nExpand it with useful detail without inventing facts."
             default: break
             }
         }
-        prompt += "\nReturn ONLY the rewritten text, with no markdown formatting, no conversational filler, and no `<text>` tags.\n\nText to rewrite: \(text)"
-        
-        let body: [String: Any] = [
-            "model": "claude-3-haiku-20240307",
-            "max_tokens": 1024,
-            "stream": true,
-            "messages": [
-                ["role": "user", "content": prompt]
-            ]
-        ]
-        
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
-        
-        let (result, response) = try await URLSession.shared.bytes(for: request)
-        
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw AnthropicError.apiError("Status code: \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+        prompt += "\nReturn only the rewritten text: no markdown, quotation marks, labels, or commentary.\n\nText:\n\(text)"
+        return prompt
+    }
+
+    private static func jsonObject(_ text: String) -> [String: Any]? {
+        guard let data = text.data(using: .utf8) else { return nil }
+        return try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    }
+
+    private static func errorMessage(from json: [String: Any]?, fallback: String) -> String {
+        guard let json else { return fallback }
+        if let error = json["error"] as? [String: Any], let message = error["message"] as? String {
+            return message
         }
-        
-        var currentText = ""
-        
-        for try await line in result.lines {
-            if line.hasPrefix("data: ") {
-                let jsonStr = String(line.dropFirst(6))
-                if jsonStr == "[DONE]" { break }
-                if let data = jsonStr.data(using: .utf8),
-                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let type = json["type"] as? String {
-                    if type == "content_block_delta",
-                       let delta = json["delta"] as? [String: Any],
-                       let textDelta = delta["text"] as? String {
-                        currentText += textDelta
-                        onUpdate(currentText)
-                    }
-                }
-            }
-        }
+        if let message = json["message"] as? String { return message }
+        return fallback
     }
 
     private static func demoRewrite(text: String, tone: String, instruction: String?) -> String {
@@ -98,16 +295,11 @@ class AnthropicClient {
         }
 
         switch tone {
-        case "concise":
-            return polished.replacingOccurrences(of: "I have ", with: "I ")
-        case "friendly":
-            return "Just a quick note: \(polished)"
-        case "expand":
-            return "\(polished) Please let me know if you would like any additional detail."
-        case "custom" where !(instruction ?? "").isEmpty:
-            return polished
-        default:
-            return polished
+        case "concise": return polished.replacingOccurrences(of: "I have ", with: "I ")
+        case "friendly": return "Just a quick note: \(polished)"
+        case "expand": return "\(polished) Please let me know if you would like any additional detail."
+        case "custom" where !(instruction ?? "").isEmpty: return polished
+        default: return polished
         }
     }
 }

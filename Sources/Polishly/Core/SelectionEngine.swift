@@ -37,7 +37,14 @@ class SelectionEngine {
         
         // Wait briefly for the clipboard to populate
         Thread.sleep(forTimeInterval: 0.15)
-        
+
+        // If the pasteboard never changed, the app copied nothing (no selection,
+        // a secure field, or missing permission). Bail out rather than treating
+        // stale clipboard contents — possibly sensitive — as the selection.
+        guard NSPasteboard.general.changeCount != snapshot.changeCount else {
+            return nil
+        }
+
         // Read what was copied
         if let text = ClipboardManager.shared.readString(), !text.isEmpty {
             // Restore clipboard immediately to not pollute user's history

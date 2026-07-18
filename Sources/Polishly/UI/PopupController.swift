@@ -90,9 +90,11 @@ class PopupController: NSWindowController, NSWindowDelegate {
             var frame = NSRect(x: 0, y: 0, width: cardSize.width, height: cardSize.height)
             
             // CoreGraphics rect (origin top-left) vs AppKit rect (origin bottom-left)
-            // rect here is typically in CG coords if derived from AX
-            let screenHeight = screen.frame.height
-            let appKitRect = NSRect(x: rect.origin.x, y: screenHeight - rect.origin.y - rect.height, width: rect.width, height: rect.height)
+            // rect here is typically in CG coords if derived from AX.
+            // The CG→AppKit flip must use the primary screen's height —
+            // NSScreen.main is merely the screen with keyboard focus.
+            let primaryHeight = NSScreen.screens.first?.frame.height ?? screen.frame.height
+            let appKitRect = NSRect(x: rect.origin.x, y: primaryHeight - rect.origin.y - rect.height, width: rect.width, height: rect.height)
             
             // Anchor above
             frame.origin.x = max(12, min(appKitRect.minX - 20, screen.frame.maxX - cardSize.width - 16))

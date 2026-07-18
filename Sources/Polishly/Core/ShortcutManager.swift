@@ -30,7 +30,13 @@ final class ShortcutManager {
             }
             let isSpace = event.getIntegerValueField(.keyboardEventKeycode) == 49
             let flags = event.flags
-            let matches = isSpace && flags.contains(.maskControl) && flags.contains(.maskAlternate)
+            // Require exactly Control-Option; extra Command/Shift means a
+            // different shortcut that should reach the frontmost app.
+            let matches = isSpace
+                && flags.contains(.maskControl)
+                && flags.contains(.maskAlternate)
+                && !flags.contains(.maskCommand)
+                && !flags.contains(.maskShift)
             guard matches else { return Unmanaged.passUnretained(event) }
             DispatchQueue.main.async { manager.handler?() }
             return nil // consume the shortcut; never let it replace selected text
