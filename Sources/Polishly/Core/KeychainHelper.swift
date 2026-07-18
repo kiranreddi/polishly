@@ -1,5 +1,13 @@
 import Foundation
 import Security
+import LocalAuthentication
+
+enum KeychainReadResult {
+    case success(Data)
+    case notFound
+    case interactionRequired
+    case failure(OSStatus)
+}
 
 class KeychainHelper {
     static let shared = KeychainHelper()
@@ -34,30 +42,44 @@ class KeychainHelper {
         return status == errSecSuccess
     }
 
-    func read(service: String, account: String) -> Data? {
-        let query = [
+    /// Silent reads never display a macOS authentication dialog. An explicit
+    /// user action can opt into authentication by passing `allowInteraction`.
+    func read(service: String, account: String, allowInteraction: Bool) -> KeychainReadResult {
+        var query: [CFString: Any] = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
             kSecAttrAccount: account,
             kSecReturnData: true
-        ] as CFDictionary
+        ]
+        let authenticationContext = LAContext()
+        authenticationContext.interactionNotAllowed = !allowInteraction
+        query[kSecUseAuthenticationContext] = authenticationContext
 
         var result: AnyObject?
-        let status = SecItemCopyMatching(query, &result)
+        let status = SecItemCopyMatching(query as CFDictionary, &result)
 
-        if status == errSecSuccess {
-            return result as? Data
+        switch status {
+        case errSecSuccess:
+            guard let data = result as? Data else { return .failure(errSecDecode) }
+            return .success(data)
+        case errSecItemNotFound:
+            return .notFound
+        case errSecInteractionNotAllowed, errSecAuthFailed, errSecUserCanceled:
+            return .interactionRequired
+        default:
+            return .failure(status)
         }
-        return nil
     }
 
-    func delete(service: String, account: String) {
+    @discardableResult
+    func delete(service: String, account: String) -> Bool {
         let query = [
             kSecClass: kSecClassGenericPassword,
             kSecAttrService: service,
             kSecAttrAccount: account
         ] as CFDictionary
 
-        SecItemDelete(query)
+        let status = SecItemDelete(query)
+        return status == errSecSuccess || status == errSecItemNotFound
     }
 }

@@ -85,14 +85,26 @@ struct SettingsView: View {
                 }
 
                 HStack {
-                    Button("Save to Keychain…") {
+                    Button(appState.hasRememberedAPIKey ? "Update Remembered Key" : "Save & Remember Key") {
                         appState.saveAPIKey()
                     }
                     .disabled(!appState.providerIsReady)
 
-                    Button("Load Saved Key…") {
-                        appState.loadStoredAPIKey()
+                    if appState.hasRememberedAPIKey {
+                        Button("Forget Key…", role: .destructive) {
+                            appState.forgetStoredAPIKey()
+                        }
+                    } else {
+                        Button("Load Saved Key…") {
+                            appState.loadStoredAPIKey()
+                        }
                     }
+                }
+
+                if appState.hasRememberedAPIKey {
+                    Label("Remembered securely — loads automatically", systemImage: "lock.fill")
+                        .font(.caption)
+                        .foregroundStyle(.green)
                 }
 
                 if !appState.providerStatusMessage.isEmpty {
@@ -104,7 +116,7 @@ struct SettingsView: View {
                 Text(appState.selectedProvider.privacyDescription)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("A typed key is active for this session and stays in memory unless you explicitly save it. Saving or loading may show a normal macOS Keychain prompt.")
+                Text("Enter the key once, then choose Save & Remember Key. Polishly will securely reload it on future launches without repeatedly asking for it.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

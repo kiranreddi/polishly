@@ -62,6 +62,7 @@ class AppState: ObservableObject {
 
     @Published private(set) var isAccessibilityTrusted = false
     @Published var apiKey = ""
+    @Published private(set) var hasRememberedAPIKey = false
     @Published var providerStatusMessage = ""
     @Published var showOnboarding = false
     @Published var selectedProvider: LLMProvider {
@@ -69,8 +70,12 @@ class AppState: ObservableObject {
             guard selectedProvider != oldValue else { return }
             UserDefaults.standard.set(selectedProvider.rawValue, forKey: "selectedProvider")
             apiKey = ""
+            hasRememberedAPIKey = false
             providerStatusMessage = ""
             modelName = Self.storedModel(for: selectedProvider)
+            if selectedProvider != .demo {
+                loadStoredAPIKey(allowInteraction: false, showMissingMessage: false)
+            }
         }
     }
     @Published var modelName: String {
@@ -98,6 +103,10 @@ class AppState: ObservableObject {
         self.isPaused = UserDefaults.standard.bool(forKey: "isPaused")
         self.notesEnabled = UserDefaults.standard.object(forKey: "notesEnabled") as? Bool ?? true
         self.teamsEnabled = UserDefaults.standard.object(forKey: "teamsEnabled") as? Bool ?? true
+
+        if savedProvider != .demo {
+            loadStoredAPIKey(allowInteraction: false, showMissingMessage: false)
+        }
 
         checkAccessibility()
         showOnboarding = !isAccessibilityTrusted
@@ -150,29 +159,34 @@ class AppState: ObservableObject {
             service: Self.keychainService(for: selectedProvider),
             account: "user"
         )
+        hasRememberedAPIKey = saved
         providerStatusMessage = saved
-            ? "Saved \(selectedProvider.displayName) key to Keychain."
+            ? "Saved securely. This key will load automatically next time."
             : "Could not save the key to Keychain."
         return saved
     }
 
-    /// Called only from an explicit settings action because reading a login-keychain
-    /// item may require the user's macOS password.
+    /// Explicit fallback that may ask macOS to authorize Keychain access once.
     @discardableResult
     func loadStoredAPIKey() -> Bool {
-        guard selectedProvider != .demo,
-              let data = KeychainHelper.shared.read(
-                service: Self.keychainService(for: selectedProvider),
-                account: "user"
-              ),
-              let key = String(data: data, encoding: .utf8),
-              !key.isEmpty else {
-            providerStatusMessage = "No saved \(selectedProvider.displayName) key was found."
-            return false
+        loadStoredAPIKey(allowInteraction: true, showMissingMessage: true)
+    }
+
+    @discardableResult
+    func forgetStoredAPIKey() -> Bool {
+        guard selectedProvider != .demo else { return false }
+        let deleted = KeychainHelper.shared.delete(
+            service: Self.keychainService(for: selectedProvider),
+            account: "user"
+        )
+        if deleted {
+            apiKey = ""
+            hasRememberedAPIKey = false
+            providerStatusMessage = "Forgot the saved \(selectedProvider.displayName) key."
+        } else {
+            providerStatusMessage = "Could not remove the saved key from Keychain."
         }
-        apiKey = key
-        providerStatusMessage = "Loaded \(selectedProvider.displayName) key for this session."
-        return true
+        return deleted
     }
 
     func resetModelToDefault() {
@@ -199,5 +213,42 @@ class AppState: ObservableObject {
     private static func storedModel(for provider: LLMProvider) -> String {
         let value = UserDefaults.standard.string(forKey: modelKey(for: provider)) ?? ""
         return value.isEmpty ? provider.defaultModel : value
+    }
+
+    @discardableResult
+    private func loadStoredAPIKey(allowInteraction: Bool, showMissingMessage: Bool) -> Bool {
+        guard selectedProvider != .demo else { return false }
+        let result = KeychainHelper.shared.read(
+            service: Self.keychainService(for: selectedProvider),
+            account: "user",
+            allowInteraction: allowInteraction
+        )
+
+        switch result {
+        case .success(let data):
+            guard let key = String(data: data, encoding: .utf8), !key.isEmpty else {
+                if showMissingMessage { providerStatusMessage = "The saved key could not be read." }
+                return false
+            }
+            apiKey = key
+            hasRememberedAPIKey = true
+            providerStatusMessage = allowInteraction
+                ? "Loaded the saved \(selectedProvider.displayName) key."
+                : "Remembered key loaded automatically."
+            return true
+        case .notFound:
+            if showMissingMessage {
+                providerStatusMessage = "No saved \(selectedProvider.displayName) key was found."
+            }
+        case .interactionRequired:
+            if showMissingMessage {
+                providerStatusMessage = "macOS did not authorize access to the saved key."
+            } else {
+                providerStatusMessage = "Saved key needs one-time authorization. Choose Load Saved Key."
+            }
+        case .failure(let status):
+            providerStatusMessage = "Keychain error \(status)."
+        }
+        return false
     }
 }
