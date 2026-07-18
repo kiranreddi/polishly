@@ -3,7 +3,7 @@ import Cocoa
 
 class SelectionEngine {
     static let shared = SelectionEngine()
-    
+
     struct CapturedText {
         let text: String
         let method: CaptureMethod
@@ -11,30 +11,31 @@ class SelectionEngine {
         let axElement: AXUIElement?
         let sourceBundleIdentifier: String?
     }
-    
+
     enum CaptureMethod {
         case accessibility
         case clipboard
     }
-    
+
     private init() {}
-    
-    func capture() -> CapturedText? {
+
+    func capture(forceClipboard: Bool = false) -> CapturedText? {
         // Try Tier A: Accessibility
-        if let element = AccessibilityManager.shared.getFocusedElement(),
+        if !forceClipboard,
+           let element = AccessibilityManager.shared.getFocusedElement(),
            let text = AccessibilityManager.shared.getSelectedText(from: element),
            !text.isEmpty {
-            
+
             let bounds = AccessibilityManager.shared.getSelectionBounds(from: element)
             return CapturedText(text: text, method: .accessibility, bounds: bounds, axElement: element, sourceBundleIdentifier: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
         }
-        
+
         // Try Tier B: Clipboard Fallback
         let snapshot = ClipboardManager.shared.takeSnapshot()
-        
+
         // We synthesize Cmd+C
         _ = ClipboardManager.shared.synthesizeCopy()
-        
+
         // Wait briefly for the clipboard to populate
         Thread.sleep(forTimeInterval: 0.15)
 
@@ -52,39 +53,51 @@ class SelectionEngine {
             _ = ClipboardManager.shared.restore(snapshot: snapshot, expectedChangeCount: copyChangeCount)
             return CapturedText(text: text, method: .clipboard, bounds: nil, axElement: nil, sourceBundleIdentifier: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
         }
-        
+
         // If we copied nothing, restore anyway
         _ = ClipboardManager.shared.restore(snapshot: snapshot, expectedChangeCount: NSPasteboard.general.changeCount)
-        
+
         return nil
     }
-    
-    func inject(text: String, originalCapture: CapturedText, completion: @escaping (Bool) -> Void) {
+
+    enum InjectionResult {
+        case success
+        case failed
+        case unconfirmed
+        case pasteSentUnconfirmable
+    }
+
+    func inject(text: String, originalCapture: CapturedText, completion: @escaping (InjectionResult) -> Void) {
         if originalCapture.method == .accessibility, let element = originalCapture.axElement {
             let success = AccessibilityManager.shared.replaceSelectedText(in: element, with: text)
             if success {
-                completion(true)
+                completion(.success)
                 return
             }
         }
-        
+
         // Fallback to Clipboard Paste
-        // Never synthesize paste into a different app than the one that owned the selection.
         guard NSWorkspace.shared.frontmostApplication?.bundleIdentifier == originalCapture.sourceBundleIdentifier else {
-            completion(false)
+            completion(.failed)
             return
         }
 
         let snapshot = ClipboardManager.shared.takeSnapshot()
         let polishlyWriteChangeCount = ClipboardManager.shared.writeString(text)
-        
-        _ = ClipboardManager.shared.synthesizePaste()
-        
-        // We need to wait for the paste to complete before restoring the clipboard.
-        // If we restore too fast, the app pastes the restored content instead.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-            _ = ClipboardManager.shared.restore(snapshot: snapshot, expectedChangeCount: polishlyWriteChangeCount)
-            completion(true)
+
+        let pasteAttempted = ClipboardManager.shared.synthesizePaste()
+
+        if pasteAttempted {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                _ = ClipboardManager.shared.restore(snapshot: snapshot, expectedChangeCount: polishlyWriteChangeCount)
+            }
+            completion(.pasteSentUnconfirmable)
+        } else {
+            // Paste event couldn't even be created. Tell user to press Cmd-V.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
+                _ = ClipboardManager.shared.restore(snapshot: snapshot, expectedChangeCount: polishlyWriteChangeCount)
+            }
+            completion(.unconfirmed)
         }
     }
 }

@@ -2,7 +2,7 @@ import SwiftUI
 
 struct PopupCardView: View {
     @ObservedObject var viewModel: PopupViewModel
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
@@ -31,9 +31,9 @@ struct PopupCardView: View {
             .padding(.horizontal, 16)
             .padding(.top, 12)
             .padding(.bottom, 10)
-            
+
             Divider().background(Color(hex: "eef0f3"))
-            
+
             // Context Disclosure
             HStack(spacing: 6) {
                 Circle()
@@ -50,19 +50,19 @@ struct PopupCardView: View {
             .cornerRadius(7)
             .padding(.horizontal, 16)
             .padding(.top, 10)
-            
+
             // Diff Content
             HStack(alignment: .top, spacing: 10) {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(Color(hex: "008c80"))
                     .frame(width: 3)
-                
+
                 VStack(alignment: .leading, spacing: 7) {
                     Text(viewModel.rewriteTitle)
                         .font(.system(size: 12.5))
                         .fontWeight(.semibold)
                         .foregroundColor(Color(hex: "008c80"))
-                    
+
                     if viewModel.isError {
                         HStack(spacing: 8) {
                             Text(viewModel.errorMessage)
@@ -97,18 +97,18 @@ struct PopupCardView: View {
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, 4)
-            
+
             if viewModel.showReviseInput {
                 HStack(spacing: 8) {
                     TextField("Tell Polishly what to change...", text: $viewModel.reviseText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .font(.system(size: 12.5))
-                    
+
                     Button("Apply") {
                         viewModel.submitRevise()
                     }
                     .buttonStyle(AcceptButtonStyle(isSmall: true))
-                    
+
                     Button("×") {
                         viewModel.showReviseInput = false
                     }
@@ -117,15 +117,27 @@ struct PopupCardView: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 12)
             }
-            
+
             // Actions
             HStack(spacing: 8) {
-                Button("Accept") {
-                    viewModel.accept()
+                if viewModel.isTierC {
+                    Button("Copied — Press ⌘V") {
+                        viewModel.close()
+                    }
+                    .buttonStyle(AcceptButtonStyle(isSmall: false))
+                } else if viewModel.isPasteSentUnconfirmable {
+                    Button("Paste sent — verify the field") {
+                        viewModel.close()
+                    }
+                    .buttonStyle(AcceptButtonStyle(isSmall: false))
+                } else {
+                    Button("Accept") {
+                        viewModel.accept()
+                    }
+                    .buttonStyle(AcceptButtonStyle(isSmall: false))
+                    .disabled(viewModel.isStreaming || viewModel.diffTokens.isEmpty || viewModel.isError)
                 }
-                .buttonStyle(AcceptButtonStyle(isSmall: false))
-                .disabled(viewModel.isStreaming || viewModel.diffTokens.isEmpty || viewModel.isError)
-                
+
                 Button(action: {
                     viewModel.showReviseInput.toggle()
                 }) {
@@ -137,9 +149,9 @@ struct PopupCardView: View {
                 }
                 .buttonStyle(ReviseButtonStyle(isOn: viewModel.showReviseInput))
                 .disabled(viewModel.isStreaming)
-                
+
                 Spacer()
-                
+
                 Button(action: {
                     viewModel.regenerate()
                 }) {
@@ -160,7 +172,7 @@ struct PopupCardView: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
-            
+
             // Tabs
             VStack(spacing: 0) {
                 Divider().background(Color(hex: "eef0f3"))
@@ -187,7 +199,7 @@ struct PopupCardView: View {
 // DiffTextView renders the tokens
 struct DiffTextView: View {
     let tokens: [DiffToken]
-    
+
     var body: some View {
         var text = Text("")
         for token in tokens {
@@ -210,14 +222,14 @@ struct TabButton: View {
     let key: String
     @Binding var selected: String
     let action: () -> Void
-    
+
     var body: some View {
         VStack(spacing: 0) {
             Text(title)
                 .font(.system(size: 12.5, weight: selected == key ? .bold : .medium))
                 .foregroundColor(Color(hex: selected == key ? "1c2430" : "6b7280"))
                 .padding(.vertical, 11)
-            
+
             Rectangle()
                 .fill(selected == key ? Color(hex: "008c80") : Color.clear)
                 .frame(height: 2)

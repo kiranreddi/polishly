@@ -21,26 +21,64 @@ final class ShortcutManager {
     func start(handler: @escaping () -> Void) {
         self.handler = handler
         installEventHandlerIfNeeded()
-        guard hotKeyRef == nil else { return }
+        registerGlobalShortcut()
+    }
+
+    func registerGlobalShortcut() {
+        guard handler != nil else { return } // Wait until handler is set
+
+        // Backup the current hotkey just in case the new one fails
+        let previousHotKeyRef = self.hotKeyRef
+        self.hotKeyRef = nil
+
+        if let previousHotKeyRef {
+            UnregisterEventHotKey(previousHotKeyRef)
+        }
 
         let hotKeyID = EventHotKeyID(
             signature: Self.signature,
             id: Self.identifier
         )
-        let modifiers = UInt32(controlKey | optionKey)
+
+        let keyCode = UInt32(AppState.shared.shortcutKeyCode)
+        let modifiers = UInt32(AppState.shared.shortcutModifiers)
+
         let status = RegisterEventHotKey(
-            UInt32(kVK_Space),
+            keyCode,
             modifiers,
             hotKeyID,
             GetApplicationEventTarget(),
             0,
             &hotKeyRef
         )
+
         if status != noErr {
-            hotKeyRef = nil
             logger.error("Global shortcut registration failed with status: \(status)")
+            AppState.shared.hasShortcutConflict = true
+
+            // Re-register the previous working shortcut
+            if previousHotKeyRef != nil,
+               let prevKeyCode = AppState.shared.lastWorkingShortcutKeyCode,
+               let prevModifiers = AppState.shared.lastWorkingShortcutModifiers {
+
+                let fallbackStatus = RegisterEventHotKey(
+                    UInt32(prevKeyCode),
+                    UInt32(prevModifiers),
+                    hotKeyID,
+                    GetApplicationEventTarget(),
+                    0,
+                    &hotKeyRef
+                )
+                if fallbackStatus != noErr {
+                    self.hotKeyRef = nil
+                }
+            }
         } else {
-            logger.info("Registered Control-Option-Space")
+            logger.info("Registered shortcut")
+            AppState.shared.hasShortcutConflict = false
+            // Save as the last known working shortcut
+            AppState.shared.lastWorkingShortcutKeyCode = Int(keyCode)
+            AppState.shared.lastWorkingShortcutModifiers = Int(modifiers)
         }
     }
 
@@ -87,7 +125,7 @@ final class ShortcutManager {
                 let manager = Unmanaged<ShortcutManager>
                     .fromOpaque(userData)
                     .takeUnretainedValue()
-                manager.logger.info("Received Control-Option-Space")
+                manager.logger.info("Received Global Shortcut")
                 DispatchQueue.main.async { manager.handler?() }
                 return noErr
             },

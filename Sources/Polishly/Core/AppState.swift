@@ -30,7 +30,7 @@ enum LLMProvider: String, CaseIterable, Identifiable {
     var defaultModel: String {
         switch self {
         case .demo: return "Local rules"
-        case .openAI: return "gpt-5.6-sol"
+        case .openAI: return "gpt-5.2"
         case .groq: return "llama-3.3-70b-versatile"
         case .cerebras: return "gpt-oss-120b"
         case .anthropic: return "claude-haiku-4-5"
@@ -108,12 +108,25 @@ class AppState: ObservableObject {
     @Published var isPaused: Bool {
         didSet { UserDefaults.standard.set(isPaused, forKey: "isPaused") }
     }
-    @Published var notesEnabled: Bool {
-        didSet { UserDefaults.standard.set(notesEnabled, forKey: "notesEnabled") }
+
+    @Published var shortcutKeyCode: Int {
+        didSet { UserDefaults.standard.set(shortcutKeyCode, forKey: "shortcutKeyCode") }
     }
-    @Published var teamsEnabled: Bool {
-        didSet { UserDefaults.standard.set(teamsEnabled, forKey: "teamsEnabled") }
+    @Published var shortcutModifiers: Int {
+        didSet { UserDefaults.standard.set(shortcutModifiers, forKey: "shortcutModifiers") }
     }
+
+    var lastWorkingShortcutKeyCode: Int? {
+        get { UserDefaults.standard.object(forKey: "lastWorkingShortcutKeyCode") as? Int }
+        set { UserDefaults.standard.set(newValue, forKey: "lastWorkingShortcutKeyCode") }
+    }
+
+    var lastWorkingShortcutModifiers: Int? {
+        get { UserDefaults.standard.object(forKey: "lastWorkingShortcutModifiers") as? Int }
+        set { UserDefaults.standard.set(newValue, forKey: "lastWorkingShortcutModifiers") }
+    }
+
+    @Published var hasShortcutConflict = false
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -123,8 +136,10 @@ class AppState: ObservableObject {
         self.selectedProvider = savedProvider
         self.modelName = Self.storedModel(for: savedProvider)
         self.isPaused = UserDefaults.standard.bool(forKey: "isPaused")
-        self.notesEnabled = UserDefaults.standard.object(forKey: "notesEnabled") as? Bool ?? true
-        self.teamsEnabled = UserDefaults.standard.object(forKey: "teamsEnabled") as? Bool ?? true
+
+        // Default to Cmd+Option+Space (49 is Space, 6144 is Cmd+Option in Carbon)
+        self.shortcutKeyCode = UserDefaults.standard.object(forKey: "shortcutKeyCode") as? Int ?? 49
+        self.shortcutModifiers = UserDefaults.standard.object(forKey: "shortcutModifiers") as? Int ?? 6144
 
         if savedProvider != .demo {
             loadStoredAPIKeyAsync(allowInteraction: false, showMissingMessage: false)
@@ -272,12 +287,7 @@ class AppState: ObservableObject {
     }
 
     func isEnabled(for bundleIdentifier: String?) -> Bool {
-        guard !isPaused else { return false }
-        switch bundleIdentifier {
-        case "com.apple.Notes": return notesEnabled
-        case "com.microsoft.teams2", "com.microsoft.teams": return teamsEnabled
-        default: return true
-        }
+        return AppCapabilityManager.shared.isEnabled(for: bundleIdentifier, isPaused: isPaused)
     }
 
     private static func keychainService(for provider: LLMProvider) -> String {
