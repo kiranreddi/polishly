@@ -57,13 +57,35 @@ enum LLMProvider: String, CaseIterable, Identifiable {
     }
 }
 
+enum ProviderConnectionState {
+    case idle
+    case testing
+    case connected
+    case failed
+
+    var systemImage: String {
+        switch self {
+        case .idle: return "info.circle"
+        case .testing: return "clock"
+        case .connected: return "checkmark.circle.fill"
+        case .failed: return "exclamationmark.triangle.fill"
+        }
+    }
+}
+
 class AppState: ObservableObject {
     static let shared = AppState()
 
     @Published private(set) var isAccessibilityTrusted = false
-    @Published var apiKey = ""
+    @Published var apiKey = "" {
+        didSet {
+            if apiKey != oldValue { providerConnectionState = .idle }
+        }
+    }
     @Published private(set) var hasRememberedAPIKey = false
     @Published var providerStatusMessage = ""
+    @Published private(set) var isTestingProviderConnection = false
+    @Published private(set) var providerConnectionState: ProviderConnectionState = .idle
     @Published var showOnboarding = false
     @Published var selectedProvider: LLMProvider {
         didSet {
@@ -74,7 +96,7 @@ class AppState: ObservableObject {
             providerStatusMessage = ""
             modelName = Self.storedModel(for: selectedProvider)
             if selectedProvider != .demo {
-                loadStoredAPIKey(allowInteraction: false, showMissingMessage: false)
+                loadStoredAPIKeyAsync(allowInteraction: false, showMissingMessage: false)
             }
         }
     }
@@ -105,7 +127,7 @@ class AppState: ObservableObject {
         self.teamsEnabled = UserDefaults.standard.object(forKey: "teamsEnabled") as? Bool ?? true
 
         if savedProvider != .demo {
-            loadStoredAPIKey(allowInteraction: false, showMissingMessage: false)
+            loadStoredAPIKeyAsync(allowInteraction: false, showMissingMessage: false)
         }
 
         checkAccessibility()
@@ -161,15 +183,71 @@ class AppState: ObservableObject {
         )
         hasRememberedAPIKey = saved
         providerStatusMessage = saved
-            ? "Saved securely. This key will load automatically next time."
+            ? "Saved securely. Testing the provider connection…"
             : "Could not save the key to Keychain."
+        if saved { testProviderConnection() }
         return saved
     }
 
+    func testProviderConnection() {
+        guard selectedProvider != .demo, providerIsReady, !isTestingProviderConnection else { return }
+        let provider = selectedProvider
+        let testedKey = rewriteAPIKey
+        let testedModel = modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        isTestingProviderConnection = true
+        providerConnectionState = .testing
+        providerStatusMessage = "Testing \(provider.displayName) with \(testedModel)…"
+
+        Task { @MainActor [weak self] in
+            do {
+                try await RewriteClient.shared.validateConnection(
+                    provider: provider,
+                    apiKey: testedKey,
+                    model: testedModel
+                )
+                guard let self else { return }
+                self.isTestingProviderConnection = false
+                guard self.selectedProvider == provider,
+                      self.rewriteAPIKey == testedKey,
+                      self.modelName.trimmingCharacters(in: .whitespacesAndNewlines) == testedModel else {
+                    self.providerConnectionState = .idle
+                    self.providerStatusMessage = "The key or model changed. Test the connection again."
+                    return
+                }
+                self.providerConnectionState = .connected
+                self.providerStatusMessage = "Connected to \(provider.displayName). The key and model are ready."
+            } catch {
+                guard let self else { return }
+                self.isTestingProviderConnection = false
+                guard self.selectedProvider == provider,
+                      self.rewriteAPIKey == testedKey,
+                      self.modelName.trimmingCharacters(in: .whitespacesAndNewlines) == testedModel else {
+                    self.providerConnectionState = .idle
+                    self.providerStatusMessage = "The key or model changed. Test the connection again."
+                    return
+                }
+                self.providerConnectionState = .failed
+                self.providerStatusMessage = error.localizedDescription
+            }
+        }
+    }
+
     /// Explicit fallback that may ask macOS to authorize Keychain access once.
-    @discardableResult
-    func loadStoredAPIKey() -> Bool {
-        loadStoredAPIKey(allowInteraction: true, showMissingMessage: true)
+    func loadStoredAPIKey() {
+        providerStatusMessage = "Loading the saved \(selectedProvider.displayName) key…"
+        guard selectedProvider != .demo else { return }
+        let provider = selectedProvider
+        let result = KeychainHelper.shared.read(
+            service: Self.keychainService(for: provider),
+            account: "user",
+            allowInteraction: true
+        )
+        applyKeychainReadResult(
+            result,
+            provider: provider,
+            allowInteraction: true,
+            showMissingMessage: true
+        )
     }
 
     @discardableResult
@@ -215,30 +293,49 @@ class AppState: ObservableObject {
         return value.isEmpty ? provider.defaultModel : value
     }
 
-    @discardableResult
-    private func loadStoredAPIKey(allowInteraction: Bool, showMissingMessage: Bool) -> Bool {
-        guard selectedProvider != .demo else { return false }
-        let result = KeychainHelper.shared.read(
-            service: Self.keychainService(for: selectedProvider),
-            account: "user",
-            allowInteraction: allowInteraction
-        )
+    private func loadStoredAPIKeyAsync(allowInteraction: Bool, showMissingMessage: Bool) {
+        guard selectedProvider != .demo else { return }
+        let provider = selectedProvider
+        let service = Self.keychainService(for: provider)
 
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let result = KeychainHelper.shared.read(
+                service: service,
+                account: "user",
+                allowInteraction: allowInteraction
+            )
+            DispatchQueue.main.async {
+                guard let self, self.selectedProvider == provider else { return }
+                self.applyKeychainReadResult(
+                    result,
+                    provider: provider,
+                    allowInteraction: allowInteraction,
+                    showMissingMessage: showMissingMessage
+                )
+            }
+        }
+    }
+
+    private func applyKeychainReadResult(
+        _ result: KeychainReadResult,
+        provider: LLMProvider,
+        allowInteraction: Bool,
+        showMissingMessage: Bool
+    ) {
         switch result {
         case .success(let data):
             guard let key = String(data: data, encoding: .utf8), !key.isEmpty else {
                 if showMissingMessage { providerStatusMessage = "The saved key could not be read." }
-                return false
+                return
             }
             apiKey = key
             hasRememberedAPIKey = true
             providerStatusMessage = allowInteraction
-                ? "Loaded the saved \(selectedProvider.displayName) key."
-                : "Remembered key loaded automatically."
-            return true
+                ? "Loaded the saved \(provider.displayName) key."
+                : "Remembered key loaded automatically. Test the connection before rewriting."
         case .notFound:
             if showMissingMessage {
-                providerStatusMessage = "No saved \(selectedProvider.displayName) key was found."
+                providerStatusMessage = "No saved \(provider.displayName) key was found."
             }
         case .interactionRequired:
             if showMissingMessage {
@@ -249,6 +346,5 @@ class AppState: ObservableObject {
         case .failure(let status):
             providerStatusMessage = "Keychain error \(status)."
         }
-        return false
     }
 }

@@ -25,6 +25,28 @@ final class RewriteClient {
 
     private init() {}
 
+    /// Exercises the same provider, model, authentication, and streaming path as
+    /// a real rewrite without reading or transmitting any user-selected text.
+    func validateConnection(provider: LLMProvider, apiKey: String, model: String) async throws {
+        guard provider != .demo else { return }
+        var receivedText = false
+        let prompt = Self.rewritePrompt(
+            text: "Polishly connection test.",
+            tone: "concise",
+            customInstruction: nil,
+            context: nil
+        )
+        try await performProviderRewrite(
+            provider: provider,
+            apiKey: apiKey,
+            model: model,
+            prompt: prompt
+        ) { text in
+            receivedText = receivedText || !text.isEmpty
+        }
+        guard receivedText else { throw RewriteError.emptyResponse }
+    }
+
     func rewriteStream(
         text: String,
         tone: String,
@@ -57,6 +79,22 @@ final class RewriteClient {
             context: context
         )
 
+        try await performProviderRewrite(
+            provider: provider,
+            apiKey: apiKey,
+            model: model,
+            prompt: prompt,
+            onUpdate: onUpdate
+        )
+    }
+
+    private func performProviderRewrite(
+        provider: LLMProvider,
+        apiKey: String,
+        model: String,
+        prompt: String,
+        onUpdate: @escaping (String) -> Void
+    ) async throws {
         switch provider {
         case .openAI:
             try await streamOpenAI(prompt: prompt, apiKey: apiKey, model: model, onUpdate: onUpdate)
@@ -81,7 +119,7 @@ final class RewriteClient {
         case .anthropic:
             try await streamAnthropic(prompt: prompt, apiKey: apiKey, model: model, onUpdate: onUpdate)
         case .demo:
-            break
+            throw RewriteError.invalidConfiguration("On-device demo does not need a connection test.")
         }
     }
 
@@ -218,9 +256,18 @@ final class RewriteClient {
             var body = ""
             for try await line in bytes.lines { body += line }
             let json = Self.jsonObject(body)
+
+            // Authentication failures need an actionable recovery path. Raw
+            // provider messages such as "Wrong API Key" made a successfully
+            // stored credential look like an app failure.
+            if http.statusCode == 401 {
+                throw RewriteError.apiError(
+                    "\(providerName) rejected this API key. Open Settings, enter an active \(providerName) key, and update the remembered key."
+                )
+            }
+
             let fallback: String
             switch http.statusCode {
-            case 401: fallback = "\(providerName) rejected the API key (401)."
             case 429: fallback = "\(providerName) rate limit reached (429). Try again shortly."
             default: fallback = "\(providerName) request failed (\(http.statusCode))."
             }
