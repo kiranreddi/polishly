@@ -165,7 +165,7 @@
     </div>
   </div>
 
-  <div class="hint">Try it: click-drag to select text in the box above, or press <span class="kbd">⌥</span><span class="kbd">Space</span> after selecting. Switch the demo app above to see the context disclosure change.</div>
+  <div class="hint">Try it: click-drag to select text in the box above, or press <span class="kbd">⌃</span><span class="kbd">⌥</span><span class="kbd">Space</span> after selecting. Switch the demo app above to see the context disclosure change.</div>
 </div>
 
 <!-- Polishly popup -->
@@ -281,7 +281,7 @@ document.addEventListener('mouseup',()=>{
   setTimeout(()=>{ const r=currentSelectionRect(); if(r && r.width>4) openCard(r); },10);
 });
 document.addEventListener('keydown',e=>{
-  if(e.altKey&&e.code==='Space'){ e.preventDefault(); const r=currentSelectionRect()||activeDraft().getBoundingClientRect(); openCard(r); }
+  if(e.altKey&&e.ctrlKey&&e.code==='Space'){ e.preventDefault(); const r=currentSelectionRect()||activeDraft().getBoundingClientRect(); openCard(r); }
   if(e.key==='Escape') closeCard();
   if(e.key==='Enter'&&open&&document.activeElement!==reviseInput&&!streaming&&!btnAccept.disabled){ e.preventDefault(); accept(); }
 });

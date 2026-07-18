@@ -1,5 +1,4 @@
 import SwiftUI
-import KeyboardShortcuts
 
 struct OnboardingView: View {
     @ObservedObject var appState = AppState.shared
@@ -52,12 +51,18 @@ struct OnboardingView: View {
                 SecureField("sk-ant-api03-...", text: $appState.apiKey)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(maxWidth: 300)
+                    .onChange(of: appState.apiKey) { _, _ in
+                        appState.useDemoMode = false
+                    }
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(12)
             
-            Button("Use demo mode") { appState.showOnboarding = false }
+            Button("Use demo mode") {
+                appState.useDemoMode = true
+                appState.showOnboarding = false
+            }
             .buttonStyle(.borderedProminent)
 
             Text("You can add a key later in Settings. Demo mode never sends text off your Mac.")

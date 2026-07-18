@@ -15,6 +15,9 @@ class AppState: ObservableObject {
         }
     }
     @Published var showOnboarding: Bool = false
+    @Published var useDemoMode: Bool {
+        didSet { UserDefaults.standard.set(useDemoMode, forKey: "useDemoMode") }
+    }
     @Published var isPaused: Bool {
         didSet { UserDefaults.standard.set(isPaused, forKey: "isPaused") }
     }
@@ -29,16 +32,13 @@ class AppState: ObservableObject {
         self.isPaused = UserDefaults.standard.bool(forKey: "isPaused")
         self.notesEnabled = UserDefaults.standard.object(forKey: "notesEnabled") as? Bool ?? true
         self.teamsEnabled = UserDefaults.standard.object(forKey: "teamsEnabled") as? Bool ?? true
-        if let data = KeychainHelper.shared.read(service: "com.polishly.apiKey", account: "user"),
-           let key = String(data: data, encoding: .utf8) {
-            self.apiKey = key
-        }
-        
+        // Keep new installs local until the user explicitly opts into using their key.
+        self.useDemoMode = UserDefaults.standard.object(forKey: "useDemoMode") as? Bool ?? true
         checkAccessibility()
         
-        if apiKey.isEmpty || !isAccessibilityTrusted {
-            showOnboarding = true
-        }
+        // Demo mode works without credentials, so never unlock the user's login
+        // Keychain merely to launch a menu-bar app.
+        showOnboarding = !isAccessibilityTrusted
     }
     
     /// A passive check never opens a system prompt; the user must explicitly request it.
@@ -52,6 +52,24 @@ class AppState: ObservableObject {
     }
 
     func requestAccessibility() { checkAccessibility(requestPrompt: true) }
+
+    var rewriteAPIKey: String {
+        useDemoMode ? "" : apiKey
+    }
+
+    /// Called only from an explicit settings action because reading a login-keychain
+    /// item may require the user's macOS password.
+    @discardableResult
+    func loadStoredAPIKey() -> Bool {
+        guard let data = KeychainHelper.shared.read(service: "com.polishly.apiKey", account: "user"),
+              let key = String(data: data, encoding: .utf8),
+              !key.isEmpty else {
+            return false
+        }
+        apiKey = key
+        useDemoMode = false
+        return true
+    }
 
     func isEnabled(for bundleIdentifier: String?) -> Bool {
         guard !isPaused else { return false }

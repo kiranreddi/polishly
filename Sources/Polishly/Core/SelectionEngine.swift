@@ -33,7 +33,7 @@ class SelectionEngine {
         let snapshot = ClipboardManager.shared.takeSnapshot()
         
         // We synthesize Cmd+C
-        ClipboardManager.shared.synthesizeCopy()
+        _ = ClipboardManager.shared.synthesizeCopy()
         
         // Wait briefly for the clipboard to populate
         Thread.sleep(forTimeInterval: 0.15)
@@ -71,7 +71,7 @@ class SelectionEngine {
         let snapshot = ClipboardManager.shared.takeSnapshot()
         let polishlyWriteChangeCount = ClipboardManager.shared.writeString(text)
         
-        ClipboardManager.shared.synthesizePaste()
+        _ = ClipboardManager.shared.synthesizePaste()
         
         // We need to wait for the paste to complete before restoring the clipboard.
         // If we restore too fast, the app pastes the restored content instead.

@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import SwiftUI
 
+@MainActor
 class PopupViewModel: ObservableObject {
     @Published var hasContext: Bool = false
     @Published var contextMessage: String = "Using selected text"
@@ -110,18 +111,20 @@ class PopupViewModel: ObservableObject {
                     customInstruction: customInstruction,
                     context: nil
                 ) { [weak self] currentText in
-                    DispatchQueue.main.async {
+                    Task { @MainActor [weak self] in
                         guard let self = self else { return }
                         self.currentTargetText = currentText
                         self.diffTokens = DiffEngine.diffWords(original: self.originalText, target: currentText)
                     }
                 }
                 
-                DispatchQueue.main.async {
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
                     self.isStreaming = false
                 }
             } catch {
-                DispatchQueue.main.async {
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
                     self.isStreaming = false
                     self.isError = true
                     self.errorMessage = error.localizedDescription
