@@ -5,11 +5,22 @@ Native macOS menu-bar assistant for explicitly invoked AI rewriting. The interac
 ## Run
 
 ```sh
-xcodebuild -project Polishly.xcodeproj -scheme Polishly -configuration Debug CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project Polishly.xcodeproj -scheme Polishly -configuration Debug -derivedDataPath .build build
 open .build/Build/Products/Debug/Polishly.app
 ```
 
-The first launch checks only Accessibility. Polishly starts in local **demo mode** and never unlocks the login Keychain automatically. Add a key, or explicitly load a stored key, from Settings when you are ready to use the Anthropic API.
+Do not disable code signing for local builds. Xcode's **Sign to Run Locally** identity keeps the proper bundle identifier attached to the app. Because this is still an ad-hoc debug signature, macOS may require the Accessibility row to be replaced after the executable changes. A production Developer ID signature provides the stable identity used by a distributed build.
+
+The first launch checks only Accessibility. Polishly starts in local **demo mode** and never unlocks the login Keychain automatically. Settings can connect OpenAI, Groq, Cerebras, or Anthropic. A typed key becomes active for that session and stays in memory unless you explicitly choose **Save to Keychain…**; **Load Saved Key…** is also always an explicit action.
+
+Default provider models are editable in Settings:
+
+- OpenAI: `gpt-5.6-sol` through the Responses API
+- Groq: `llama-3.3-70b-versatile` through Chat Completions
+- Cerebras: `gpt-oss-120b` through Chat Completions
+- Anthropic: `claude-haiku-4-5` through Messages
+
+If macOS shows Accessibility as enabled but Polishly reports otherwise, remove the stale Polishly row in **System Settings → Privacy & Security → Accessibility**, add the exact app at `.build/Build/Products/Debug/Polishly.app`, and switch it on. This is expected after some ad-hoc debug rebuilds; the Settings status refreshes automatically.
 
 ## Manual Phase 1 validation
 
@@ -22,5 +33,5 @@ The first launch checks only Accessibility. Polishly starts in local **demo mode
 Automated build validation:
 
 ```sh
-xcodebuild -project Polishly.xcodeproj -scheme Polishly -configuration Debug -derivedDataPath .build CODE_SIGNING_ALLOWED=NO build
+xcodebuild -project Polishly.xcodeproj -scheme Polishly -configuration Debug -derivedDataPath .build build
 ```

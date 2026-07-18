@@ -2,78 +2,73 @@ import SwiftUI
 
 struct OnboardingView: View {
     @ObservedObject var appState = AppState.shared
-    
-    var body: some View {
-        VStack(spacing: 24) {
-            Text("Welcome to Polishly")
-                .font(.largeTitle)
-                .fontWeight(.bold)
-            
-            Text("Polishly uses AI to rewrite text anywhere on your Mac. To do this, it needs Accessibility permission to read your selected text and paste the rewrites.")
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            
-            if !appState.isAccessibilityTrusted {
-                VStack(spacing: 12) {
-                    Text("1. Grant Accessibility Access")
-                        .font(.headline)
-                    
-                    Button("Open System Settings") {
-                        appState.requestAccessibility()
-                        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility")!
-                        NSWorkspace.shared.open(url)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    
-                    Button("I've granted access") {
-                        appState.checkAccessibility()
-                    }
-                    .buttonStyle(.bordered)
-                }
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(12)
-            } else {
-                VStack(spacing: 12) {
-                    Text("✅ Accessibility Granted")
-                        .font(.headline)
-                        .foregroundColor(.green)
-                }
-                .padding()
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(12)
-            }
-            
-            VStack(spacing: 12) {
-                Text("2. Add Anthropic API Key")
-                    .font(.headline)
-                
-                SecureField("sk-ant-api03-...", text: $appState.apiKey)
-                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .frame(maxWidth: 300)
-                Button("Save key and use Anthropic") {
-                    if appState.saveAPIKey() {
-                        appState.showOnboarding = false
-                    }
-                }
-                .disabled(appState.apiKey.isEmpty)
-            }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            .cornerRadius(12)
-            
-            Button("Use demo mode") {
-                appState.useDemoMode = true
-                appState.showOnboarding = false
-            }
-            .buttonStyle(.borderedProminent)
 
-            Text("You can add a key later in Settings. Demo mode never sends text off your Mac.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+    var body: some View {
+        VStack(spacing: 26) {
+            Image(systemName: "text.badge.checkmark")
+                .font(.system(size: 42, weight: .medium))
+                .foregroundStyle(.tint)
+
+            VStack(spacing: 8) {
+                Text("Welcome to Polishly")
+                    .font(.largeTitle.weight(.bold))
+                Text("Select text in Notes or Teams, press Control–Option–Space, and choose a clearer rewrite.")
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            permissionCard
+
+            VStack(spacing: 8) {
+                Button(appState.isAccessibilityTrusted ? "Start Using Polishly" : "Continue in Demo Mode") {
+                    appState.selectedProvider = .demo
+                    appState.showOnboarding = false
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+
+                Text("Demo rewrites stay on your Mac. Open Settings later to connect OpenAI, Groq, Cerebras, or Anthropic.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding(40)
-        .frame(width: 500, height: 500)
+        .frame(width: 520, height: 470)
+        .onAppear { appState.checkAccessibility() }
+    }
+
+    private var permissionCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 10) {
+                Image(systemName: appState.isAccessibilityTrusted ? "checkmark.circle.fill" : "hand.raised.fill")
+                    .foregroundStyle(appState.isAccessibilityTrusted ? .green : .orange)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Accessibility Access")
+                        .font(.headline)
+                    Text(appState.isAccessibilityTrusted ? "Granted — Polishly is ready." : "Required to read and replace only the text you select.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+
+            if !appState.isAccessibilityTrusted {
+                HStack {
+                    Button("Open System Settings") {
+                        appState.openAccessibilitySettings()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    Button("Refresh Status") {
+                        appState.checkAccessibility()
+                    }
+                }
+                Text("The status updates automatically after permission is granted.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(18)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
     }
 }
