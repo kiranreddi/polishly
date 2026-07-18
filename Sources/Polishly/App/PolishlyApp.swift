@@ -1,19 +1,17 @@
 import SwiftUI
-import Combine
+import AppKit
 
 @main
 struct PolishlyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var appState = AppState.shared
-    @Environment(\.openWindow) var openWindow
     
     var body: some Scene {
         MenuBarExtra("Polishly", systemImage: "sparkles") {
             Toggle("Pause Polishly", isOn: $appState.isPaused)
             Divider()
             Button("Settings...") {
-                openWindow(id: "settings")
-                NSApp.activate(ignoringOtherApps: true)
+                SettingsWindowController.shared.show()
             }
             .keyboardShortcut(",", modifiers: .command)
             
@@ -37,43 +35,63 @@ struct PolishlyApp: App {
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
         
-        Window("Settings", id: "settings") {
-            SettingsView()
-        }
-        .handlesExternalEvents(matching: Set(arrayLiteral: "settings"))
-        .windowResizability(.contentSize)
+    }
+}
+
+/// AppKit owns one reusable settings window. This avoids duplicate SwiftUI
+/// window-scene instances and guarantees that opening Polishly from Applications
+/// presents visible UI instead of appearing to do nothing.
+final class SettingsWindowController: NSWindowController {
+    static let shared = SettingsWindowController()
+
+    private init() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 500, height: 700),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "Settings"
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: SettingsView())
+        window.center()
+        super.init(window: window)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func show() {
+        showWindow(nil)
+        window?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-    private var shortcutPermissionSubscription: AnyCancellable?
-
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Hide dock icon entirely (already set in Info.plist, but ensure it behaves as UIElement)
         NSApp.setActivationPolicy(.accessory)
 
-        // An event tap cannot be created before Accessibility is granted. Keep
-        // the shortcut listener synchronized with live permission changes so a
-        // user does not have to discover that Polishly needs to be relaunched.
-        shortcutPermissionSubscription = AppState.shared.$isAccessibilityTrusted
-            .removeDuplicates()
-            .receive(on: RunLoop.main)
-            .sink { [weak self] isTrusted in
-                if isTrusted {
-                    ShortcutManager.shared.start { [weak self] in
-                        self?.handleRewriteShortcut()
-                    }
-                } else {
-                    ShortcutManager.shared.stop()
-                }
-            }
+        ShortcutManager.shared.start { [weak self] in
+            self?.handleRewriteShortcut()
+        }
         
-        // WindowGroup creates the onboarding window locally. Do not open the
-        // app's URL scheme here: a stale development copy with the same scheme
-        // could otherwise be launched instead of this running build.
         if AppState.shared.showOnboarding {
             NSApp.activate(ignoringOtherApps: true)
+        } else {
+            SettingsWindowController.shared.show()
         }
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        SettingsWindowController.shared.show()
+        return true
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        ShortcutManager.shared.stop()
     }
     
     func handleRewriteShortcut() {

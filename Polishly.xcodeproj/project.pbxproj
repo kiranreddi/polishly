@@ -204,6 +204,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development: kiranreddi.t@gmail.com (4LCB7R3S6Y)";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = Polishly/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -219,6 +221,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development: kiranreddi.t@gmail.com (4LCB7R3S6Y)";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = Polishly/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (

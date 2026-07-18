@@ -90,6 +90,11 @@ struct SettingsView: View {
                     }
                     .disabled(!appState.providerIsReady)
 
+                    Button(appState.isTestingProviderConnection ? "Testing…" : "Test Connection") {
+                        appState.testProviderConnection()
+                    }
+                    .disabled(!appState.providerIsReady || appState.isTestingProviderConnection)
+
                     if appState.hasRememberedAPIKey {
                         Button("Forget Key…", role: .destructive) {
                             appState.forgetStoredAPIKey()
@@ -102,15 +107,15 @@ struct SettingsView: View {
                 }
 
                 if appState.hasRememberedAPIKey {
-                    Label("Remembered securely — loads automatically", systemImage: "lock.fill")
+                    Label("Stored securely in Keychain — loads automatically", systemImage: "lock.fill")
                         .font(.caption)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(.secondary)
                 }
 
                 if !appState.providerStatusMessage.isEmpty {
-                    Label(appState.providerStatusMessage, systemImage: appState.providerIsReady ? "checkmark.circle" : "info.circle")
+                    Label(appState.providerStatusMessage, systemImage: appState.providerConnectionState.systemImage)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(providerStatusColor)
                 }
 
                 Text(appState.selectedProvider.privacyDescription)
@@ -120,6 +125,14 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+        }
+    }
+
+    private var providerStatusColor: Color {
+        switch appState.providerConnectionState {
+        case .connected: return .green
+        case .failed: return .orange
+        case .idle, .testing: return .secondary
         }
     }
 }
