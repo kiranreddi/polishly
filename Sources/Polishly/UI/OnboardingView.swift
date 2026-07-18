@@ -21,7 +21,9 @@ struct OnboardingView: View {
 
             VStack(spacing: 8) {
                 Button(appState.isAccessibilityTrusted ? "Start Using Polishly" : "Continue in Demo Mode") {
-                    appState.selectedProvider = .demo
+                    // First launches already default to demo. Onboarding can
+                    // reappear when Accessibility trust is lost, so it must not
+                    // reset a provider the user configured earlier.
                     appState.showOnboarding = false
                 }
                 .buttonStyle(.borderedProminent)

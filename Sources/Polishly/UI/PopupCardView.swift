@@ -202,7 +202,7 @@ struct DiffTextView: View {
 
     var body: some View {
         var text = Text("")
-        for token in tokens {
+        for (index, token) in tokens.enumerated() {
             switch token {
             case .same(let s):
                 text = text + Text(s)
@@ -211,8 +211,36 @@ struct DiffTextView: View {
             case .del(let s):
                 text = text + Text(s).foregroundColor(Color(hex: "b0b4bd")).strikethrough(true, color: Color(hex: "d7a3a3"))
             }
+
+            // A del immediately followed by an ins (or vice versa) is a word-level
+            // replacement — there's no whitespace token between them in either
+            // source text, since both occupy the same position. Rendered back to
+            // back with no gap, two real words read as one run-together word
+            // (e.g. "email;" + "email" as "email;email"). Insert a plain space
+            // at that boundary only — not between whitespace-only tokens, where
+            // it would just add a redundant space.
+            if let next = tokens[safe: index + 1],
+               token.isWord, next.isWord,
+               isReplacementBoundary(token, next) {
+                text = text + Text(" ")
+            }
         }
         return text
+    }
+
+    private func isReplacementBoundary(_ current: DiffToken, _ next: DiffToken) -> Bool {
+        switch (current, next) {
+        case (.del, .ins), (.ins, .del):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
 
@@ -241,6 +269,7 @@ struct TabButton: View {
 
 struct AcceptButtonStyle: ButtonStyle {
     let isSmall: Bool
+    @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 12.5, weight: .bold))
@@ -249,11 +278,16 @@ struct AcceptButtonStyle: ButtonStyle {
             .padding(.vertical, 7)
             .background(Color(hex: "008c80").opacity(configuration.isPressed ? 0.8 : 1))
             .cornerRadius(8)
+            // A disabled SwiftUI Button still fires this makeBody, so custom
+            // styles must dim themselves explicitly — the default automatic
+            // disabled-dimming only applies to stock button styles.
+            .opacity(isEnabled ? 1 : 0.4)
     }
 }
 
 struct ReviseButtonStyle: ButtonStyle {
     let isOn: Bool
+    @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundColor(Color(hex: isOn ? "0b6b5f" : "1c2430"))
@@ -261,16 +295,19 @@ struct ReviseButtonStyle: ButtonStyle {
             .padding(.vertical, 7)
             .background(Color(hex: isOn ? "173230" : "f2f3f5").opacity(configuration.isPressed ? 0.8 : 1))
             .cornerRadius(8)
+            .opacity(isEnabled ? 1 : 0.4)
     }
 }
 
 struct IconButtonStyle: ButtonStyle {
+    @Environment(\.isEnabled) private var isEnabled
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .foregroundColor(Color(hex: "6b7280"))
             .frame(width: 28, height: 28)
             .background(configuration.isPressed ? Color(hex: "f2f3f5") : Color.clear)
             .cornerRadius(7)
+            .opacity(isEnabled ? 1 : 0.4)
     }
 }
 

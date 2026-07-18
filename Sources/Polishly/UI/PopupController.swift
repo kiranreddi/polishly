@@ -2,17 +2,27 @@ import Cocoa
 import SwiftUI
 import Combine
 
+/// A borderless panel (no `.titled`/`.closable`/`.resizable`) defaults
+/// `canBecomeKeyWindow` to NO — `.nonactivatingPanel` only controls whether
+/// becoming key also activates the owning app, it doesn't grant key-ability
+/// itself. Without this override, `makeKey()` fails silently and any text
+/// field in the panel never receives typed keystrokes.
+final class KeyableNonactivatingPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+}
+
 class PopupController: NSWindowController, NSWindowDelegate {
     static let shared = PopupController()
-    
+
     let viewModel = PopupViewModel()
     private var capturedText: SelectionEngine.CapturedText?
     private var updateSubscription: AnyCancellable?
+    private var reviseInputSubscription: AnyCancellable?
     private var outsideClickMonitor: Any?
     private var escapeMonitor: Any?
-    
+
     private init() {
-        let panel = NSPanel(
+        let panel = KeyableNonactivatingPanel(
             contentRect: NSRect(x: 0, y: 0, width: 430, height: 200),
             styleMask: [.nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
@@ -42,6 +52,20 @@ class PopupController: NSWindowController, NSWindowDelegate {
             guard let self, let capturedText = self.capturedText, let bounds = capturedText.bounds else { return }
             DispatchQueue.main.async { self.position(relativeTo: bounds) }
         }
+
+        // The panel deliberately stays non-key otherwise, so a quick Accept or
+        // tab click never steals keyboard focus from whatever the user was
+        // typing in elsewhere. But a non-key NSPanel's TextField never
+        // receives keystrokes at all — nonactivatingPanel only exempts this
+        // window from also activating the app when it becomes key, it
+        // doesn't make typing work without key status. Promote only when
+        // the revise box actually needs to accept text.
+        reviseInputSubscription = viewModel.$showReviseInput
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] showReviseInput in
+                guard showReviseInput, let window = self?.window else { return }
+                window.makeKey()
+            }
     }
     
     required init?(coder: NSCoder) {

@@ -11,6 +11,12 @@ targets:
       - path: Sources/Polishly
       - path: Polishly/Assets.xcassets
         buildPhase: resources
+    settings:
+      base:
+        # A stable Team ID lets TCC (Accessibility, etc.) recognize this app
+        # across rebuilds instead of treating every recompile as a new binary.
+        DEVELOPMENT_TEAM: W26KHF87HS
+        CODE_SIGN_STYLE: Automatic
     info:
       path: Polishly/Info.plist
       properties:
