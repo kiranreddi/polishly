@@ -11,7 +11,7 @@ open .build/Build/Products/Debug/Polishly.app
 
 Do not disable code signing for local builds. Xcode's **Sign to Run Locally** identity keeps the proper bundle identifier attached to the app. Because this is still an ad-hoc debug signature, macOS may require the Accessibility row to be replaced after the executable changes. A production Developer ID signature provides the stable identity used by a distributed build.
 
-The first launch checks only Accessibility. Polishly starts in local **demo mode** and never unlocks the login Keychain automatically. Settings can connect OpenAI, Groq, Cerebras, or Anthropic. A typed key becomes active for that session and stays in memory unless you explicitly choose **Save to Keychain…**; **Load Saved Key…** is also always an explicit action.
+The first launch checks only Accessibility. Polishly starts in local **demo mode**. Settings can connect OpenAI, Groq, Cerebras, or Anthropic. Choose **Save & Remember Key** once and Polishly securely reloads that provider key from Keychain on later launches. Automatic reads never display a macOS authentication dialog; **Load Saved Key…** is the explicit fallback when one-time authorization is required.
 
 Default provider models are editable in Settings:
 
