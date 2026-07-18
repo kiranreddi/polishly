@@ -21,6 +21,7 @@
 		F6080BF4853DB421C69F2008 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFC85F13AEB7E7A881A6C689 /* SettingsView.swift */; };
 		FC4177F25FC09483FC049E7F /* PolishlyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E8982A182F07C7F3AA51E29 /* PolishlyApp.swift */; };
 		FE0F8C8E17C527E6C637AC70 /* SelectionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91D48057F79223C05E55E0E5 /* SelectionEngine.swift */; };
+		FE892BA2D7330AA311166694 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 4D42ECD7DBC670AF37750AE5 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 		3E8982A182F07C7F3AA51E29 /* PolishlyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolishlyApp.swift; sourceTree = "<group>"; };
 		49B68140AFE3D408DE7565F4 /* PopupCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopupCardView.swift; sourceTree = "<group>"; };
 		4BAC4FC3F132679DE1F11187 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		4D42ECD7DBC670AF37750AE5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		5665805D398D73966AA105E1 /* Polishly.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Polishly.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D82947341A242B8CFCE9374 /* PopupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopupViewModel.swift; sourceTree = "<group>"; };
 		87D42833B33130848B9EE474 /* DiffEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiffEngine.swift; sourceTree = "<group>"; };
@@ -45,18 +47,16 @@
 		0285398D114DCD3DF198A113 /* Polishly */ = {
 			isa = PBXGroup;
 			children = (
-				CEC466814A654B924CED2B1C /* App */,
-				68FCEC1DB5CB26EAA43B8EF1 /* Core */,
-				62E7E75AC37D09EC294DEF26 /* UI */,
+				4D42ECD7DBC670AF37750AE5 /* Assets.xcassets */,
 			);
-			name = Polishly;
-			path = Sources/Polishly;
+			path = Polishly;
 			sourceTree = "<group>";
 		};
 		2C6F51C262B0C7983D9B190F = {
 			isa = PBXGroup;
 			children = (
 				0285398D114DCD3DF198A113 /* Polishly */,
+				681B8E5AEED641758B08EAB5 /* Polishly */,
 				C4DA7EECFC56B76E8AC2BAC6 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -71,6 +71,17 @@
 				BFC85F13AEB7E7A881A6C689 /* SettingsView.swift */,
 			);
 			path = UI;
+			sourceTree = "<group>";
+		};
+		681B8E5AEED641758B08EAB5 /* Polishly */ = {
+			isa = PBXGroup;
+			children = (
+				CEC466814A654B924CED2B1C /* App */,
+				68FCEC1DB5CB26EAA43B8EF1 /* Core */,
+				62E7E75AC37D09EC294DEF26 /* UI */,
+			);
+			name = Polishly;
+			path = Sources/Polishly;
 			sourceTree = "<group>";
 		};
 		68FCEC1DB5CB26EAA43B8EF1 /* Core */ = {
@@ -112,6 +123,7 @@
 			buildConfigurationList = 398CE001EF753634EA839C0A /* Build configuration list for PBXNativeTarget "Polishly" */;
 			buildPhases = (
 				C9E632DD1AB67AA935A90F8A /* Sources */,
+				7D836DAB22DCF609E82467D6 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -151,6 +163,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		7D836DAB22DCF609E82467D6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FE892BA2D7330AA311166694 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		C9E632DD1AB67AA935A90F8A /* Sources */ = {
