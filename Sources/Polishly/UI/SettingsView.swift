@@ -8,12 +8,13 @@ struct SettingsView: View {
             Section(header: Text("API Configuration")) {
                 SecureField("Anthropic API Key", text: $appState.apiKey)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
-                    .onChange(of: appState.apiKey) { _, _ in
-                        appState.useDemoMode = false
-                    }
-                Text("Your key is stored securely in the macOS Keychain and only used for rewriting text when you invoke Polishly.")
+                Text("A key is stored in the macOS Keychain only when you explicitly save it.")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                Button("Save key and use Anthropic") {
+                    appState.saveAPIKey()
+                }
+                .disabled(appState.apiKey.isEmpty)
                 if appState.apiKey.isEmpty {
                     Button("Load stored key…") {
                         appState.loadStoredAPIKey()

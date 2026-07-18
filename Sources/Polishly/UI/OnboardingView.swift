@@ -51,9 +51,12 @@ struct OnboardingView: View {
                 SecureField("sk-ant-api03-...", text: $appState.apiKey)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(maxWidth: 300)
-                    .onChange(of: appState.apiKey) { _, _ in
-                        appState.useDemoMode = false
+                Button("Save key and use Anthropic") {
+                    if appState.saveAPIKey() {
+                        appState.showOnboarding = false
                     }
+                }
+                .disabled(appState.apiKey.isEmpty)
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
