@@ -7,13 +7,7 @@ class AppState: ObservableObject {
     static let shared = AppState()
     
     @Published var isAccessibilityTrusted: Bool = false
-    @Published var apiKey: String = "" {
-        didSet {
-            if let data = apiKey.data(using: .utf8) {
-                KeychainHelper.shared.save(data, service: "com.polishly.apiKey", account: "user")
-            }
-        }
-    }
+    @Published var apiKey: String = ""
     @Published var showOnboarding: Bool = false
     @Published var useDemoMode: Bool {
         didSet { UserDefaults.standard.set(useDemoMode, forKey: "useDemoMode") }
@@ -55,6 +49,15 @@ class AppState: ObservableObject {
 
     var rewriteAPIKey: String {
         useDemoMode ? "" : apiKey
+    }
+
+    /// Writes only after the user expressly chooses to save their typed key.
+    @discardableResult
+    func saveAPIKey() -> Bool {
+        guard !apiKey.isEmpty, let data = apiKey.data(using: .utf8) else { return false }
+        KeychainHelper.shared.save(data, service: "com.polishly.apiKey", account: "user")
+        useDemoMode = false
+        return true
     }
 
     /// Called only from an explicit settings action because reading a login-keychain
