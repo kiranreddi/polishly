@@ -40,7 +40,8 @@ final class RewriteClient {
             provider: provider,
             apiKey: apiKey,
             model: model,
-            prompt: prompt
+            prompt: prompt,
+            maxTokens: 64
         ) { text in
             receivedText = receivedText || !text.isEmpty
         }
@@ -78,15 +79,35 @@ final class RewriteClient {
             customInstruction: customInstruction,
             context: context
         )
+        let maxTokens = Self.maxOutputTokens(for: text)
 
         do {
-            try await performProviderRewrite(
-                provider: provider,
-                apiKey: apiKey,
-                model: model,
-                prompt: prompt,
-                onUpdate: onUpdate
-            )
+            // A network layer that stalls without ever closing the stream or
+            // throwing (a wedged proxy, a server that stops sending bytes
+            // mid-response) would otherwise leave isStreaming — and every
+            // button gated on it — stuck forever with no way to recover but
+            // force-quitting the app. Race the real request against a wall
+            // clock so the UI always gets back control.
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                group.addTask {
+                    try await self.performProviderRewrite(
+                        provider: provider,
+                        apiKey: apiKey,
+                        model: model,
+                        prompt: prompt,
+                        maxTokens: maxTokens,
+                        onUpdate: onUpdate
+                    )
+                }
+                group.addTask {
+                    try await Task.sleep(for: .seconds(45))
+                    throw RewriteError.apiError(
+                        "\(provider.displayName) did not finish responding in time. Check your connection and try again."
+                    )
+                }
+                defer { group.cancelAll() }
+                try await group.next()
+            }
         } catch let error as URLError {
             throw Self.mapNetworkError(error, providerName: provider.displayName)
         }
@@ -97,16 +118,18 @@ final class RewriteClient {
         apiKey: String,
         model: String,
         prompt: String,
+        maxTokens: Int,
         onUpdate: @escaping (String) -> Void
     ) async throws {
         switch provider {
         case .openAI:
-            try await streamOpenAI(prompt: prompt, apiKey: apiKey, model: model, onUpdate: onUpdate)
+            try await streamOpenAI(prompt: prompt, apiKey: apiKey, model: model, maxTokens: maxTokens, onUpdate: onUpdate)
         case .groq:
             try await streamChatCompletions(
                 prompt: prompt,
                 apiKey: apiKey,
                 model: model,
+                maxTokens: maxTokens,
                 endpoint: URL(string: "https://api.groq.com/openai/v1/chat/completions")!,
                 providerName: provider.displayName,
                 onUpdate: onUpdate
@@ -116,21 +139,33 @@ final class RewriteClient {
                 prompt: prompt,
                 apiKey: apiKey,
                 model: model,
+                maxTokens: maxTokens,
                 endpoint: URL(string: "https://api.cerebras.ai/v1/chat/completions")!,
                 providerName: provider.displayName,
                 onUpdate: onUpdate
             )
         case .anthropic:
-            try await streamAnthropic(prompt: prompt, apiKey: apiKey, model: model, onUpdate: onUpdate)
+            try await streamAnthropic(prompt: prompt, apiKey: apiKey, model: model, maxTokens: maxTokens, onUpdate: onUpdate)
         case .demo:
             throw RewriteError.invalidConfiguration("On-device demo does not need a connection test.")
         }
+    }
+
+    /// A rewrite's output is usually close to the input's length, but tone
+    /// changes like "expand" or a custom "make this much longer" instruction
+    /// can ask for substantially more. Scale the cap with input size instead
+    /// of using one fixed number, so short selections don't reserve an
+    /// unnecessarily large budget and long selections aren't cut off.
+    private static func maxOutputTokens(for text: String) -> Int {
+        let estimatedInputTokens = max(1, text.count / 4)
+        return min(8192, max(2048, estimatedInputTokens * 8))
     }
 
     private func streamOpenAI(
         prompt: String,
         apiKey: String,
         model: String,
+        maxTokens: Int,
         onUpdate: @escaping (String) -> Void
     ) async throws {
         var request = URLRequest(url: URL(string: "https://api.openai.com/v1/responses")!)
@@ -140,6 +175,7 @@ final class RewriteClient {
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "model": model,
             "stream": true,
+            "max_output_tokens": maxTokens,
             "input": [
                 ["role": "system", "content": "You are a precise writing assistant. Return only the rewritten text."],
                 ["role": "user", "content": prompt]
@@ -170,6 +206,7 @@ final class RewriteClient {
         prompt: String,
         apiKey: String,
         model: String,
+        maxTokens: Int,
         endpoint: URL,
         providerName: String,
         onUpdate: @escaping (String) -> Void
@@ -181,6 +218,7 @@ final class RewriteClient {
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "model": model,
             "stream": true,
+            "max_tokens": maxTokens,
             "messages": [
                 ["role": "system", "content": "You are a precise writing assistant. Return only the rewritten text."],
                 ["role": "user", "content": prompt]
@@ -210,6 +248,7 @@ final class RewriteClient {
         prompt: String,
         apiKey: String,
         model: String,
+        maxTokens: Int,
         onUpdate: @escaping (String) -> Void
     ) async throws {
         var request = URLRequest(url: URL(string: "https://api.anthropic.com/v1/messages")!)
@@ -219,7 +258,7 @@ final class RewriteClient {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "model": model,
-            "max_tokens": 1024,
+            "max_tokens": maxTokens,
             "stream": true,
             "messages": [["role": "user", "content": prompt]]
         ])

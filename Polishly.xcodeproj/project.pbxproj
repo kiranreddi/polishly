@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		01FBA4597AE0D8176B512D45 /* ShortcutManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 481A6595363A2622CE24F766 /* ShortcutManagerTests.swift */; };
 		09571FD3E259C25EDF4C0712 /* PopupViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AF8695E7041D494FA4CC309 /* PopupViewModelTests.swift */; };
+		17D92946C177A361044213EA /* ReviseQualityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13D2EDA51B238B922D627A5D /* ReviseQualityTests.swift */; };
 		26743B99E5130935E99C01E7 /* TriggerControllerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DBFE656A7543AB68083394A /* TriggerControllerTests.swift */; };
 		60B6A8AFDA9677A45A8B8C74 /* SelectionObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A544001D5B65DE0F5EB4A24 /* SelectionObserver.swift */; };
 		64F34B80E0A4752A18EBA7EB /* ClipboardManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD4EEF4C50BFD4DFCB1BA50D /* ClipboardManager.swift */; };
@@ -50,6 +51,7 @@
 		0089588A66D203A9DD790354 /* AnthropicClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicClient.swift; sourceTree = "<group>"; };
 		06FF005F1533E12A5BB4C4B1 /* DiscoveryTriggerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryTriggerView.swift; sourceTree = "<group>"; };
 		0A544001D5B65DE0F5EB4A24 /* SelectionObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionObserver.swift; sourceTree = "<group>"; };
+		13D2EDA51B238B922D627A5D /* ReviseQualityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviseQualityTests.swift; sourceTree = "<group>"; };
 		2C5C83AAA429A25F83B9921E /* AppCapabilityManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCapabilityManagerTests.swift; sourceTree = "<group>"; };
 		2E0DA1823B86EAC0991E5D08 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
 		2F58F1BFC8460463EDD47A2C /* AppCapabilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCapabilityManager.swift; sourceTree = "<group>"; };
@@ -163,6 +165,7 @@
 				C11CDF8D44601431550B0B59 /* ClipboardManagerTests.swift */,
 				8A736F95913012CEA759BF03 /* LLMProviderTests.swift */,
 				4AF8695E7041D494FA4CC309 /* PopupViewModelTests.swift */,
+				13D2EDA51B238B922D627A5D /* ReviseQualityTests.swift */,
 				80419656694D42074D543BDF /* RewriteClientTests.swift */,
 				D504167154AF5D17335D0356 /* SelectionObserverTests.swift */,
 				481A6595363A2622CE24F766 /* ShortcutManagerTests.swift */,
@@ -219,6 +222,12 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					73DDF88A5EC90E1E0676320E = {
+						DevelopmentTeam = W26KHF87HS;
+						ProvisioningStyle = Automatic;
+					};
+				};
 			};
 			buildConfigurationList = 5669D131C68840FFB76CA514 /* Build configuration list for PBXProject "Polishly" */;
 			compatibilityVersion = "Xcode 14.0";
@@ -261,6 +270,7 @@
 				ED712F133905A87DF0E46C03 /* ClipboardManagerTests.swift in Sources */,
 				B27F6FAD3AD55E46E9105224 /* LLMProviderTests.swift in Sources */,
 				09571FD3E259C25EDF4C0712 /* PopupViewModelTests.swift in Sources */,
+				17D92946C177A361044213EA /* ReviseQualityTests.swift in Sources */,
 				902F3EE84CBCD015C1672DA4 /* RewriteClientTests.swift in Sources */,
 				B0C6768A7ED2656B6225B6E0 /* SelectionObserverTests.swift in Sources */,
 				01FBA4597AE0D8176B512D45 /* ShortcutManagerTests.swift in Sources */,
@@ -324,7 +334,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = W26KHF87HS;
 				INFOPLIST_FILE = Polishly/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -356,7 +368,9 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				DEVELOPMENT_TEAM = W26KHF87HS;
 				INFOPLIST_FILE = Polishly/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
