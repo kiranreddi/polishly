@@ -3,17 +3,103 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Polishly — Free, open-source AI rewriting for macOS</title>
-<meta name="description" content="Select text anywhere on your Mac, press a hotkey, and get a real in-place AI rewrite. Free, open source, bring your own API key. No subscription, no background scanning.">
+<title>Polishly — Free AI Rewrite for Mac (BYO API Key)</title>
+<meta name="description" content="Polishly is a free, open-source macOS menu-bar app that rewrites selected text in place. Bring your own API key (Groq, Cerebras, OpenAI, Anthropic). No subscription. No background scanning.">
+<link rel="canonical" href="https://polishly.info/">
+<meta property="og:title" content="Polishly — Free AI Rewrite for Mac (BYO API Key)">
+<meta property="og:description" content="Polishly is a free, open-source macOS menu-bar app that rewrites selected text in place. Bring your own API key (Groq, Cerebras, OpenAI, Anthropic). No subscription. No background scanning.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://polishly.info/">
+<meta property="og:image" content="https://polishly.info/assets/og-cover.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Polishly — Free AI Rewrite for Mac (BYO API Key)">
+<meta name="twitter:description" content="Polishly is a free, open-source macOS menu-bar app that rewrites selected text in place. Bring your own API key (Groq, Cerebras, OpenAI, Anthropic). No subscription. No background scanning.">
+<meta name="twitter:image" content="https://polishly.info/assets/og-cover.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Polishly",
+  "operatingSystem": "macOS",
+  "applicationCategory": "ProductivityApplication",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "downloadUrl": "https://polishly.info/assets/releases/Polishly-1.0.0.dmg"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is it actually free, or is there a catch?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The app is free and open source (MIT license). There's no subscription and no hidden tier. If you use a real AI provider, you pay that provider directly for your own usage — Polishly never sees or marks up that cost."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What happens to my text?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nothing is read or sent until you press the hotkey. When you do, your selected text goes directly from your Mac to the provider you configured, using your key — Polishly has no backend server in between. In demo mode, nothing ever leaves your Mac."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Which AI providers can I use?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "OpenAI, Anthropic, Groq, and Cerebras today. The model field is free text, so any model string your provider supports will work."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do I need an API key to try it?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No — local demo mode runs entirely on-device with simple rule-based cleanup, so you can try the selection → hotkey → diff → accept flow before connecting a real provider."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is there a Windows version?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Not yet. Polishly is built on macOS's Accessibility API; a Windows port would need to rebuild the capture layer on UI Automation."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Where's the code?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Right here: github.com/kiranreddi/polishly. Issues and PRs are welcome."
+      }
+    }
+  ]
+}
+</script>
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32">
 <link rel="stylesheet" href="styles.css">
+<!-- Vercel Web Analytics (static HTML). Served only on Vercel deployments. -->
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
 <nav class="topbar">
   <div class="wrap">
     <a class="brand" href="#top">
-      <img src="assets/icon-256.png" alt="">
+      <img src="assets/icon-256.png" alt="Polishly app icon">
       Polishly
     </a>
     <div class="nav-links">
@@ -35,7 +121,7 @@
   <div class="wrap hero-grid">
     <div>
       <span class="eyebrow"><span class="dot"></span>100% free &amp; open source</span>
-      <h1 class="headline">Rewrite anything,<br>anywhere, <span class="accent">on your terms.</span></h1>
+      <h1 class="headline">Free AI text rewrite for Mac — <br><span class="accent">in place, with your own API key.</span></h1>
       <p class="hero-sub">Polishly is a macOS menu-bar app that rewrites selected text in place, in any app, using your own API key. No subscription. No background scanning. No middleman between your text and your model.</p>
 
       <div class="hero-flow">
@@ -98,7 +184,7 @@
       <div class="download-main">
         <div class="download-badge">macOS 14+</div>
         <h3>Polishly 1.0.0</h3>
-        <p class="download-lead">Direct download — no App Store, no subscription, no account required for the app itself.</p>
+        <p class="download-lead">Direct download — no subscription, no account required for the app itself.</p>
         <div class="download-actions">
           <a class="btn btn-primary btn-lg" href="assets/releases/Polishly-1.0.0.dmg" download="Polishly-1.0.0.dmg">
             Download Polishly-1.0.0.dmg
@@ -107,7 +193,7 @@
         </div>
         <ul class="download-meta">
           <li>Apple silicon &amp; Intel via universal Release build</li>
-          <li>Developer ID signed · Gatekeeper / notarization as published on the release</li>
+          <li>Developer ID signed and stapled notarization by Apple</li>
           <li>Same Team ID across updates so Accessibility stays granted</li>
         </ul>
       </div>

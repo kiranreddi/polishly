@@ -10,7 +10,17 @@ await rm(output, { recursive: true, force: true });
 await mkdir(resolve(output, "server"), { recursive: true });
 await mkdir(client, { recursive: true });
 
-for (const file of ["index.html", "styles.css", "script.js", "assets"]) {
+for (const file of [
+  "index.html", 
+  "styles.css", 
+  "script.js", 
+  "assets", 
+  "robots.txt", 
+  "sitemap.xml", 
+  "groq-setup.html", 
+  "privacy.html", 
+  "grammarly-alternative.html"
+]) {
   await cp(resolve(root, file), resolve(client, file), { recursive: true });
 }
 
