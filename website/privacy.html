@@ -13,6 +13,11 @@
 <meta property="og:image" content="https://polishly.info/assets/og-cover.png">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32">
 <link rel="stylesheet" href="styles.css">
+<!-- Vercel Web Analytics (static HTML). Served only on Vercel deployments. -->
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
@@ -63,7 +68,7 @@
       <p style="margin-bottom: 1.5rem;">If you prefer not to use an external provider, you can use "Demo Mode." In Demo Mode, Polishly runs entirely on your Mac, performing simple rule-based cleanups without ever making a network request.</p>
 
       <h3>5. Analytics</h3>
-      <p style="margin-bottom: 1.5rem;">This marketing website (polishly.info) uses privacy-friendly analytics to count simple page views. It does not track you across the web or collect PII. The Polishly macOS app itself contains no analytics or tracking SDKs.</p>
+      <p style="margin-bottom: 1.5rem;">This marketing website (polishly.info) uses <a href="https://vercel.com/docs/analytics" target="_blank" rel="noopener" style="color:var(--teal)">Vercel Web Analytics</a> to count simple page views when the site is hosted on Vercel. It does not use advertising cookies, does not track you across other websites, and is not present in the Polishly macOS app (the app has no analytics or tracking SDKs).</p>
 
       <p style="margin-top: 3rem; margin-bottom: 5rem;">Have more questions? Check the <a href="https://github.com/kiranreddi/polishly">open-source code on GitHub</a> to verify exactly what the app does.</p>
     </div>
