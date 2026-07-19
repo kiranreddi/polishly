@@ -172,8 +172,6 @@ These are genuine outputs from Polishly’s “Revise with AI” path during tes
 - Local word-level diff — the model returns clean text; Polishly computes the diff.
 - Streaming completions from your configured provider.
 
-See [`PLAN.md`](PLAN.md) for the full product plan and [`mockup.html`](mockup.html) for the interaction-model reference.
-
 ## Testing
 
 ```sh
