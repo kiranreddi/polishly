@@ -55,6 +55,86 @@ enum LLMProvider: String, CaseIterable, Identifiable {
             return "Only text you explicitly rewrite is sent to \(displayName)."
         }
     }
+
+    /// Returns a user-facing error when the model string is invalid for this provider.
+    func modelValidationError(for model: String) -> String? {
+        let trimmed = model.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard self != .demo else { return nil }
+        guard !trimmed.isEmpty else {
+            return "Choose a \(displayName) model in Settings."
+        }
+        guard trimmed.count <= 128 else {
+            return "That model name is too long for \(displayName)."
+        }
+        guard !trimmed.contains(where: { $0.isNewline || $0 == " " }) else {
+            return "Model names cannot contain spaces. Enter a single \(displayName) model id."
+        }
+        // Reject credential-shaped strings pasted into the model field.
+        let lower = trimmed.lowercased()
+        if lower.hasPrefix("sk-") || lower.hasPrefix("gsk_") || lower.hasPrefix("csk-") || lower.hasPrefix("sk-ant-") {
+            return "That looks like an API key, not a model. Paste the key in the API Key field."
+        }
+
+        switch self {
+        case .openAI:
+            if lower.hasPrefix("claude") {
+                return "OpenAI models do not use Claude ids. Try something like \(defaultModel)."
+            }
+            if !(lower.hasPrefix("gpt-") || lower.hasPrefix("o1") || lower.hasPrefix("o3")
+                    || lower.hasPrefix("o4") || lower.hasPrefix("chatgpt-") || lower.hasPrefix("text-")) {
+                return "OpenAI model ids usually start with gpt- or o1/o3/o4. Try \(defaultModel)."
+            }
+        case .anthropic:
+            if !lower.hasPrefix("claude") {
+                return "Anthropic model ids start with claude-. Try \(defaultModel)."
+            }
+        case .groq:
+            if lower.hasPrefix("claude") {
+                return "Groq does not serve Claude models. Try \(defaultModel)."
+            }
+        case .cerebras:
+            if lower.hasPrefix("claude") {
+                return "Cerebras does not serve Claude models. Try \(defaultModel)."
+            }
+        case .demo:
+            break
+        }
+        return nil
+    }
+
+    /// Soft key-format check so obviously wrong pastes fail before a network call.
+    func apiKeyFormatError(for key: String) -> String? {
+        let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard self != .demo else { return nil }
+        guard !trimmed.isEmpty else {
+            return "Enter a \(displayName) API key in Settings."
+        }
+        switch self {
+        case .openAI:
+            if trimmed.hasPrefix("sk-ant-") {
+                return "That looks like an Anthropic key. Paste an OpenAI key (sk-…)."
+            }
+            if !trimmed.hasPrefix("sk-") {
+                return "OpenAI API keys usually start with sk-."
+            }
+        case .anthropic:
+            if !trimmed.hasPrefix("sk-ant-") {
+                return "Anthropic API keys usually start with sk-ant-."
+            }
+        case .groq:
+            if !trimmed.hasPrefix("gsk_") {
+                return "Groq API keys usually start with gsk_."
+            }
+        case .cerebras:
+            // Cerebras key prefixes have varied; only reject clearly foreign shapes.
+            if trimmed.hasPrefix("sk-ant-") || trimmed.hasPrefix("gsk_") {
+                return "That key looks like it belongs to another provider."
+            }
+        case .demo:
+            break
+        }
+        return nil
+    }
 }
 
 enum ProviderConnectionState {
@@ -76,10 +156,16 @@ enum ProviderConnectionState {
 class AppState: ObservableObject {
     static let shared = AppState()
 
+    /// Tests redirect Keychain traffic to an isolated service name so real keys stay untouched.
+    static var keychainServiceOverrideForTesting: String?
+
     @Published private(set) var isAccessibilityTrusted = false
     @Published var apiKey = "" {
         didSet {
-            if apiKey != oldValue { providerConnectionState = .idle }
+            if apiKey != oldValue {
+                providerConnectionState = .idle
+                if isTestingProviderConnection { isTestingProviderConnection = false }
+            }
         }
     }
     @Published private(set) var hasRememberedAPIKey = false
@@ -91,11 +177,12 @@ class AppState: ObservableObject {
         didSet {
             guard selectedProvider != oldValue else { return }
             UserDefaults.standard.set(selectedProvider.rawValue, forKey: "selectedProvider")
-            apiKey = ""
-            hasRememberedAPIKey = false
-            providerStatusMessage = ""
+            clearInMemoryKeyState(statusMessage: "")
             modelName = Self.storedModel(for: selectedProvider)
-            if selectedProvider != .demo {
+            if selectedProvider == .demo {
+                providerConnectionState = .connected
+                providerStatusMessage = "On-device demo is ready — no network, no API key."
+            } else {
                 loadStoredAPIKeyAsync(allowInteraction: false, showMissingMessage: false)
             }
         }
@@ -103,6 +190,9 @@ class AppState: ObservableObject {
     @Published var modelName: String {
         didSet {
             UserDefaults.standard.set(modelName, forKey: Self.modelKey(for: selectedProvider))
+            if modelName != oldValue {
+                providerConnectionState = selectedProvider == .demo ? .connected : .idle
+            }
         }
     }
     @Published var isPaused: Bool {
@@ -163,7 +253,10 @@ class AppState: ObservableObject {
             UserDefaults.standard.removeObject(forKey: "lastWorkingShortcutKeyCode")
         }
 
-        if savedProvider != .demo {
+        if savedProvider == .demo {
+            providerConnectionState = .connected
+            providerStatusMessage = "On-device demo is ready — no network, no API key."
+        } else {
             loadStoredAPIKeyAsync(allowInteraction: false, showMissingMessage: false)
         }
 
@@ -209,37 +302,72 @@ class AppState: ObservableObject {
         selectedProvider == .demo ? "" : apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// Nil when demo, or when the active key + model are locally valid.
+    var providerConfigurationError: String? {
+        guard selectedProvider != .demo else { return nil }
+        if let keyError = selectedProvider.apiKeyFormatError(for: rewriteAPIKey) {
+            return keyError
+        }
+        if let modelError = selectedProvider.modelValidationError(for: modelName) {
+            return modelError
+        }
+        return nil
+    }
+
     var providerIsReady: Bool {
-        selectedProvider == .demo || (!rewriteAPIKey.isEmpty && !modelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        selectedProvider == .demo || providerConfigurationError == nil
     }
 
     /// Writes only after the user expressly chooses to save their typed key.
     @discardableResult
-    func saveAPIKey() -> Bool {
-        guard selectedProvider != .demo,
-              !rewriteAPIKey.isEmpty,
-              let data = rewriteAPIKey.data(using: .utf8) else { return false }
+    func saveAPIKey(testAfterSave: Bool = true) -> Bool {
+        guard selectedProvider != .demo else { return false }
+        if let configError = providerConfigurationError {
+            providerConnectionState = .failed
+            providerStatusMessage = configError
+            return false
+        }
+        guard let data = rewriteAPIKey.data(using: .utf8) else { return false }
+        let updating = hasRememberedAPIKey
         let saved = KeychainHelper.shared.save(
             data,
             service: Self.keychainService(for: selectedProvider),
             account: "user"
         )
-        hasRememberedAPIKey = saved
-        providerStatusMessage = saved
-            ? "Saved securely. Testing the provider connection…"
-            : "Could not save the key to Keychain."
-        if saved { testProviderConnection() }
+        if saved {
+            // Rotation: memory already holds the new key; Keychain now matches it.
+            hasRememberedAPIKey = true
+            providerConnectionState = .idle
+            if testAfterSave {
+                providerStatusMessage = updating
+                    ? "Updated remembered key. Testing the provider connection…"
+                    : "Saved securely. Testing the provider connection…"
+                testProviderConnection()
+            } else {
+                providerStatusMessage = updating
+                    ? "Updated remembered key."
+                    : "Saved securely."
+            }
+        } else {
+            providerConnectionState = .failed
+            providerStatusMessage = "Could not save the key to Keychain."
+        }
         return saved
     }
 
     func testProviderConnection() {
-        guard selectedProvider != .demo, providerIsReady, !isTestingProviderConnection else { return }
+        guard selectedProvider != .demo, !isTestingProviderConnection else { return }
+        if let configError = providerConfigurationError {
+            providerConnectionState = .failed
+            providerStatusMessage = configError
+            return
+        }
         let provider = selectedProvider
         let testedKey = rewriteAPIKey
         let testedModel = modelName.trimmingCharacters(in: .whitespacesAndNewlines)
         isTestingProviderConnection = true
         providerConnectionState = .testing
-        providerStatusMessage = "Testing \(provider.displayName) with \(testedModel)…"
+        providerStatusMessage = "Testing \(provider.displayName)…"
 
         Task { @MainActor [weak self] in
             do {
@@ -258,7 +386,7 @@ class AppState: ObservableObject {
                     return
                 }
                 self.providerConnectionState = .connected
-                self.providerStatusMessage = "Connected to \(provider.displayName). The key and model are ready."
+                self.providerStatusMessage = "Connected to \(provider.displayName)."
             } catch {
                 guard let self else { return }
                 self.isTestingProviderConnection = false
@@ -270,7 +398,7 @@ class AppState: ObservableObject {
                     return
                 }
                 self.providerConnectionState = .failed
-                self.providerStatusMessage = error.localizedDescription
+                self.providerStatusMessage = RewriteError.sanitize(error.localizedDescription)
             }
         }
     }
@@ -293,6 +421,7 @@ class AppState: ObservableObject {
         )
     }
 
+    /// Deletes the remembered key and clears in-memory credentials immediately.
     @discardableResult
     func forgetStoredAPIKey() -> Bool {
         guard selectedProvider != .demo else { return false }
@@ -301,10 +430,11 @@ class AppState: ObservableObject {
             account: "user"
         )
         if deleted {
-            apiKey = ""
-            hasRememberedAPIKey = false
-            providerStatusMessage = "Forgot the saved \(selectedProvider.displayName) key."
+            clearInMemoryKeyState(
+                statusMessage: "Forgot the saved \(selectedProvider.displayName) key."
+            )
         } else {
+            providerConnectionState = .failed
             providerStatusMessage = "Could not remove the saved key from Keychain."
         }
         return deleted
@@ -318,8 +448,19 @@ class AppState: ObservableObject {
         return AppCapabilityManager.shared.isEnabled(for: bundleIdentifier, isPaused: isPaused)
     }
 
-    private static func keychainService(for provider: LLMProvider) -> String {
-        "com.polishly.apiKey.\(provider.rawValue)"
+    static func keychainService(for provider: LLMProvider) -> String {
+        if let override = keychainServiceOverrideForTesting, !override.isEmpty {
+            return override
+        }
+        return "com.polishly.apiKey.\(provider.rawValue)"
+    }
+
+    private func clearInMemoryKeyState(statusMessage: String) {
+        apiKey = ""
+        hasRememberedAPIKey = false
+        isTestingProviderConnection = false
+        providerConnectionState = .idle
+        providerStatusMessage = statusMessage
     }
 
     private static func modelKey(for provider: LLMProvider) -> String {
@@ -363,26 +504,32 @@ class AppState: ObservableObject {
         switch result {
         case .success(let data):
             guard let key = String(data: data, encoding: .utf8), !key.isEmpty else {
-                if showMissingMessage { providerStatusMessage = "The saved key could not be read." }
+                clearInMemoryKeyState(statusMessage: showMissingMessage ? "The saved key could not be read." : "")
                 return
             }
+            // Replace any stale in-memory value with the Keychain contents.
             apiKey = key
             hasRememberedAPIKey = true
+            providerConnectionState = .idle
             providerStatusMessage = allowInteraction
                 ? "Loaded the saved \(provider.displayName) key."
                 : "Remembered key loaded automatically. Test the connection before rewriting."
         case .notFound:
-            if showMissingMessage {
-                providerStatusMessage = "No saved \(provider.displayName) key was found."
-            }
+            clearInMemoryKeyState(
+                statusMessage: showMissingMessage ? "No saved \(provider.displayName) key was found." : ""
+            )
         case .interactionRequired:
+            // Keep whatever is already typed; do not loop password prompts.
+            hasRememberedAPIKey = true
+            providerConnectionState = .idle
             if showMissingMessage {
                 providerStatusMessage = "macOS did not authorize access to the saved key."
             } else {
                 providerStatusMessage = "Saved key needs one-time authorization. Choose Load Saved Key."
             }
-        case .failure(let status):
-            providerStatusMessage = "Keychain error \(status)."
+        case .failure:
+            providerConnectionState = .failed
+            providerStatusMessage = "Could not read the saved key from Keychain."
         }
     }
 }

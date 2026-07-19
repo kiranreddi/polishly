@@ -36,9 +36,7 @@ class KeychainHelper {
             status = SecItemUpdate(updateQuery, updateAttributes)
         }
 
-        if status != errSecSuccess {
-            print("Keychain save failed with status: \(status)")
-        }
+        // Never log Keychain payloads — status-only failures stay silent here.
         return status == errSecSuccess
     }
 

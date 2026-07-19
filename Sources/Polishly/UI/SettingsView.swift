@@ -138,27 +138,34 @@ struct SettingsView: View {
                     SecureField(appState.selectedProvider.keyPlaceholder, text: $appState.apiKey)
                         .labelsHidden()
                         .textFieldStyle(.roundedBorder)
+                        // Never expose the key value through accessibility.
+                        .accessibilityLabel("\(appState.selectedProvider.displayName) API key")
+                        .accessibilityHint("Secure field. Value is not spoken.")
                 }
 
                 HStack {
                     Button(appState.hasRememberedAPIKey ? "Update Remembered Key" : "Save & Remember Key") {
                         appState.saveAPIKey()
                     }
-                    .disabled(!appState.providerIsReady)
+                    .disabled(appState.rewriteAPIKey.isEmpty || appState.selectedProvider.modelValidationError(for: appState.modelName) != nil)
+                    .accessibilityLabel(appState.hasRememberedAPIKey ? "Update Remembered Key" : "Save and Remember Key")
 
                     Button(appState.isTestingProviderConnection ? "Testing…" : "Test Connection") {
                         appState.testProviderConnection()
                     }
                     .disabled(!appState.providerIsReady || appState.isTestingProviderConnection)
+                    .accessibilityLabel("Test Connection")
 
                     if appState.hasRememberedAPIKey {
                         Button("Forget Key…", role: .destructive) {
                             appState.forgetStoredAPIKey()
                         }
+                        .accessibilityLabel("Forget saved API key")
                     } else {
                         Button("Load Saved Key…") {
                             appState.loadStoredAPIKey()
                         }
+                        .accessibilityLabel("Load saved API key")
                     }
                 }
 
@@ -166,12 +173,14 @@ struct SettingsView: View {
                     Label("Stored securely in Keychain — loads automatically", systemImage: "lock.fill")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel("API key stored securely in Keychain")
                 }
 
                 if !appState.providerStatusMessage.isEmpty {
                     Label(appState.providerStatusMessage, systemImage: appState.providerConnectionState.systemImage)
                         .font(.caption)
                         .foregroundStyle(providerStatusColor)
+                        .accessibilityLabel(appState.providerStatusMessage)
                 }
 
                 Text(appState.selectedProvider.privacyDescription)

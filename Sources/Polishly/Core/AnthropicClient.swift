@@ -1,20 +1,62 @@
 import Foundation
 
-enum RewriteError: LocalizedError {
+enum RewriteError: LocalizedError, Equatable {
     case missingAPIKey(String)
     case invalidConfiguration(String)
-    case apiError(String)
+    case invalidKey(String)
+    case expiredOrRevokedKey(String)
+    case wrongModel(String)
+    case rateLimit(String)
+    case offline
+    case networkFailure(String)
+    case providerOutage(String)
+    case malformedResponse(String)
     case emptyResponse
+    case apiError(String)
 
     var errorDescription: String? {
         switch self {
         case .missingAPIKey(let provider):
             return "No \(provider) API key is active. Add one in Settings or choose On-device demo."
-        case .invalidConfiguration(let message), .apiError(let message):
-            return message
+        case .invalidConfiguration(let message), .apiError(let message), .networkFailure(let message):
+            return Self.sanitize(message)
+        case .invalidKey(let provider):
+            return "\(provider) rejected this API key. Open Settings, enter a valid key, and update the remembered key."
+        case .expiredOrRevokedKey(let provider):
+            return "This \(provider) API key is expired or revoked. Replace it in Settings and update the remembered key."
+        case .wrongModel(let provider):
+            return "\(provider) does not recognize this model. Choose a valid model for \(provider) in Settings."
+        case .rateLimit(let provider):
+            return "\(provider) rate limit reached. Try again shortly."
+        case .offline:
+            return "You appear to be offline. Check your internet connection."
+        case .providerOutage(let provider):
+            return "\(provider) is experiencing an outage. Try again later."
+        case .malformedResponse(let provider):
+            return "\(provider) returned a malformed response. Try again or choose another model."
         case .emptyResponse:
             return "The provider returned no rewritten text. Try again or choose another model."
         }
+    }
+
+    /// Strips credential-shaped tokens from any user-visible error text.
+    static func sanitize(_ message: String) -> String {
+        var result = message
+        let patterns = [
+            #"sk-ant-[A-Za-z0-9_\-]+"#,
+            #"sk-[A-Za-z0-9_\-]+"#,
+            #"gsk_[A-Za-z0-9_\-]+"#,
+            #"csk-[A-Za-z0-9_\-]+"#,
+            #"(?i)bearer\s+[A-Za-z0-9_\-\.=]+"#,
+            #"(?i)(api[_-]?key|x-api-key)\s*[:=]\s*\S+"#
+        ]
+        for pattern in patterns {
+            if let regex = try? NSRegularExpression(pattern: pattern) {
+                let range = NSRange(result.startIndex..<result.endIndex, in: result)
+                result = regex.stringByReplacingMatches(in: result, range: range, withTemplate: "[redacted]")
+            }
+        }
+        return result
     }
 }
 
@@ -29,6 +71,13 @@ final class RewriteClient {
     /// a real rewrite without reading or transmitting any user-selected text.
     func validateConnection(provider: LLMProvider, apiKey: String, model: String) async throws {
         guard provider != .demo else { return }
+        if let modelError = provider.modelValidationError(for: model) {
+            throw RewriteError.invalidConfiguration(modelError)
+        }
+        if let keyError = provider.apiKeyFormatError(for: apiKey) {
+            throw RewriteError.invalidConfiguration(keyError)
+        }
+
         var receivedText = false
         let prompt = Self.rewritePrompt(
             text: "Polishly connection test.",
@@ -36,14 +85,22 @@ final class RewriteClient {
             customInstruction: nil,
             context: nil
         )
-        try await performProviderRewrite(
-            provider: provider,
-            apiKey: apiKey,
-            model: model,
-            prompt: prompt,
-            maxTokens: 64
-        ) { text in
-            receivedText = receivedText || !text.isEmpty
+        do {
+            try await performProviderRewrite(
+                provider: provider,
+                apiKey: apiKey,
+                model: model,
+                prompt: prompt,
+                maxTokens: 64
+            ) { text in
+                receivedText = receivedText || !text.isEmpty
+            }
+        } catch let error as RewriteError {
+            throw error
+        } catch let error as URLError {
+            throw Self.mapNetworkError(error, providerName: provider.displayName)
+        } catch {
+            throw RewriteError.networkFailure("Could not reach \(provider.displayName). Check your connection and try again.")
         }
         guard receivedText else { throw RewriteError.emptyResponse }
     }
@@ -63,15 +120,18 @@ final class RewriteClient {
             return
         }
 
-        let apiKey = appState.rewriteAPIKey
-        guard !apiKey.isEmpty else {
-            throw RewriteError.missingAPIKey(provider.displayName)
+        guard appState.providerIsReady else {
+            if appState.rewriteAPIKey.isEmpty {
+                throw RewriteError.missingAPIKey(provider.displayName)
+            }
+            if let configError = appState.providerConfigurationError {
+                throw RewriteError.invalidConfiguration(configError)
+            }
+            throw RewriteError.invalidConfiguration("\(provider.displayName) is not ready. Check Settings.")
         }
 
+        let apiKey = appState.rewriteAPIKey
         let model = appState.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !model.isEmpty else {
-            throw RewriteError.invalidConfiguration("Choose a \(provider.displayName) model in Settings.")
-        }
 
         let prompt = Self.rewritePrompt(
             text: text,
@@ -196,7 +256,7 @@ final class RewriteClient {
                 currentText += delta
                 onUpdate(currentText)
             } else if type == "error" {
-                throw RewriteError.apiError(Self.errorMessage(from: json, fallback: "OpenAI streaming error."))
+                throw Self.mapProviderPayloadError(json: json, providerName: "OpenAI", fallback: "OpenAI streaming error.")
             }
         }
         guard !currentText.isEmpty else { throw RewriteError.emptyResponse }
@@ -279,7 +339,7 @@ final class RewriteClient {
                 currentText += textDelta
                 onUpdate(currentText)
             } else if type == "error" {
-                throw RewriteError.apiError(Self.errorMessage(from: json, fallback: "Anthropic streaming error."))
+                throw Self.mapProviderPayloadError(json: json, providerName: "Anthropic", fallback: "Anthropic streaming error.")
             } else if type == "message_stop" {
                 break
             }
@@ -293,13 +353,12 @@ final class RewriteClient {
         providerName: String
     ) async throws {
         guard let http = response as? HTTPURLResponse else {
-            throw RewriteError.apiError("\(providerName) returned an invalid network response.")
+            throw RewriteError.malformedResponse(providerName)
         }
         guard (200..<300).contains(http.statusCode) else {
             var body = ""
             for try await line in bytes.lines { body += line }
             let json = Self.jsonObject(body)
-
             throw Self.mapHTTPError(statusCode: http.statusCode, providerName: providerName, json: json)
         }
     }
@@ -324,30 +383,67 @@ final class RewriteClient {
 
     internal static func mapNetworkError(_ error: URLError, providerName: String) -> RewriteError {
         switch error.code {
-        case .notConnectedToInternet:
-            return .apiError("You appear to be offline. Check your internet connection.")
-        case .timedOut:
-            return .apiError("The request to \(providerName) timed out.")
+        case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
+            return .offline
+        case .timedOut, .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed:
+            return .networkFailure("The request to \(providerName) failed. Check your connection and try again.")
         default:
-            return .apiError("Network error: \(error.localizedDescription)")
+            return .networkFailure("Network error talking to \(providerName). Check your connection and try again.")
         }
     }
 
     internal static func mapHTTPError(statusCode: Int, providerName: String, json: [String: Any]? = nil) -> RewriteError {
-        let fallback: String
+        let providerText = Self.errorMessage(from: json, fallback: "").lowercased()
+        let looksLikeExpired = providerText.contains("expired") || providerText.contains("revoked")
+        let looksLikeWrongModel =
+            providerText.contains("model")
+            && (providerText.contains("not found")
+                || providerText.contains("does not exist")
+                || providerText.contains("invalid")
+                || providerText.contains("unknown")
+                || providerText.contains("not available"))
+
         switch statusCode {
         case 401:
-            return .apiError(
-                "\(providerName) rejected this API key. Open Settings, enter an active \(providerName) key, and update the remembered key."
-            )
+            return looksLikeExpired ? .expiredOrRevokedKey(providerName) : .invalidKey(providerName)
+        case 403:
+            return looksLikeExpired ? .expiredOrRevokedKey(providerName) : .invalidKey(providerName)
+        case 404 where looksLikeWrongModel:
+            return .wrongModel(providerName)
+        case 400, 404, 422:
+            if looksLikeWrongModel { return .wrongModel(providerName) }
+            if providerText.contains("api key") || providerText.contains("authentication") {
+                return .invalidKey(providerName)
+            }
+            return .apiError("\(providerName) rejected this request (\(statusCode)). Check the model and try again.")
         case 429:
-            fallback = "\(providerName) rate limit reached (429). Try again shortly."
+            return .rateLimit(providerName)
         case 500...599:
-            fallback = "\(providerName) is experiencing server issues (\(statusCode)). Try again later."
+            return .providerOutage(providerName)
         default:
-            fallback = "\(providerName) request failed (\(statusCode))."
+            return .apiError("\(providerName) request failed (\(statusCode)).")
         }
-        return .apiError(Self.errorMessage(from: json, fallback: fallback))
+    }
+
+    internal static func mapProviderPayloadError(
+        json: [String: Any]?,
+        providerName: String,
+        fallback: String
+    ) -> RewriteError {
+        let text = errorMessage(from: json, fallback: fallback).lowercased()
+        if text.contains("model") && (text.contains("not found") || text.contains("invalid") || text.contains("unknown")) {
+            return .wrongModel(providerName)
+        }
+        if text.contains("rate limit") || text.contains("too many requests") {
+            return .rateLimit(providerName)
+        }
+        if text.contains("expired") || text.contains("revoked") {
+            return .expiredOrRevokedKey(providerName)
+        }
+        if text.contains("api key") || text.contains("authentication") || text.contains("unauthorized") {
+            return .invalidKey(providerName)
+        }
+        return .malformedResponse(providerName)
     }
 
     private static func rewritePrompt(
@@ -381,12 +477,14 @@ final class RewriteClient {
     }
 
     private static func errorMessage(from json: [String: Any]?, fallback: String) -> String {
-        guard let json else { return fallback }
+        guard let json else { return RewriteError.sanitize(fallback) }
         if let error = json["error"] as? [String: Any], let message = error["message"] as? String {
-            return message
+            return RewriteError.sanitize(message)
         }
-        if let message = json["message"] as? String { return message }
-        return fallback
+        if let message = json["message"] as? String {
+            return RewriteError.sanitize(message)
+        }
+        return RewriteError.sanitize(fallback)
     }
 
     private static func demoRewrite(text: String, tone: String, instruction: String?) -> String {
