@@ -21,10 +21,11 @@ Select text  →  ⌃⌥Space  →  review rewrite + inline diff  →  Accept
 **[polishly.info](https://polishly.info)** — website, download, and full feature tour.
 
 <p align="center">
-  <video src="docs/video/polishly-promo.mp4" poster="docs/video/polishly-promo-poster.jpg" width="820" controls muted playsinline>
-    Your Markdown viewer can't play inline video — watch it at
-    <a href="docs/video/polishly-promo.mp4">docs/video/polishly-promo.mp4</a>.
-  </video>
+  <img src="docs/video/polishly-demo.gif" width="640" alt="Polishly demo: selecting text, pressing the hotkey, and reviewing the inline diff" />
+</p>
+
+<p align="center">
+  <a href="https://raw.githubusercontent.com/kiranreddi/polishly/main/docs/video/polishly-promo.mp4">▶ Watch the full 52s demo with narration</a>
 </p>
 
 <p align="center">
