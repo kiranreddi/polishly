@@ -11,55 +11,108 @@ final class KeyableNonactivatingPanel: NSPanel {
     override var canBecomeKey: Bool { true }
 }
 
+/// Shared Accessibility (CoreGraphics, top-left) ↔ AppKit (bottom-left) helpers.
+enum ScreenCoordinates {
+    /// Flip a CG/AX rect into AppKit global coordinates using the main display height.
+    static func appKitRect(fromAccessibility rect: CGRect) -> NSRect {
+        let mainScreenHeight = CGDisplayBounds(CGMainDisplayID()).height
+        return NSRect(
+            x: rect.origin.x,
+            y: mainScreenHeight - rect.maxY,
+            width: rect.width,
+            height: rect.height
+        )
+    }
+
+    /// Flip a CG/AX point into AppKit global coordinates.
+    static func appKitPoint(fromAccessibility point: CGPoint) -> NSPoint {
+        let mainScreenHeight = CGDisplayBounds(CGMainDisplayID()).height
+        return NSPoint(x: point.x, y: mainScreenHeight - point.y)
+    }
+
+    static func screenContaining(_ point: NSPoint, fallbackRect: NSRect? = nil) -> NSScreen {
+        // NSRect.contains treats maxX/maxY as exclusive — nudge edge points inward.
+        if let match = NSScreen.screens.first(where: { $0.frame.insetBy(dx: -1, dy: -1).contains(point) }) {
+            return match
+        }
+        if let fallbackRect,
+           let match = NSScreen.screens.first(where: { $0.frame.intersects(fallbackRect) }) {
+            return match
+        }
+        // Nearest screen by squared distance to frame (multi-monitor edges).
+        let nearest = NSScreen.screens.min { a, b in
+            distanceSquared(point, to: a.frame) < distanceSquared(point, to: b.frame)
+        }
+        return nearest ?? NSScreen.main ?? NSScreen.screens.first!
+    }
+
+    private static func distanceSquared(_ point: NSPoint, to rect: NSRect) -> CGFloat {
+        let dx = max(rect.minX - point.x, 0, point.x - rect.maxX)
+        let dy = max(rect.minY - point.y, 0, point.y - rect.maxY)
+        return dx * dx + dy * dy
+    }
+
+    /// Clamp a window origin so `size` stays inside `visibleFrame`.
+    static func clampOrigin(
+        _ origin: NSPoint,
+        size: NSSize,
+        in visibleFrame: NSRect,
+        padding: CGFloat = 12
+    ) -> NSPoint {
+        var x = origin.x
+        var y = origin.y
+        let minX = visibleFrame.minX + padding
+        let maxX = visibleFrame.maxX - size.width - padding
+        let minY = visibleFrame.minY + padding
+        let maxY = visibleFrame.maxY - size.height - padding
+        x = max(minX, min(x, max(minX, maxX)))
+        y = max(minY, min(y, max(minY, maxY)))
+        return NSPoint(x: x, y: y)
+    }
+}
+
 class PopupController: NSWindowController, NSWindowDelegate {
     static let shared = PopupController()
 
+    static let cardSize = NSSize(width: 430, height: 300)
+
     let viewModel = PopupViewModel()
     private var capturedText: SelectionEngine.CapturedText?
-    private var updateSubscription: AnyCancellable?
     private var reviseInputSubscription: AnyCancellable?
     private var outsideClickMonitor: Any?
     private var escapeMonitor: Any?
 
     private init() {
         let panel = KeyableNonactivatingPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 430, height: 200),
+            contentRect: NSRect(x: 0, y: 0, width: Self.cardSize.width, height: Self.cardSize.height),
             styleMask: [.nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
-        
+
         panel.isFloatingPanel = true
         panel.level = .floating
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.hasShadow = false
         panel.backgroundColor = .clear
         panel.isOpaque = false
-        
+
         super.init(window: panel)
-        
+
         panel.delegate = self
-        
+
         let view = PopupCardView(viewModel: viewModel)
         let hostingView = NSHostingView(rootView: view)
+        // Empty sizing options — never let SwiftUI drive AppKit frame feedback loops.
         hostingView.sizingOptions = []
         panel.contentView = hostingView
-        
+        panel.setContentSize(Self.cardSize)
+
         viewModel.closeAction = { [weak self] in
             self?.closePanel()
         }
-        updateSubscription = viewModel.objectWillChange.sink { [weak self] in
-            guard let self, let capturedText = self.capturedText, let bounds = capturedText.bounds else { return }
-            DispatchQueue.main.async { self.position(relativeTo: bounds) }
-        }
 
-        // The panel deliberately stays non-key otherwise, so a quick Accept or
-        // tab click never steals keyboard focus from whatever the user was
-        // typing in elsewhere. But a non-key NSPanel's TextField never
-        // receives keystrokes at all — nonactivatingPanel only exempts this
-        // window from also activating the app when it becomes key, it
-        // doesn't make typing work without key status. Promote only when
-        // the revise box actually needs to accept text.
+        // Promote to key only when the revise field needs keystrokes.
         reviseInputSubscription = viewModel.$showReviseInput
             .receive(on: DispatchQueue.main)
             .sink { [weak self] showReviseInput in
@@ -67,35 +120,30 @@ class PopupController: NSWindowController, NSWindowDelegate {
                 window.makeKey()
             }
     }
-    
+
     required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        fatalError("init(coder:) not implemented")
     }
-    
+
     func show(for capture: SelectionEngine.CapturedText) {
         capturedText = capture
         viewModel.configure(with: capture)
-        
+
         if let bounds = capture.bounds {
             position(relativeTo: bounds)
-        } else {
-            // Electron apps do not always expose a selection range. The mouse
-            // remains next to a drag-selection, so use it as the anchor while
-            // preserving the CoreGraphics coordinate convention below.
-            if let primaryScreen = NSScreen.screens.first {
-                let mouse = NSEvent.mouseLocation
-                let coreGraphicsAnchor = NSRect(
-                    x: mouse.x,
-                    y: primaryScreen.frame.maxY - mouse.y,
-                    width: 0,
-                    height: 0
-                )
-                position(relativeTo: coreGraphicsAnchor)
-            }
+        } else if let primaryScreen = NSScreen.screens.first {
+            // Electron apps often omit AX bounds — anchor near the mouse.
+            let mouse = NSEvent.mouseLocation
+            let coreGraphicsAnchor = NSRect(
+                x: mouse.x,
+                y: primaryScreen.frame.maxY - mouse.y,
+                width: 0,
+                height: 0
+            )
+            position(relativeTo: coreGraphicsAnchor)
         }
-        
-        // A nonactivating panel must be explicitly ordered above the source app.
-        // `makeKeyAndOrderFront` is insufficient while Polishly is an accessory app.
+
+        // Nonactivating panel must be ordered above the source app explicitly.
         window?.orderFrontRegardless()
         installDismissMonitors()
     }
@@ -110,58 +158,32 @@ class PopupController: NSWindowController, NSWindowDelegate {
         )
         show(for: preview)
     }
-    
-    private func position(relativeTo rect: CGRect) {
-        guard let window = self.window, let primaryScreen = NSScreen.screens.first else { return }
-        
-        // Size to fit the SwiftUI content
-        if let view = window.contentView as? NSHostingView<PopupCardView> {
-            let size = view.fittingSize
-            // A freshly-created hosting view can report a transient zero fitting
-            // height before its first layout pass. Preserve a usable card frame.
-            let cardSize = NSSize(width: max(430, size.width), height: max(240, size.height))
-            var frame = NSRect(x: 0, y: 0, width: cardSize.width, height: cardSize.height)
-            
-            // Accessibility bounds use the global CoreGraphics coordinate space
-            // (origin at the primary display's top-left). AppKit uses a global
-            // bottom-left origin. Convert first, then choose the display that
-            // actually contains the selection. `NSScreen.main` can still be the
-            // Settings display while the user is writing on another monitor.
-            let appKitRect = NSRect(
-                x: rect.origin.x,
-                y: primaryScreen.frame.maxY - rect.maxY,
-                width: rect.width,
-                height: rect.height
-            )
-            let selectionPoint = NSPoint(x: appKitRect.midX, y: appKitRect.midY)
-            let targetScreen = NSScreen.screens.first(where: { $0.frame.contains(selectionPoint) })
-                ?? NSScreen.screens.first(where: { $0.frame.intersects(appKitRect) })
-                ?? NSScreen.main
-                ?? primaryScreen
-            let visibleFrame = targetScreen.visibleFrame
-            
-            // Anchor above
-            frame.origin.x = max(
-                visibleFrame.minX + 12,
-                min(appKitRect.minX - 20, visibleFrame.maxX - cardSize.width - 16)
-            )
-            var top = appKitRect.maxY + 14
-            
-            // If it goes off top of screen, flip below
-            if top + cardSize.height > visibleFrame.maxY - 12 {
-                top = appKitRect.minY - cardSize.height - 14
-            }
 
-            // A very tall card or a selection near a screen edge must remain on
-            // the same display instead of leaking onto an adjacent monitor.
-            frame.origin.y = max(
-                visibleFrame.minY + 12,
-                min(top, visibleFrame.maxY - cardSize.height - 12)
-            )
-            window.setFrame(frame, display: true)
+    private func position(relativeTo rect: CGRect) {
+        guard let window = self.window else { return }
+
+        let cardSize = Self.cardSize
+        var frame = NSRect(x: 0, y: 0, width: cardSize.width, height: cardSize.height)
+
+        let appKitRect = ScreenCoordinates.appKitRect(fromAccessibility: rect)
+        let selectionPoint = NSPoint(x: appKitRect.midX, y: appKitRect.midY)
+        let targetScreen = ScreenCoordinates.screenContaining(selectionPoint, fallbackRect: appKitRect)
+        let visibleFrame = targetScreen.visibleFrame
+
+        // Prefer above-left of the selection; flip below if it would leave the display.
+        var origin = NSPoint(
+            x: appKitRect.minX - 20,
+            y: appKitRect.maxY + 14
+        )
+        if origin.y + cardSize.height > visibleFrame.maxY - 12 {
+            origin.y = appKitRect.minY - cardSize.height - 14
         }
+
+        origin = ScreenCoordinates.clampOrigin(origin, size: cardSize, in: visibleFrame)
+        frame.origin = origin
+        window.setFrame(frame, display: true)
     }
-    
+
     func closePanel() {
         removeDismissMonitors()
         window?.orderOut(nil)
@@ -171,13 +193,11 @@ class PopupController: NSWindowController, NSWindowDelegate {
         removeDismissMonitors()
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
             guard let self, let window = self.window else { return }
-            // A global monitor's location is not in the panel's coordinate space.
-            // Use the current screen position so any outside click closes reliably.
             if !window.frame.contains(NSEvent.mouseLocation) { self.closePanel() }
         }
-        escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 { self?.closePanel(); return nil }
-            return event
+        // Global Escape — local monitors miss keyDown while Polishly is accessory/non-key.
+        escapeMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 53 { self?.closePanel() }
         }
     }
 

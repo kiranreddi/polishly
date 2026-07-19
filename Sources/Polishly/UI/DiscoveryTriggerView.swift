@@ -4,7 +4,7 @@ import AppKit
 struct DiscoveryTriggerView: View {
     let action: () -> Void
     @State private var isHovered = false
-    
+
     var body: some View {
         Button(action: action) {
             HStack(spacing: 4) {
@@ -27,25 +27,31 @@ struct DiscoveryTriggerView: View {
         .onHover { hovered in
             isHovered = hovered
         }
+        .frame(width: DiscoveryTriggerController.triggerSize.width,
+               height: DiscoveryTriggerController.triggerSize.height)
     }
 }
 
 class DiscoveryTriggerController {
     static let shared = DiscoveryTriggerController()
-    
+    static let triggerSize = NSSize(width: 90, height: 30)
+
     private var window: NSWindow?
     private var currentCapture: SelectionEngine.CapturedText?
     private var isAXCapture: Bool = false
-    
+    private var outsideClickMonitor: Any?
+    private var escapeMonitor: Any?
+
     private init() {}
-    
+
     func show(at point: CGPoint, capture: SelectionEngine.CapturedText?, isAX: Bool) {
         self.currentCapture = capture
         self.isAXCapture = isAX
-        
+
         if window == nil {
+            let size = Self.triggerSize
             let win = NSPanel(
-                contentRect: NSRect(x: 0, y: 0, width: 90, height: 30),
+                contentRect: NSRect(x: 0, y: 0, width: size.width, height: size.height),
                 styleMask: [.borderless, .nonactivatingPanel],
                 backing: .buffered,
                 defer: false
@@ -55,81 +61,69 @@ class DiscoveryTriggerController {
             win.level = .floating
             win.hasShadow = false
             win.collectionBehavior = [.canJoinAllSpaces, .transient, .ignoresCycle]
-            
+
             let host = NSHostingView(rootView: DiscoveryTriggerView(action: { [weak self] in
                 self?.triggerRewrite()
             }))
             host.sizingOptions = []
-            host.frame = NSRect(x: 0, y: 0, width: 90, height: 30)
+            host.frame = NSRect(x: 0, y: 0, width: size.width, height: size.height)
             host.autoresizingMask = [.width, .height]
             win.contentView = host
+            win.setContentSize(size)
             self.window = win
         }
-        
-        // Convert CoreGraphics coordinates (top-left) to AppKit (bottom-left) if needed
-        var appKitPoint = point
-        if isAX {
-            // CoreGraphics uses top-left of the primary display (screen 0)
-            let mainScreenHeight = NSScreen.screens.first?.frame.height ?? 0
-            appKitPoint.y = mainScreenHeight - point.y
-        }
-        
-        // Use monitor-aware coordinate clamping
-        var targetScreen = NSScreen.main
-        for screen in NSScreen.screens {
-            if screen.frame.contains(appKitPoint) {
-                targetScreen = screen
-                break
-            }
-        }
-        
-        let screenFrame = targetScreen?.visibleFrame ?? NSScreen.main?.visibleFrame ?? .zero
-        
-        var clampedX = appKitPoint.x
-        var clampedY = appKitPoint.y
-        
-        // Ensure it doesn't go off-screen
-        let winWidth: CGFloat = 90
-        let winHeight: CGFloat = 30
-        if clampedX + winWidth > screenFrame.maxX {
-            clampedX = screenFrame.maxX - winWidth
-        }
-        if clampedY - winHeight < screenFrame.minY {
-            clampedY = screenFrame.minY + winHeight
-        }
-        
-        window?.setFrameOrigin(NSPoint(x: clampedX, y: clampedY - winHeight))
-        window?.orderFrontRegardless() // Does not steal focus
+
+        let appKitPoint = isAX ? ScreenCoordinates.appKitPoint(fromAccessibility: point) : point
+        let targetScreen = ScreenCoordinates.screenContaining(appKitPoint)
+        let size = Self.triggerSize
+
+        // Point is the top-left of the trigger in AppKit space after conversion.
+        var origin = NSPoint(x: appKitPoint.x, y: appKitPoint.y - size.height)
+        origin = ScreenCoordinates.clampOrigin(origin, size: size, in: targetScreen.visibleFrame)
+
+        window?.setFrame(NSRect(origin: origin, size: size), display: true)
+        window?.orderFrontRegardless()
+        installDismissMonitors()
     }
-    
+
     func hide() {
+        removeDismissMonitors()
         window?.orderOut(nil)
         currentCapture = nil
     }
-    
+
     var isVisible: Bool {
-        return window?.isVisible == true
+        window?.isVisible == true
     }
-    
+
     private func triggerRewrite() {
-        // Capture local values first before hiding, as hide() clears currentCapture
         let localCapture = currentCapture
         let localIsAX = isAXCapture
-        hide() // Now safe to hide
-        
+        hide()
+
         if localIsAX, let axCapture = localCapture {
-            // Keep AX captures on the AX path
             PopupController.shared.show(for: axCapture)
-        } else {
-            // Fallback path or non-AX, force clipboard capture
-            if let newCapture = SelectionEngine.shared.capture(forceClipboard: true) {
-                PopupController.shared.show(for: newCapture)
-            } else {
-                print("Failed to capture text via clipboard fallback")
-            }
+        } else if let newCapture = SelectionEngine.shared.capture(forceClipboard: true) {
+            PopupController.shared.show(for: newCapture)
         }
     }
-    
+
+    private func installDismissMonitors() {
+        removeDismissMonitors()
+        outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
+            guard let self, let window = self.window else { return }
+            if !window.frame.contains(NSEvent.mouseLocation) { self.hide() }
+        }
+        escapeMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if event.keyCode == 53 { self?.hide() }
+        }
+    }
+
+    private func removeDismissMonitors() {
+        if let outsideClickMonitor { NSEvent.removeMonitor(outsideClickMonitor); self.outsideClickMonitor = nil }
+        if let escapeMonitor { NSEvent.removeMonitor(escapeMonitor); self.escapeMonitor = nil }
+    }
+
     // MARK: - Test Hooks
     var test_window: NSWindow? { window }
 }

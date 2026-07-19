@@ -63,33 +63,8 @@ struct PopupCardView: View {
                         .fontWeight(.semibold)
                         .foregroundColor(Color(hex: "008c80"))
 
-                    if viewModel.isError {
-                        HStack(spacing: 8) {
-                            Text(viewModel.errorMessage)
-                                .font(.system(size: 12.5))
-                                .foregroundColor(Color(hex: "9a3412"))
-                            Spacer()
-                            Button("Retry") { viewModel.retry() }
-                                .buttonStyle(.borderless)
-                                .foregroundColor(Color(hex: "0b6b5f"))
-                        }
-                        .padding(10)
-                        .background(Color(hex: "fff7ed"))
-                        .cornerRadius(8)
-                    } else if viewModel.isStreaming && viewModel.diffTokens.isEmpty {
-                        // Skeleton loading state
-                        VStack(alignment: .leading, spacing: 8) {
-                            RoundedRectangle(cornerRadius: 6).fill(Color(hex: "eef0f3")).frame(height: 10)
-                            RoundedRectangle(cornerRadius: 6).fill(Color(hex: "eef0f3")).frame(height: 10).padding(.trailing, 40)
-                            RoundedRectangle(cornerRadius: 6).fill(Color(hex: "eef0f3")).frame(height: 10).padding(.trailing, 100)
-                        }
-                        .padding(.top, 2)
-                        .padding(.bottom, 6)
-                    } else {
-                        // Computed Diff
-                        DiffTextView(tokens: viewModel.diffTokens)
-                            .font(.system(size: 13.5))
-                            .lineSpacing(4)
+                    ScrollView(.vertical, showsIndicators: true) {
+                        contentStateView
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -97,12 +72,14 @@ struct PopupCardView: View {
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, 4)
+            .frame(height: 120)
 
             if viewModel.showReviseInput {
                 HStack(spacing: 8) {
                     TextField("Tell Polishly what to change...", text: $viewModel.reviseText)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                         .font(.system(size: 12.5))
+                        .accessibilityLabel("Revise with AI instruction")
 
                     Button("Apply") {
                         viewModel.submitRevise()
@@ -113,9 +90,11 @@ struct PopupCardView: View {
                         viewModel.showReviseInput = false
                     }
                     .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Close revise input")
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 12)
+                .transition(.opacity)
             }
 
             // Actions
@@ -188,11 +167,78 @@ struct PopupCardView: View {
             .disabled(viewModel.isStreaming)
             .opacity(viewModel.isStreaming ? 0.4 : 1.0)
         }
-        .frame(width: 430)
+        .frame(
+            width: PopupController.cardSize.width,
+            height: PopupController.cardSize.height,
+            alignment: .top
+        )
         .background(Color.white)
         .cornerRadius(14)
         .shadow(color: Color.black.opacity(0.15), radius: 20, y: 10)
-        .colorScheme(.light) // Force light mode as per mockup or adapt
+        .colorScheme(.light)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(accessibilityStateLabel)
+    }
+
+    @ViewBuilder
+    private var contentStateView: some View {
+        if viewModel.isError {
+            HStack(spacing: 8) {
+                Text(viewModel.errorMessage)
+                    .font(.system(size: 12.5))
+                    .foregroundColor(Color(hex: "9a3412"))
+                Spacer()
+                Button("Retry") { viewModel.retry() }
+                    .buttonStyle(.borderless)
+                    .foregroundColor(Color(hex: "0b6b5f"))
+            }
+            .padding(10)
+            .background(Color(hex: "fff7ed"))
+            .cornerRadius(8)
+            .accessibilityLabel("Error: \(viewModel.errorMessage)")
+        } else if viewModel.isStreaming && viewModel.diffTokens.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                RoundedRectangle(cornerRadius: 6).fill(Color(hex: "eef0f3")).frame(height: 10)
+                RoundedRectangle(cornerRadius: 6).fill(Color(hex: "eef0f3")).frame(height: 10).padding(.trailing, 40)
+                RoundedRectangle(cornerRadius: 6).fill(Color(hex: "eef0f3")).frame(height: 10).padding(.trailing, 100)
+            }
+            .padding(.top, 2)
+            .padding(.bottom, 6)
+            .accessibilityLabel("Loading rewrite")
+        } else if viewModel.showReviseInput {
+            DiffTextView(tokens: viewModel.diffTokens)
+                .font(.system(size: 13.5))
+                .lineSpacing(4)
+                .accessibilityLabel("Revise with AI — current draft")
+        } else if !viewModel.diffTokens.isEmpty && !viewModel.isStreaming {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(Color(hex: "0b6b5f"))
+                        .font(.system(size: 11))
+                    Text("Ready to accept")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundColor(Color(hex: "0b6b5f"))
+                    Spacer()
+                }
+                DiffTextView(tokens: viewModel.diffTokens)
+                    .font(.system(size: 13.5))
+                    .lineSpacing(4)
+            }
+            .accessibilityLabel("Rewrite ready")
+        } else {
+            DiffTextView(tokens: viewModel.diffTokens)
+                .font(.system(size: 13.5))
+                .lineSpacing(4)
+        }
+    }
+
+    private var accessibilityStateLabel: String {
+        if viewModel.isError { return "Polishly rewrite error" }
+        if viewModel.isStreaming { return "Polishly rewriting" }
+        if viewModel.showReviseInput { return "Polishly revise with AI" }
+        if !viewModel.diffTokens.isEmpty { return "Polishly rewrite ready" }
+        return "Polishly rewrite card"
     }
 }
 

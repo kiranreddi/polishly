@@ -2,6 +2,7 @@ import XCTest
 import Combine
 @testable import Polishly
 
+@MainActor
 final class SelectionObserverTests: XCTestCase {
     
     func testIdempotentStart() {
@@ -11,26 +12,22 @@ final class SelectionObserverTests: XCTestCase {
         observer.stop()
         XCTAssertFalse(observer.test_isStarted)
         XCTAssertFalse(observer.test_hasEventMonitor)
-        XCTAssertFalse(observer.test_hasDismissMonitor)
         
         observer.start()
         
         XCTAssertTrue(observer.test_isStarted)
         XCTAssertTrue(observer.test_hasEventMonitor)
-        XCTAssertTrue(observer.test_hasDismissMonitor)
         
         // Start again
         observer.start()
         
         XCTAssertTrue(observer.test_isStarted)
         XCTAssertTrue(observer.test_hasEventMonitor)
-        XCTAssertTrue(observer.test_hasDismissMonitor)
         
         observer.stop()
         
         XCTAssertFalse(observer.test_isStarted)
         XCTAssertFalse(observer.test_hasEventMonitor)
-        XCTAssertFalse(observer.test_hasDismissMonitor)
         XCTAssertFalse(observer.test_hasAXObserver)
         XCTAssertNil(observer.test_currentlyObservedFocusedElement)
     }

@@ -2,13 +2,13 @@ import Foundation
 import Cocoa
 import Combine
 
+@MainActor
 class SelectionObserver {
     static let shared = SelectionObserver()
     
     private var axObserver: AXObserver?
     private var isStarted = false
     private var eventMonitorToken: Any?
-    private var dismissEventMonitorToken: Any?
     private var currentlyObservedFocusedElement: AXUIElement?
     
     private var pollingTimer: AnyCancellable?
@@ -71,9 +71,6 @@ class SelectionObserver {
         
         // Fallback Mouse Observer for Electron apps
         setupFallbackMouseSelection()
-        
-        // Setup Dismissal Observer for outside clicks and Escape key
-        setupDismissalObserver()
         
         isStarted = true
         
@@ -176,10 +173,6 @@ class SelectionObserver {
             self.eventMonitorToken = nil
         }
         
-        if let token = dismissEventMonitorToken {
-            NSEvent.removeMonitor(token)
-            self.dismissEventMonitorToken = nil
-        }
         
         pollingTimer?.cancel()
         pollingTimer = nil
@@ -229,22 +222,7 @@ class SelectionObserver {
         }
     }
     
-    private func setupDismissalObserver() {
-        if let token = dismissEventMonitorToken {
-            NSEvent.removeMonitor(token)
-        }
-        
-        dismissEventMonitorToken = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .keyDown]) { event in
-            if event.type == .keyDown && event.keyCode == 53 { // Escape
-                DiscoveryTriggerController.shared.hide()
-            } else if event.type == .leftMouseDown {
-                // If they click outside our trigger, hide it.
-                // Note: The global monitor won't catch clicks inside our app, 
-                // but since the trigger is our app, clicking it won't hide it.
-                DiscoveryTriggerController.shared.hide()
-            }
-        }
-    }
+
     
     private func handleAXSelectionChange(element: AXUIElement) {
         let frontApp = NSWorkspace.shared.frontmostApplication
@@ -319,7 +297,6 @@ class SelectionObserver {
     
     internal var test_isStarted: Bool { isStarted }
     internal var test_hasEventMonitor: Bool { eventMonitorToken != nil }
-    internal var test_hasDismissMonitor: Bool { dismissEventMonitorToken != nil }
     internal var test_hasAXObserver: Bool { axObserver != nil }
     internal var test_currentlyObservedFocusedElement: AXUIElement? { currentlyObservedFocusedElement }
     internal var test_pollingTimerActive: Bool { pollingTimer != nil }
