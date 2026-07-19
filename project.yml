@@ -3,6 +3,36 @@ options:
   bundleIdPrefix: com.polishly
   deploymentTarget:
     macOS: 14.0
+  createIntermediateGroups: true
+settings:
+  base:
+    # Stable identity — TCC (Accessibility) recognizes the same Team + bundle across rebuilds.
+    DEVELOPMENT_TEAM: W26KHF87HS
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "2"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    SWIFT_VERSION: "5.0"
+  configs:
+    Debug:
+      SWIFT_OPTIMIZATION_LEVEL: "-Onone"
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      COPY_PHASE_STRIP: NO
+      DEBUG_INFORMATION_FORMAT: dwarf
+      ONLY_ACTIVE_ARCH: YES
+    Release:
+      SWIFT_OPTIMIZATION_LEVEL: "-O"
+      SWIFT_COMPILATION_MODE: wholemodule
+      COPY_PHASE_STRIP: YES
+      DEAD_CODE_STRIPPING: YES
+      DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+      ONLY_ACTIVE_ARCH: NO
+      ENABLE_TESTABILITY: NO
+      ENABLE_NS_ASSERTIONS: NO
+      ENABLE_CODE_COVERAGE: NO
+      CLANG_ENABLE_CODE_COVERAGE: NO
+      CLANG_COVERAGE_MAPPING: NO
+      SWIFT_ENABLE_TESTABILITY: NO
 targets:
   Polishly:
     type: application
@@ -13,21 +43,33 @@ targets:
         buildPhase: resources
     settings:
       base:
-        # A stable Team ID lets TCC (Accessibility, etc.) recognize this app
-        # across rebuilds instead of treating every recompile as a new binary.
+        PRODUCT_NAME: Polishly
+        PRODUCT_BUNDLE_IDENTIFIER: com.polishly.Polishly
+        PRODUCT_MODULE_NAME: Polishly
+        INFOPLIST_FILE: Polishly/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        # Keep Team ID + bundle ID fixed so Accessibility grants survive rebuilds.
         DEVELOPMENT_TEAM: W26KHF87HS
         CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: Polishly/Polishly.entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        COMBINE_HIDPI_IMAGES: YES
     info:
       path: Polishly/Info.plist
       properties:
+        CFBundleDisplayName: Polishly
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         LSUIElement: true
+        LSApplicationCategoryType: public.app-category.productivity
         NSHumanReadableCopyright: "Copyright © 2026 Polishly. All rights reserved."
         NSHighResolutionCapable: true
         NSServices: []
         CFBundleURLTypes:
           - CFBundleURLSchemes:
               - polishly
-            CFBundleURLName: "com.polishly"
+            CFBundleURLName: "com.polishly.Polishly"
   PolishlyTests:
     type: bundle.unit-test
     platform: macOS
@@ -36,4 +78,10 @@ targets:
     dependencies:
       - target: Polishly
     settings:
+      PRODUCT_NAME: PolishlyTests
+      PRODUCT_MODULE_NAME: PolishlyTests
+      PRODUCT_BUNDLE_IDENTIFIER: com.polishly.PolishlyTests
       GENERATE_INFOPLIST_FILE: YES
+      # Host tests don't need the app entitlements / hardened-runtime flags.
+      CODE_SIGN_ENTITLEMENTS: ""
+      ENABLE_HARDENED_RUNTIME: NO

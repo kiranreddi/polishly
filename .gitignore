@@ -1,8 +1,11 @@
 .build/
+.build-release/
+.build-test/
+.build-signed/
 DerivedData/
+dist/
+release/
+*.dmg
 xcuserdata/
 *.xcuserstate
 .DS_Store
-
-.build-test/
-.build-signed/

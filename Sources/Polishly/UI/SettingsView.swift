@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct SettingsView: View {
     @ObservedObject var appState = AppState.shared
@@ -55,7 +56,26 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Section("Activation") {
+            Section("General") {
+                Toggle("Open at Login", isOn: Binding(
+                    get: { appState.launchAtLoginEnabled },
+                    set: { appState.setLaunchAtLoginEnabled($0) }
+                ))
+                .accessibilityLabel("Open at Login")
+                Text(appState.launchAtLoginMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel(appState.launchAtLoginMessage)
+
+                if appState.launchAtLoginMessage.localizedCaseInsensitiveContains("approval") {
+                    Button("Open Login Items Settings") {
+                        if let url = URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                    .accessibilityLabel("Open Login Items Settings")
+                }
+
                 Toggle("Pause Polishly globally", isOn: $appState.isPaused)
             }
 
@@ -113,7 +133,10 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .padding(8)
         .frame(width: 500, height: 700)
-        .onAppear { appState.checkAccessibility() }
+        .onAppear {
+            appState.checkAccessibility()
+            appState.refreshLaunchAtLoginStatus()
+        }
     }
 
     @ViewBuilder

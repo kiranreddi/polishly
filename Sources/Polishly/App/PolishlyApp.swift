@@ -112,6 +112,24 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         return true
     }
 
+    func application(_ application: NSApplication, open urls: [URL]) {
+        for url in urls {
+            guard url.scheme == "polishly" else { continue }
+            switch url.host {
+            case "settings":
+                SettingsWindowController.shared.show()
+            case "launch-at-login":
+                let enabled = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+                    .queryItems?
+                    .first(where: { $0.name == "enabled" })?
+                    .value == "1"
+                AppState.shared.setLaunchAtLoginEnabled(enabled)
+            default:
+                break
+            }
+        }
+    }
+
     func applicationWillTerminate(_ notification: Notification) {
         ShortcutManager.shared.stop()
         SelectionObserver.shared.stop()

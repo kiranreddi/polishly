@@ -17,20 +17,56 @@ Select text  →  ⌃⌥Space  →  card appears with a rewrite + inline diff  �
 - **A real diff, not a leap of faith.** Every rewrite is shown as a word-level diff against your original selection before you accept it.
 - **Works system-wide.** Notes, Mail, Slack, Teams, browsers — anywhere macOS Accessibility can read a selection.
 
-## Install (build from source)
+## Install
 
-There's no signed release yet — build it yourself:
+### Release build (recommended)
 
 ```sh
-brew install xcodegen   # if you don't already have it
+brew install xcodegen   # once
 git clone git@github.com:kiranreddi/polishly.git
 cd polishly
-xcodegen generate
-xcodebuild -project Polishly.xcodeproj -scheme Polishly -configuration Debug build
-open ~/Library/Developer/Xcode/DerivedData/Polishly-*/Build/Products/Debug/Polishly.app
+./scripts/package-release.sh
 ```
 
-First launch asks for Accessibility access (System Settings → Privacy & Security → Accessibility) — required to read your selection and paste the rewrite back in. Polishly starts in local demo mode; connect a real provider any time from the menu-bar icon → Settings.
+That produces:
+
+- `dist/Polishly.app` — signed Release build (hardened runtime)
+- `dist/Polishly-1.0.0.dmg` — distributable disk image
+
+Install:
+
+```sh
+# Quit any running copy, then replace /Applications
+osascript -e 'tell application "Polishly" to quit' 2>/dev/null || true
+rm -rf /Applications/Polishly.app
+cp -R dist/Polishly.app /Applications/
+xattr -cr /Applications/Polishly.app
+open /Applications/Polishly.app
+```
+
+Keeping the same **Team ID** (`W26KHF87HS`) and bundle id (`com.polishly.Polishly`) across rebuilds preserves Accessibility TCC approval — you should not need to re-grant it after updating.
+
+### Debug build (development)
+
+```sh
+xcodegen generate
+xcodebuild -project Polishly.xcodeproj -scheme Polishly -configuration Debug build
+open "$(ls -d ~/Library/Developer/Xcode/DerivedData/Polishly-*/Build/Products/Debug/Polishly.app | head -1)"
+```
+
+### First-run setup
+
+1. Open Polishly from `/Applications` (menu-bar app — no Dock icon).
+2. Grant **Accessibility** when prompted (System Settings → Privacy & Security → Accessibility).
+3. Finish onboarding: stay on demo, or connect OpenAI / Anthropic / Groq / Cerebras.
+4. Optional: Settings → **Open at Login** (uses `SMAppService`; macOS may ask once under Login Items).
+
+### Uninstall / disable launch at login
+
+1. Settings → turn off **Open at Login** (or System Settings → General → Login Items → remove Polishly).
+2. Quit Polishly from the menu bar.
+3. Delete `/Applications/Polishly.app`.
+4. API keys in Keychain are left alone; remove `com.polishly.apiKey.*` items in Keychain Access if you want a full wipe.
 
 ## Setting up a provider
 

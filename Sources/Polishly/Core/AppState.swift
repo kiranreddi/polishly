@@ -257,6 +257,9 @@ class AppState: ObservableObject {
         didSet { UserDefaults.standard.set(isPaused, forKey: "isPaused") }
     }
 
+    @Published private(set) var launchAtLoginEnabled = false
+    @Published private(set) var launchAtLoginMessage = LaunchAtLogin.userFacingMessage
+
     @Published var shortcutKeyCode: Int {
         didSet { UserDefaults.standard.set(shortcutKeyCode, forKey: "shortcutKeyCode") }
     }
@@ -323,12 +326,16 @@ class AppState: ObservableObject {
 
         let onboardingCompleted = UserDefaults.standard.bool(forKey: "onboardingCompleted")
         self.onboardingState = Self.initialOnboardingState(trusted: trusted, onboardingCompleted: onboardingCompleted)
+        refreshLaunchAtLoginStatus()
 
         // System Settings changes TCC state outside our process. Refresh on return
         // and while a permission window is open so the label cannot remain stale.
         NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
             .receive(on: RunLoop.main)
-            .sink { [weak self] _ in self?.checkAccessibility() }
+            .sink { [weak self] _ in
+                self?.checkAccessibility()
+                self?.refreshLaunchAtLoginStatus()
+            }
             .store(in: &cancellables)
 
         Timer.publish(every: 1, on: .main, in: .common)
@@ -361,6 +368,22 @@ class AppState: ObservableObject {
         checkAccessibility(requestPrompt: true)
         guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    func refreshLaunchAtLoginStatus() {
+        launchAtLoginEnabled = LaunchAtLogin.isEnabled
+        launchAtLoginMessage = LaunchAtLogin.userFacingMessage
+    }
+
+    /// Enables or disables launch-at-login via `SMAppService` (no legacy login-item APIs).
+    func setLaunchAtLoginEnabled(_ enabled: Bool) {
+        do {
+            _ = try LaunchAtLogin.setEnabled(enabled)
+            refreshLaunchAtLoginStatus()
+        } catch {
+            launchAtLoginEnabled = LaunchAtLogin.isEnabled
+            launchAtLoginMessage = "Couldn’t update launch-at-login. \(RewriteError.sanitize(error.localizedDescription))"
+        }
     }
 
     var rewriteAPIKey: String {
