@@ -13,9 +13,6 @@ struct PopupCardView: View {
                 Text("Polishly")
                     .fontWeight(.semibold)
                     .font(.system(size: 12.5))
-                Text("· MVP")
-                    .foregroundColor(Color(hex: "6b7280"))
-                    .font(.system(size: 11.5))
                 Spacer()
                 Button(action: {
                     viewModel.close()

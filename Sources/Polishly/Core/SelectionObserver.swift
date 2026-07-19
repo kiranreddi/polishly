@@ -235,9 +235,20 @@ class SelectionObserver {
             let currentSignature = SelectionSignature(text: text, bounds: bounds, pid: pid)
             lastSelectionSignature = currentSignature
             
-            let capture = SelectionEngine.CapturedText(text: text, method: .accessibility, bounds: bounds, axElement: element, sourceBundleIdentifier: bundleId)
+            let preferClipboard = AppCapabilityManager.shared.prefersClipboardInteraction(for: bundleId)
+            // Show the trigger from AX discovery, but for Electron hosts defer
+            // the real capture to Cmd+C on click (isAX: false).
+            let capture: SelectionEngine.CapturedText? = preferClipboard
+                ? nil
+                : SelectionEngine.CapturedText(
+                    text: text,
+                    method: .accessibility,
+                    bounds: bounds,
+                    axElement: element,
+                    sourceBundleIdentifier: bundleId
+                )
             let point = bounds != nil ? NSPoint(x: bounds!.maxX, y: bounds!.minY) : NSEvent.mouseLocation
-            DiscoveryTriggerController.shared.show(at: point, capture: capture, isAX: true)
+            DiscoveryTriggerController.shared.show(at: point, capture: capture, isAX: !preferClipboard)
         } else {
             lastSelectionSignature = nil
             DiscoveryTriggerController.shared.hide()
@@ -281,9 +292,18 @@ class SelectionObserver {
         if lastSelectionSignature != currentSignature {
             lastSelectionSignature = currentSignature
             
-            let capture = SelectionEngine.CapturedText(text: text, method: .accessibility, bounds: bounds, axElement: element, sourceBundleIdentifier: bundleId)
+            let preferClipboard = AppCapabilityManager.shared.prefersClipboardInteraction(for: bundleId)
+            let capture: SelectionEngine.CapturedText? = preferClipboard
+                ? nil
+                : SelectionEngine.CapturedText(
+                    text: text,
+                    method: .accessibility,
+                    bounds: bounds,
+                    axElement: element,
+                    sourceBundleIdentifier: bundleId
+                )
             let point = bounds != nil ? NSPoint(x: bounds!.maxX, y: bounds!.minY) : NSEvent.mouseLocation
-            DiscoveryTriggerController.shared.show(at: point, capture: capture, isAX: true)
+            DiscoveryTriggerController.shared.show(at: point, capture: capture, isAX: !preferClipboard)
         }
     }
     

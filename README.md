@@ -1,21 +1,91 @@
+<p align="center">
+  <img src="docs/images/icon.png" width="96" alt="Polishly icon" />
+</p>
+
 # Polishly
 
 **Select text anywhere on your Mac. Press one hotkey. Get a real, in-place rewrite.**
 
-Polishly is a free, open-source macOS menu-bar app for explicitly-invoked AI rewriting. No background scanning, no subscription, no vendor lock-in — you bring your own API key (or skip the network entirely with local demo mode), and your text goes straight from your Mac to the provider you chose.
+Polishly is a free, open-source macOS menu-bar app. No subscription. No background scanning. No middleman — you bring a free (or paid) API key, and your text goes straight from your Mac to the provider you chose.
 
 ```
-Select text  →  ⌃⌥Space  →  card appears with a rewrite + inline diff  →  Accept
+Select text  →  ⌃⌥Space  →  review rewrite + inline diff  →  Accept
 ```
+
+<p align="center">
+  <img src="docs/images/rewrite-card.png" width="480" alt="Polishly rewrite card showing an inline diff" />
+</p>
+
+<p align="center">
+  <img src="docs/images/website-hero.png" width="820" alt="Polishly website hero" />
+</p>
+
+## Truly free setup (recommended)
+
+The app itself is **always free**. To use real AI rewrites at **$0**, pick a provider with a free tier and paste the key into Polishly.
+
+| Provider | Card required? | Best for | Default model in Polishly |
+|---|---|---|---|
+| **[Groq](https://console.groq.com/keys)** | **No** | Everyday free rewrites | `llama-3.3-70b-versatile` |
+| **[Cerebras](https://cloud.cerebras.ai/)** | Often yes (for free trial credits) | Very fast inference | `gpt-oss-120b` |
+| On-device demo | No | Trying the UI offline | Local rules (no AI) |
+
+**Recommendation:** start with **Groq** — signup is free, no credit card, and keys work in Polishly in under two minutes.
+
+> Free tiers have rate limits (requests/tokens per day). Limits can change; check each provider’s console. Polishly never bills you — only the provider would, and only if *you* upgrade.
+
+---
+
+### 1) Get a free Groq API key (no credit card)
+
+1. Open **[console.groq.com](https://console.groq.com)** and sign up (Google / GitHub / email).
+2. Go to **[API Keys](https://console.groq.com/keys)** → **Create API Key**.
+3. Name it something like `polishly`, create it, and **copy the key immediately** (it starts with `gsk_` and is shown once).
+4. In Polishly:
+   - Menu bar → **Settings** (or finish onboarding)
+   - **Rewrite Provider** → **Groq**
+   - Paste the key → leave model as `llama-3.3-70b-versatile` (or pick another Groq model id)
+   - **Save & Remember Key**
+5. Optional: click **Test Connection**, then try a rewrite in Notes with **⌃⌥Space**.
+
+That’s it — Polishly + Groq free tier = real AI rewrites with no Polishly fee and no Groq card on file.
+
+---
+
+### 2) Get a Cerebras API key (free trial credits)
+
+1. Open **[cloud.cerebras.ai](https://cloud.cerebras.ai/)** (Cerebras Inference Cloud Console) and create an account.
+2. Create an API key under **API Keys** (keys often look like `csk-…`). Copy it.
+3. Cerebras’s free trial typically grants starter credits after account setup; **some accounts require adding a verified payment method before API access activates**, even if you are not charged until you buy more credits. Check **Billing / Limits** in their console for your account.
+4. In Polishly:
+   - **Rewrite Provider** → **Cerebras**
+   - Paste the key → model `gpt-oss-120b` (default)
+   - **Save & Remember Key** → **Test Connection**
+
+Use Cerebras when you want faster inference; use Groq when you want the simplest no-card free path.
+
+---
+
+### Paste the key into Polishly
+
+1. Open Polishly from the menu bar.
+2. **Settings → Rewrite Provider**.
+3. Choose **Groq** or **Cerebras**.
+4. Paste the API key into the key field.
+5. Click **Save & Remember Key** (stored in the macOS Keychain — never in plaintext prefs).
+6. Select text in Notes → press **⌃⌥Space** → Accept.
+
+Paid providers still work the same way if you prefer them later: [OpenAI](https://platform.openai.com/api-keys) · [Anthropic](https://console.anthropic.com/).
+
+---
 
 ## Why Polishly
 
-- **$0 forever.** The app itself is free and open source. You only ever pay your own provider's per-token usage — no subscription, no markup, no middleman.
-- **Bring your own key.** OpenAI, Anthropic, Groq, or Cerebras — pick a provider, paste your key, done. Stored in the macOS Keychain, never in plaintext prefs.
-- **No key? No problem.** Local demo mode runs entirely on-device with simple rule-based cleanup — zero network calls, zero cost, useful for trying the interaction model before connecting a real provider.
-- **Explicitly invoked, not always-on.** Polishly never reads or sends anything until you press the hotkey. No underlining, no continuous scanning of what you type.
-- **A real diff, not a leap of faith.** Every rewrite is shown as a word-level diff against your original selection before you accept it.
-- **Works system-wide.** Notes, Mail, Slack, Teams, browsers — anywhere macOS Accessibility can read a selection.
+- **$0 for the app, forever.** MIT-licensed; no subscription, no markup.
+- **Bring your own key.** OpenAI, Anthropic, Groq, or Cerebras — or stay on local demo mode with zero network.
+- **Explicitly invoked.** Nothing is read or sent until you press the hotkey.
+- **Real word-level diff.** See exactly what changed before you Accept.
+- **System-wide.** Notes, Mail, Slack, Teams, browsers — anywhere Accessibility can read a selection.
 
 ## Install
 
@@ -36,7 +106,6 @@ That produces:
 Install:
 
 ```sh
-# Quit any running copy, then replace /Applications
 osascript -e 'tell application "Polishly" to quit' 2>/dev/null || true
 rm -rf /Applications/Polishly.app
 cp -R dist/Polishly.app /Applications/
@@ -44,7 +113,7 @@ xattr -cr /Applications/Polishly.app
 open /Applications/Polishly.app
 ```
 
-Keeping the same **Team ID** (`W26KHF87HS`) and bundle id (`com.polishly.Polishly`) across rebuilds preserves Accessibility TCC approval — you should not need to re-grant it after updating.
+Keeping the same **Team ID** (`W26KHF87HS`) and bundle id (`com.polishly.Polishly`) across rebuilds preserves Accessibility approval — you usually should not need to re-grant it after updating.
 
 ### Debug build (development)
 
@@ -57,74 +126,53 @@ open "$(ls -d ~/Library/Developer/Xcode/DerivedData/Polishly-*/Build/Products/De
 ### First-run setup
 
 1. Open Polishly from `/Applications` (menu-bar app — no Dock icon).
-2. Grant **Accessibility** when prompted (System Settings → Privacy & Security → Accessibility).
-3. Finish onboarding: stay on demo, or connect OpenAI / Anthropic / Groq / Cerebras.
-4. Optional: Settings → **Open at Login** (uses `SMAppService`; macOS may ask once under Login Items).
+2. Grant **Accessibility** when prompted (*System Settings → Privacy & Security → Accessibility*).
+3. Finish onboarding: stay on demo, or connect **Groq / Cerebras / OpenAI / Anthropic**.
+4. Optional: Settings → **Open at Login**.
 
-### Uninstall / disable launch at login
+### Uninstall
 
-1. Settings → turn off **Open at Login** (or System Settings → General → Login Items → remove Polishly).
+1. Settings → turn off **Open at Login** (or remove Polishly under *System Settings → General → Login Items*).
 2. Quit Polishly from the menu bar.
 3. Delete `/Applications/Polishly.app`.
-4. API keys in Keychain are left alone; remove `com.polishly.apiKey.*` items in Keychain Access if you want a full wipe.
-
-## Setting up a provider
-
-Settings → **Rewrite Provider** → choose OpenAI, Anthropic, Groq, or Cerebras → paste your API key → **Save & Remember Key**. The model field is free text, so you can point it at any model string the provider supports (e.g. `gpt-4.1-mini`, `claude-haiku-4-5`, `llama-3.3-70b-versatile`, `gpt-oss-120b`).
-
-Get a key from whichever provider you'd rather pay directly:
-[OpenAI](https://platform.openai.com/api-keys) · [Anthropic](https://console.anthropic.com/) · [Groq](https://console.groq.com/keys) · [Cerebras](https://cloud.cerebras.ai/)
+4. API keys stay in Keychain until you remove `com.polishly.apiKey.*` in Keychain Access.
 
 ## Using it
 
 1. Select text in any app.
 2. Press **⌃⌥Space** (configurable in Settings).
-3. Pick a tone tab — **Improve · Concise · Friendly · Expand** — or click **Revise with AI** and type any free-form instruction.
-4. Review the inline diff, then **Accept** to replace the text in place, or **Copy**.
+3. Pick a tone — **Improve · Concise · Friendly · Expand** — or **Revise with AI** with a free-form instruction.
+4. Review the inline diff → **Accept** (replace in place) or **Copy**.
 
 ### Real examples
 
-These are genuine, unedited outputs from Polishly's "Revise with AI" custom-instruction path, captured during testing — not cherry-picked marketing copy.
+These are genuine outputs from Polishly’s “Revise with AI” path during testing — not cherry-picked marketing copy.
 
-**Instruction: "translate this to Spanish"**
-> Input: *I think we should push the meeting to next week.*
+**Instruction: "translate this to Spanish"**  
+> Input: *I think we should push the meeting to next week.*  
 > Output: *Creo que deberíamos posponer la reunión para la próxima semana.*
 
-**Instruction: "make this concise — cut it to two sentences"**
-> Input: *Our Q3 numbers came in below target, mostly because of the delayed product launch. The engineering team hit a few last-minute bugs that pushed the release by three weeks. Marketing had already spent a chunk of the budget on the original launch date, so some of that spend is now sunk. We're revising the Q4 forecast to account for the slower start. I'd like to get the team together this week to talk through next steps.*
+**Instruction: "make this concise — cut it to two sentences"**  
+> Input: *Our Q3 numbers came in below target, mostly because of the delayed product launch…*  
 > Output: *Our Q3 results missed targets due to a delayed product launch caused by last-minute engineering bugs, with marketing budget partially sunk. We're revising the Q4 forecast accordingly and will meet this week to discuss next steps.*
 
-**Instruction: "rewrite this as a bulleted list"**
-> Input: *The new onboarding flow requires users to verify their email, set up two-factor authentication, and complete a short profile before they can access the dashboard. Early data shows about 40% of users drop off during the 2FA step...*
+**Instruction: "rewrite this as a bulleted list"**  
+> Input: *The new onboarding flow requires users to verify their email, set up two-factor authentication…*  
 > Output:
-> - Users must verify their email
-> - Users must set up two-factor authentication
-> - Users must complete a short profile
-> - Access to the dashboard is granted after these steps
-> - Approximately 40% of users drop off during the 2FA step
-> - Simplifying the process could significantly improve user activation
-
-**Instruction: "make it sound apologetic"**
-> Input: *Sorry I missed your call, I was in a meeting all day.*
-> Output: *I apologize for missing your call; I was tied up in a meeting all day.*
-
-**Instruction: "convert this into numbered steps"**
-> Input: *(a multi-paragraph customer email about a delayed furniture order with three resolution options)*
-> Output:
-> 1. Inform Ms. Rodriguez about the update on her custom furniture order number 48291 placed on March 3rd.
-> 2. Explain the delay due to the walnut veneer batch failing quality inspection...
-> 3. Present two alternatives: substitute a similar in-stock veneer, or wait ~5 weeks for an exact match.
-> 4. Offer a partial refund regardless of the chosen option.
-> 5. Request her preference or offer a phone call.
+> - Users must verify their email  
+> - Users must set up two-factor authentication  
+> - Users must complete a short profile  
+> - Access to the dashboard is granted after these steps  
+> - Approximately 40% of users drop off during the 2FA step  
 
 ## How it's built
 
-- Swift + SwiftUI, AppKit `NSPanel` for the floating card (non-activating, so focus stays in whatever app you're rewriting in).
-- macOS Accessibility API for reading the selection and writing the rewrite back in place, with a clipboard-transaction fallback (full pasteboard snapshot, change-count guard, focus re-verification) for apps with flaky AX support.
-- A local word-level diff engine — the model returns clean rewritten text only; Polishly computes the displayed diff itself.
-- Streaming completions from whichever provider you've configured, with a per-request token budget that scales with input length so long selections and "expand" instructions aren't cut off mid-sentence.
+- Swift + SwiftUI, AppKit `NSPanel` for the floating card (non-activating, so focus stays in the app you’re rewriting).
+- macOS Accessibility API for selection + in-place replace, with a clipboard-transaction fallback for Electron apps (Teams, Slack).
+- Local word-level diff — the model returns clean text; Polishly computes the diff.
+- Streaming completions from your configured provider.
 
-See [`PLAN.md`](PLAN.md) for the full product/technical plan, including the market positioning research and design rationale, and [`mockup.html`](mockup.html) for the interaction-model reference the card UI is built from.
+See [`PLAN.md`](PLAN.md) for the full product plan and [`mockup.html`](mockup.html) for the interaction-model reference.
 
 ## Testing
 
@@ -133,15 +181,13 @@ xcodegen generate
 xcodebuild -project Polishly.xcodeproj -scheme Polishly -configuration Debug test
 ```
 
-`Tests/PolishlyTests/ReviseQualityTests.swift` is a diagnostic (non-CI) harness that exercises the real configured provider against 10 varied custom-instruction cases plus a long-output truncation stress test, and writes the results to disk for manual review. It reads whichever provider key you've already saved in Keychain — it never asks for or handles a key directly.
-
 ## Privacy
 
-Polishly only sends text when you explicitly invoke the hotkey — never in the background, never continuously. In real-provider mode, your selection goes directly from your Mac to the provider you configured, using your key. Polishly itself has no backend and never sees your text. Sensitive fields (password managers, banking apps) are never captured from.
+Polishly only sends text when you explicitly invoke the hotkey. Your selection goes from your Mac to the provider you configured, using your key. Polishly has no rewrite backend and never sees your text. Sensitive apps (password managers, etc.) are blocked.
 
 ## Contributing
 
-Issues and PRs welcome. This is a small, personal open-source project — no formal process, just be reasonable.
+Issues and PRs welcome. Small personal open-source project — be reasonable.
 
 ## License
 

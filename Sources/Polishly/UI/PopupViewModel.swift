@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import AppKit
 
 @MainActor
 class PopupViewModel: ObservableObject {
@@ -57,6 +58,11 @@ class PopupViewModel: ObservableObject {
 
     func accept() {
         guard let capture = originalCapture, !currentTargetText.isEmpty else { return }
+
+        // Accept clicks can make the rewrite panel key. Resign so synthesized
+        // Cmd+V is delivered to Teams/Notes instead of this card.
+        NSApp.keyWindow?.resignKey()
+
         SelectionEngine.shared.inject(text: currentTargetText, originalCapture: capture) { result in
             DispatchQueue.main.async {
                 switch result {

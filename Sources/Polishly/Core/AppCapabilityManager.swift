@@ -25,6 +25,32 @@ struct AppCapabilityManager {
             case .edge: return "Microsoft Edge"
             }
         }
+
+        /// Electron / Chromium hosts where AX selection range + set-selected-text
+        /// are unreliable. Promise A should use clipboard copy/paste (Tier B).
+        var prefersClipboardInteraction: Bool {
+            switch self {
+            case .teams, .slack:
+                return true
+            case .notes, .mail, .outlook, .safari, .chrome, .edge:
+                return false
+            }
+        }
+    }
+
+    /// Legacy Teams bundle ID still appears on some installs.
+    private static let teamsBundleAliases: Set<String> = [
+        "com.microsoft.teams2",
+        "com.microsoft.teams"
+    ]
+
+    /// Whether selection capture + Accept should prefer Cmd+C / Cmd+V over AX.
+    func prefersClipboardInteraction(for bundleIdentifier: String?) -> Bool {
+        guard let bundleIdentifier else { return false }
+        if Self.teamsBundleAliases.contains(bundleIdentifier) {
+            return true
+        }
+        return AppGroup(rawValue: bundleIdentifier)?.prefersClipboardInteraction ?? false
     }
     
     private let sensitiveAppDenylist: Set<String> = [

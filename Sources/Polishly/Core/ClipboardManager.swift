@@ -59,6 +59,19 @@ class ClipboardManager {
         return true
     }
 
+    /// Polls `changeCount` instead of a single fixed sleep — Electron hosts
+    /// (Teams) often need longer than 150ms before Cmd+C lands.
+    func waitForPasteboardChange(from previousChangeCount: Int, timeout: TimeInterval) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if NSPasteboard.general.changeCount != previousChangeCount {
+                return true
+            }
+            Thread.sleep(forTimeInterval: 0.02)
+        }
+        return NSPasteboard.general.changeCount != previousChangeCount
+    }
+
     func synthesizePaste() -> Bool {
         let src = CGEventSource(stateID: .hidSystemState)
         guard let cmdd = CGEvent(keyboardEventSource: src, virtualKey: 0x09, keyDown: true),

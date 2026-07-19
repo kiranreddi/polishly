@@ -57,6 +57,15 @@ final class AppCapabilityManagerTests: XCTestCase {
         defaults.set(false, forKey: "enabled_com.microsoft.teams2")
         XCTAssertFalse(manager.isEnabled(for: "com.microsoft.teams", isPaused: false))
     }
+
+    func testClipboardPreferredHosts() {
+        XCTAssertTrue(manager.prefersClipboardInteraction(for: "com.microsoft.teams2"))
+        XCTAssertTrue(manager.prefersClipboardInteraction(for: "com.microsoft.teams"))
+        XCTAssertTrue(manager.prefersClipboardInteraction(for: "com.tinyspeck.slackmacgap"))
+        XCTAssertFalse(manager.prefersClipboardInteraction(for: "com.apple.Notes"))
+        XCTAssertFalse(manager.prefersClipboardInteraction(for: "com.apple.mail"))
+        XCTAssertFalse(manager.prefersClipboardInteraction(for: nil))
+    }
     
     func testMigration() {
         defaults.set(false, forKey: "notesEnabled")

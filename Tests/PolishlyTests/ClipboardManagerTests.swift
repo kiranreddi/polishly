@@ -62,5 +62,26 @@ final class ClipboardManagerTests: XCTestCase {
         let restored = manager.restore(snapshot: snapshot, expectedChangeCount: newCount)
         XCTAssertFalse(restored)
         XCTAssertEqual(pb.string(forType: .string), "External User Copy") // User's copy is preserved
+        XCTAssertEqual(externalCount, pb.changeCount)
+    }
+
+    func testWaitForPasteboardChangeDetectsWrite() {
+        let manager = ClipboardManager.shared
+        let pb = NSPasteboard.general
+        let before = pb.changeCount
+
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 0.05) {
+            _ = manager.writeString("polishly-wait-change-\(UUID().uuidString)")
+        }
+
+        XCTAssertTrue(manager.waitForPasteboardChange(from: before, timeout: 0.5))
+        XCTAssertNotEqual(pb.changeCount, before)
+    }
+
+    func testWaitForPasteboardChangeTimesOut() {
+        let manager = ClipboardManager.shared
+        let before = NSPasteboard.general.changeCount
+        XCTAssertFalse(manager.waitForPasteboardChange(from: before, timeout: 0.06))
+        XCTAssertEqual(NSPasteboard.general.changeCount, before)
     }
 }

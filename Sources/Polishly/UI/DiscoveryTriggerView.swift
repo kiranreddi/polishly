@@ -99,9 +99,14 @@ class DiscoveryTriggerController {
     private func triggerRewrite() {
         let localCapture = currentCapture
         let localIsAX = isAXCapture
+        let bundleId = localCapture?.sourceBundleIdentifier
+            ?? NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        let preferClipboard = AppCapabilityManager.shared.prefersClipboardInteraction(for: bundleId)
         hide()
 
-        if localIsAX, let axCapture = localCapture {
+        // Teams/Electron: never trust a cached AX capture for the rewrite —
+        // re-capture via Cmd+C so Accept can paste-replace reliably.
+        if localIsAX, let axCapture = localCapture, !preferClipboard {
             PopupController.shared.show(for: axCapture)
         } else if let newCapture = SelectionEngine.shared.capture(forceClipboard: true) {
             PopupController.shared.show(for: newCapture)

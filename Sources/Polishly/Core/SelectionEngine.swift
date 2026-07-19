@@ -20,43 +20,55 @@ class SelectionEngine {
     private init() {}
 
     func capture(forceClipboard: Bool = false) -> CapturedText? {
-        // Try Tier A: Accessibility
-        if !forceClipboard,
+        let bundleId = NSWorkspace.shared.frontmostApplication?.bundleIdentifier
+        let preferClipboard = forceClipboard
+            || AppCapabilityManager.shared.prefersClipboardInteraction(for: bundleId)
+
+        // Tier A — Accessibility (skipped for Electron hosts like Teams).
+        if !preferClipboard,
            let element = AccessibilityManager.shared.getFocusedElement(),
            let text = AccessibilityManager.shared.getSelectedText(from: element),
            !text.isEmpty {
 
             let bounds = AccessibilityManager.shared.getSelectionBounds(from: element)
-            return CapturedText(text: text, method: .accessibility, bounds: bounds, axElement: element, sourceBundleIdentifier: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
+            return CapturedText(
+                text: text,
+                method: .accessibility,
+                bounds: bounds,
+                axElement: element,
+                sourceBundleIdentifier: bundleId
+            )
         }
 
-        // Try Tier B: Clipboard Fallback
+        // Tier B — Clipboard fallback (primary path for Teams).
         let snapshot = ClipboardManager.shared.takeSnapshot()
-
-        // We synthesize Cmd+C
         _ = ClipboardManager.shared.synthesizeCopy()
 
-        // Wait briefly for the clipboard to populate
-        Thread.sleep(forTimeInterval: 0.15)
-
-        // If the pasteboard never changed, the app copied nothing (no selection,
-        // a secure field, or missing permission). Bail out rather than treating
-        // stale clipboard contents — possibly sensitive — as the selection.
-        guard NSPasteboard.general.changeCount != snapshot.changeCount else {
+        // Electron apps often exceed a fixed 150ms; poll up to ~450ms.
+        let copyTimeout: TimeInterval = preferClipboard ? 0.45 : 0.20
+        guard ClipboardManager.shared.waitForPasteboardChange(
+            from: snapshot.changeCount,
+            timeout: copyTimeout
+        ) else {
             return nil
         }
 
-        // Read what was copied
         if let text = ClipboardManager.shared.readString(), !text.isEmpty {
-            // Restore clipboard immediately to not pollute user's history
             let copyChangeCount = NSPasteboard.general.changeCount
             _ = ClipboardManager.shared.restore(snapshot: snapshot, expectedChangeCount: copyChangeCount)
-            return CapturedText(text: text, method: .clipboard, bounds: nil, axElement: nil, sourceBundleIdentifier: NSWorkspace.shared.frontmostApplication?.bundleIdentifier)
+            return CapturedText(
+                text: text,
+                method: .clipboard,
+                bounds: nil,
+                axElement: nil,
+                sourceBundleIdentifier: bundleId
+            )
         }
 
-        // If we copied nothing, restore anyway
-        _ = ClipboardManager.shared.restore(snapshot: snapshot, expectedChangeCount: NSPasteboard.general.changeCount)
-
+        _ = ClipboardManager.shared.restore(
+            snapshot: snapshot,
+            expectedChangeCount: NSPasteboard.general.changeCount
+        )
         return nil
     }
 
@@ -68,7 +80,14 @@ class SelectionEngine {
     }
 
     func inject(text: String, originalCapture: CapturedText, completion: @escaping (InjectionResult) -> Void) {
-        if originalCapture.method == .accessibility, let element = originalCapture.axElement {
+        let bundleId = originalCapture.sourceBundleIdentifier
+        let preferClipboard = AppCapabilityManager.shared.prefersClipboardInteraction(for: bundleId)
+
+        // Tier A — AX write only when the host is known-good (Notes, etc.).
+        // Teams/Electron often report AX success without replacing the field.
+        if !preferClipboard,
+           originalCapture.method == .accessibility,
+           let element = originalCapture.axElement {
             let success = AccessibilityManager.shared.replaceSelectedText(in: element, with: text)
             if success {
                 completion(.success)
@@ -76,8 +95,17 @@ class SelectionEngine {
             }
         }
 
-        // Fallback to Clipboard Paste
-        guard NSWorkspace.shared.frontmostApplication?.bundleIdentifier == originalCapture.sourceBundleIdentifier else {
+        // Ensure Cmd+V lands in the source app's field, not the rewrite card.
+        // Electron hosts always need an explicit activate; others only when focus moved.
+        if preferClipboard
+            || NSWorkspace.shared.frontmostApplication?.bundleIdentifier != bundleId {
+            guard activateSourceApp(bundleIdentifier: bundleId) else {
+                completion(.failed)
+                return
+            }
+        }
+
+        guard NSWorkspace.shared.frontmostApplication?.bundleIdentifier == bundleId else {
             completion(.failed)
             return
         }
@@ -85,11 +113,20 @@ class SelectionEngine {
         let snapshot = ClipboardManager.shared.takeSnapshot()
         let polishlyWriteChangeCount = ClipboardManager.shared.writeString(text)
 
+        // Give Electron a beat to observe the new pasteboard contents.
+        if preferClipboard {
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+
         let pasteAttempted = ClipboardManager.shared.synthesizePaste()
 
         if pasteAttempted {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                _ = ClipboardManager.shared.restore(snapshot: snapshot, expectedChangeCount: polishlyWriteChangeCount)
+            let restoreDelay: TimeInterval = preferClipboard ? 0.7 : 0.5
+            DispatchQueue.main.asyncAfter(deadline: .now() + restoreDelay) {
+                _ = ClipboardManager.shared.restore(
+                    snapshot: snapshot,
+                    expectedChangeCount: polishlyWriteChangeCount
+                )
             }
             completion(.pasteSentUnconfirmable)
         } else {
@@ -99,5 +136,20 @@ class SelectionEngine {
             // stale — possibly sensitive — content instead of the rewrite.
             completion(.unconfirmed)
         }
+    }
+
+    @discardableResult
+    private func activateSourceApp(bundleIdentifier: String?) -> Bool {
+        guard let bundleIdentifier else { return false }
+        let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleIdentifier)
+            .first(where: { !$0.isTerminated })
+        guard let app else { return false }
+        let activated = app.activate()
+        if activated || app.isActive {
+            // Focus handoff into Electron compose boxes is not instantaneous.
+            Thread.sleep(forTimeInterval: 0.08)
+            return true
+        }
+        return false
     }
 }
