@@ -34,7 +34,6 @@ struct PolishlyApp: App {
         .handlesExternalEvents(matching: Set(arrayLiteral: "onboarding"))
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
-
     }
 }
 
@@ -88,10 +87,29 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         switch AppDelegate.launchDecision(showOnboarding: AppState.shared.showOnboarding) {
         case .showOnboarding:
+            // Deleting /Applications/Polishly.app does NOT clear UserDefaults —
+            // but even when onboarding is still due, a menu-bar app won't show
+            // the Window scene unless we present it. Activate + open explicitly.
             NSApp.activate(ignoringOtherApps: true)
+            DispatchQueue.main.async {
+                AppDelegate.presentOnboardingWindow()
+            }
         case .startSilently:
             // Close the Onboarding window if SwiftUI opened it by default
             NSApp.windows.first(where: { $0.title == "Onboarding" })?.close()
+        }
+    }
+
+    /// Presents the SwiftUI Onboarding window (by title, or via the polishly URL).
+    static func presentOnboardingWindow() {
+        if let window = NSApp.windows.first(where: { $0.title == "Onboarding" }) {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        // Creates the scene when it hasn't been instantiated yet.
+        if let url = URL(string: "polishly://onboarding") {
+            NSWorkspace.shared.open(url)
         }
     }
 
@@ -118,6 +136,8 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             switch url.host {
             case "settings":
                 SettingsWindowController.shared.show()
+            case "onboarding":
+                AppDelegate.presentOnboardingWindow()
             case "launch-at-login":
                 let enabled = URLComponents(url: url, resolvingAgainstBaseURL: false)?
                     .queryItems?

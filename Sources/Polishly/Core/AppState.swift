@@ -30,7 +30,7 @@ enum LLMProvider: String, CaseIterable, Identifiable {
     var defaultModel: String {
         switch self {
         case .demo: return "Local rules"
-        case .openAI: return "gpt-5.2"
+        case .openAI: return "gpt-4.1-mini"
         case .groq: return "llama-3.3-70b-versatile"
         case .cerebras: return "gpt-oss-120b"
         case .anthropic: return "claude-haiku-4-5"

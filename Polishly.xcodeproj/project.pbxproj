@@ -31,6 +31,7 @@
 		C1898E3751C109E57FAA98E2 /* SelectionEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 932420424C4DE42D62AE5929 /* SelectionEngine.swift */; };
 		C55CC150D2D9C34F70C85BAD /* PopupViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F165E0DA1CBB82F0FBC6DDA4 /* PopupViewModel.swift */; };
 		CC3610E4C20118541E4621A3 /* LLMProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E153A4D25A9E4AA8909EF72 /* LLMProviderTests.swift */; };
+		D5D4A449E2B2B796B8148CBF /* Phase5E2ETests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15D3F0495EF1EC3892ED4AD9 /* Phase5E2ETests.swift */; };
 		D853979F7683C0EE8888679E /* RepeatedInteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658B189BB9ED242967A27454 /* RepeatedInteractionTests.swift */; };
 		D91562976C4832F048DAADE3 /* DiscoveryTriggerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55FE10AED3C93BDDC124E535 /* DiscoveryTriggerView.swift */; };
 		ECF946E201900962E26A686D /* ShortcutManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A97D15DD89469096510556A /* ShortcutManagerTests.swift */; };
@@ -55,6 +56,7 @@
 
 /* Begin PBXFileReference section */
 		012717E50F29471C90DD8AFD /* PolishlyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PolishlyApp.swift; sourceTree = "<group>"; };
+		15D3F0495EF1EC3892ED4AD9 /* Phase5E2ETests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Phase5E2ETests.swift; sourceTree = "<group>"; };
 		26B38EDFCFBD703CF04B12FE /* AppLifecycleTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLifecycleTests.swift; sourceTree = "<group>"; };
 		2A97D15DD89469096510556A /* ShortcutManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutManagerTests.swift; sourceTree = "<group>"; };
 		361045FD537E6E97D38AD837 /* PopupSizingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PopupSizingTests.swift; sourceTree = "<group>"; };
@@ -160,6 +162,7 @@
 				8E153A4D25A9E4AA8909EF72 /* LLMProviderTests.swift */,
 				585B497914BE2E869DB88B72 /* MultiMonitorCoordinateTests.swift */,
 				8A3B642E659AE95B1C76588C /* OnboardingTests.swift */,
+				15D3F0495EF1EC3892ED4AD9 /* Phase5E2ETests.swift */,
 				361045FD537E6E97D38AD837 /* PopupSizingTests.swift */,
 				DE6722248A3B53077A2009C8 /* PopupViewModelTests.swift */,
 				C933BC250C1F5B8012D57E15 /* ProviderManagementTests.swift */,
@@ -308,6 +311,7 @@
 				B0A05DEFF2246A0C4176B232 /* LaunchAtLoginTests.swift in Sources */,
 				7EE58F085318E91D53D583D8 /* MultiMonitorCoordinateTests.swift in Sources */,
 				3F872C6DFCE74AAB0185E3E6 /* OnboardingTests.swift in Sources */,
+				D5D4A449E2B2B796B8148CBF /* Phase5E2ETests.swift in Sources */,
 				F7A12D6974513EA9775BD77F /* PopupSizingTests.swift in Sources */,
 				3553501E3EEF73383F858374 /* PopupViewModelTests.swift in Sources */,
 				04F9E1FE15236A6BBDA64264 /* ProviderManagementTests.swift in Sources */,
