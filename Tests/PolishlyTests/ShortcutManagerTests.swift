@@ -2,6 +2,7 @@ import XCTest
 @testable import Polishly
 import Carbon.HIToolbox
 
+@MainActor
 final class ShortcutManagerTests: XCTestCase {
     
     var originalKeyCode: Int!

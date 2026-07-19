@@ -18,12 +18,17 @@ final class ShortcutManager {
 
     private init() {}
 
+    /// Only ever called from `applicationDidFinishLaunching`, already on the main actor.
+    @MainActor
     func start(handler: @escaping () -> Void) {
         self.handler = handler
         installEventHandlerIfNeeded()
         registerGlobalShortcut()
     }
 
+    /// Only ever called from `applicationDidFinishLaunching` and a SwiftUI
+    /// Button action — both already on the main actor, matching `AppState`.
+    @MainActor
     func registerGlobalShortcut() {
         guard handler != nil else { return } // Wait until handler is set
 

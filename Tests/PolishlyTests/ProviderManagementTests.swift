@@ -1,6 +1,7 @@
 import XCTest
 @testable import Polishly
 
+@MainActor
 final class ProviderManagementTests: XCTestCase {
     private var originalProvider: LLMProvider!
     private var originalModel: String!

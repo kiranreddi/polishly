@@ -153,7 +153,7 @@ struct SettingsView: View {
                     Button(appState.hasRememberedAPIKey ? "Update Remembered Key" : "Save & Remember Key") {
                         appState.saveAPIKey()
                     }
-                    .disabled(appState.rewriteAPIKey.isEmpty || appState.selectedProvider.modelValidationError(for: appState.modelName) != nil)
+                    .disabled(appState.rewriteAPIKey.isEmpty || appState.providerConfigurationError != nil)
                     .accessibilityLabel(appState.hasRememberedAPIKey ? "Update Remembered Key" : "Save and Remember Key")
 
                     Button(appState.isTestingProviderConnection ? "Testing…" : "Test Connection") {
@@ -185,7 +185,7 @@ struct SettingsView: View {
                 if !appState.providerStatusMessage.isEmpty {
                     Label(appState.providerStatusMessage, systemImage: appState.providerConnectionState.systemImage)
                         .font(.caption)
-                        .foregroundStyle(providerStatusColor)
+                        .foregroundStyle(appState.providerConnectionState.color)
                         .accessibilityLabel(appState.providerStatusMessage)
                 }
 
@@ -196,14 +196,6 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-        }
-    }
-
-    private var providerStatusColor: Color {
-        switch appState.providerConnectionState {
-        case .connected: return .green
-        case .failed: return .orange
-        case .idle, .testing: return .secondary
         }
     }
 }

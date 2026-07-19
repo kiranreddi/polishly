@@ -151,6 +151,14 @@ enum ProviderConnectionState {
         case .failed: return "exclamationmark.triangle.fill"
         }
     }
+
+    var color: Color {
+        switch self {
+        case .connected: return .green
+        case .failed: return .orange
+        case .idle, .testing: return .secondary
+        }
+    }
 }
 
 enum OnboardingState: Equatable {
@@ -161,9 +169,33 @@ enum OnboardingState: Equatable {
     case ready
 }
 
-
+@MainActor
 class AppState: ObservableObject {
     static let shared = AppState()
+
+    /// Pure so first-run routing is testable without touching the real
+    /// Accessibility API or re-constructing the `AppState` singleton.
+    static func initialOnboardingState(trusted: Bool, onboardingCompleted: Bool) -> OnboardingState {
+        if !trusted { return .accessibilityMissing }
+        if !onboardingCompleted { return .providerMissing }
+        return .ready
+    }
+
+    /// Pure transition for the passive re-check that runs on launch, on
+    /// return from System Settings, and on the 1 Hz poll. Returns nil when
+    /// no transition applies. Deliberately does **not** revert `.ready` back
+    /// to `.accessibilityMissing` if trust is later lost mid-session —
+    /// onboarding is a one-time setup flow, not a permission-status display
+    /// (Settings already shows live accessibility status for that), and
+    /// nothing re-opens the onboarding window once it's closed, so silently
+    /// flipping this state had no visible effect other than making
+    /// `showOnboarding` lie about what the user would actually see.
+    static func onboardingStateAfterAccessibilityChange(current: OnboardingState, trusted: Bool) -> OnboardingState? {
+        if trusted && current == .accessibilityMissing {
+            return .accessibilityGranted
+        }
+        return nil
+    }
 
     /// Tests redirect Keychain traffic to an isolated service name so real keys stay untouched.
     static var keychainServiceOverrideForTesting: String?
@@ -174,6 +206,7 @@ class AppState: ObservableObject {
             if apiKey != oldValue {
                 providerConnectionState = .idle
                 if isTestingProviderConnection { isTestingProviderConnection = false }
+                revertProviderConnectedOnboardingIfNeeded()
             }
         }
     }
@@ -202,6 +235,7 @@ class AppState: ObservableObject {
             UserDefaults.standard.set(selectedProvider.rawValue, forKey: "selectedProvider")
             clearInMemoryKeyState(statusMessage: "")
             modelName = Self.storedModel(for: selectedProvider)
+            revertProviderConnectedOnboardingIfNeeded()
             if selectedProvider == .demo {
                 providerConnectionState = .connected
                 providerStatusMessage = "On-device demo is ready — no network, no API key."
@@ -215,6 +249,7 @@ class AppState: ObservableObject {
             UserDefaults.standard.set(modelName, forKey: Self.modelKey(for: selectedProvider))
             if modelName != oldValue {
                 providerConnectionState = selectedProvider == .demo ? .connected : .idle
+                revertProviderConnectedOnboardingIfNeeded()
             }
         }
     }
@@ -287,13 +322,7 @@ class AppState: ObservableObject {
         self.isAccessibilityTrusted = trusted
 
         let onboardingCompleted = UserDefaults.standard.bool(forKey: "onboardingCompleted")
-        if !trusted {
-            self.onboardingState = .accessibilityMissing
-        } else if !onboardingCompleted {
-            self.onboardingState = .providerMissing
-        } else {
-            self.onboardingState = .ready
-        }
+        self.onboardingState = Self.initialOnboardingState(trusted: trusted, onboardingCompleted: onboardingCompleted)
 
         // System Settings changes TCC state outside our process. Refresh on return
         // and while a permission window is open so the label cannot remain stale.
@@ -322,12 +351,8 @@ class AppState: ObservableObject {
         if trusted != isAccessibilityTrusted {
             isAccessibilityTrusted = trusted
 
-            if trusted && onboardingState == .accessibilityMissing {
-                onboardingState = .accessibilityGranted
-            } else if !trusted && onboardingState == .ready {
-                // If trust is lost after onboarding, we can optionally reshow it,
-                // but requirements say "reappear when Accessibility trust is lost"
-                onboardingState = .accessibilityMissing
+            if let next = Self.onboardingStateAfterAccessibilityChange(current: onboardingState, trusted: trusted) {
+                onboardingState = next
             }
         }
     }
@@ -427,6 +452,9 @@ class AppState: ObservableObject {
                 }
                 self.providerConnectionState = .connected
                 self.providerStatusMessage = "Connected to \(provider.displayName)."
+                if self.onboardingState == .providerMissing {
+                    self.onboardingState = .providerConnected
+                }
             } catch {
                 guard let self else { return }
                 self.isTestingProviderConnection = false
@@ -501,6 +529,16 @@ class AppState: ObservableObject {
         isTestingProviderConnection = false
         providerConnectionState = .idle
         providerStatusMessage = statusMessage
+    }
+
+    /// A successful onboarding connection test only stays valid until the
+    /// user changes the configuration it was tested against — otherwise the
+    /// onboarding "Continue" button could stay enabled for a provider/key/
+    /// model combination that was never actually verified.
+    private func revertProviderConnectedOnboardingIfNeeded() {
+        if onboardingState == .providerConnected {
+            onboardingState = .providerMissing
+        }
     }
 
     private static func modelKey(for provider: LLMProvider) -> String {

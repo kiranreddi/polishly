@@ -112,26 +112,46 @@ final class RewriteClient {
         context: String?,
         onUpdate: @escaping (String) -> Void
     ) async throws {
-        let appState = AppState.shared
-        let provider = appState.selectedProvider
+        // AppState is @MainActor-isolated; snapshot everything needed in one
+        // hop so the rest of this (network-bound) function reads a single
+        // consistent view instead of several actor hops that could each
+        // observe a different mid-edit state if the user is in Settings.
+        struct ProviderSnapshot {
+            let provider: LLMProvider
+            let isReady: Bool
+            let apiKey: String
+            let configurationError: String?
+            let model: String
+        }
+        let snapshot = await MainActor.run { () -> ProviderSnapshot in
+            let appState = AppState.shared
+            return ProviderSnapshot(
+                provider: appState.selectedProvider,
+                isReady: appState.providerIsReady,
+                apiKey: appState.rewriteAPIKey,
+                configurationError: appState.providerConfigurationError,
+                model: appState.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+            )
+        }
+        let provider = snapshot.provider
 
         if provider == .demo {
             try await streamDemo(text: text, tone: tone, instruction: customInstruction, onUpdate: onUpdate)
             return
         }
 
-        guard appState.providerIsReady else {
-            if appState.rewriteAPIKey.isEmpty {
+        guard snapshot.isReady else {
+            if snapshot.apiKey.isEmpty {
                 throw RewriteError.missingAPIKey(provider.displayName)
             }
-            if let configError = appState.providerConfigurationError {
+            if let configError = snapshot.configurationError {
                 throw RewriteError.invalidConfiguration(configError)
             }
             throw RewriteError.invalidConfiguration("\(provider.displayName) is not ready. Check Settings.")
         }
 
-        let apiKey = appState.rewriteAPIKey
-        let model = appState.modelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let apiKey = snapshot.apiKey
+        let model = snapshot.model
 
         let prompt = Self.rewritePrompt(
             text: text,

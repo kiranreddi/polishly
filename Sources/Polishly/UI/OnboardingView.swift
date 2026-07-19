@@ -26,7 +26,7 @@ struct OnboardingView: View {
             }
         }
         .padding(40)
-        .frame(width: 520, height: 470)
+        .frame(width: 520)
         .onAppear { appState.checkAccessibility() }
     }
 
@@ -37,6 +37,12 @@ struct OnboardingView: View {
             VStack(spacing: 8) {
                 Button("Continue") {
                     withAnimation {
+                        // Land on a real provider by default so the setup
+                        // fields are immediately meaningful; Skip still
+                        // switches back to demo explicitly if that's chosen.
+                        if appState.selectedProvider == .demo {
+                            appState.selectedProvider = .openAI
+                        }
                         appState.onboardingState = .providerMissing
                     }
                 }
@@ -86,12 +92,12 @@ struct OnboardingView: View {
     }
 
     private var providerStep: some View {
-        VStack(spacing: 26) {
+        VStack(spacing: 20) {
             VStack(alignment: .leading, spacing: 14) {
-                Text("Provider Setup")
+                Text("Connect a Provider")
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
-                Text("Demo rewrites stay on your Mac. Open Settings later to connect OpenAI, Groq, Cerebras, or Anthropic.")
+                Text("Add a real AI provider now, or skip and start with the on-device demo — you can change this anytime from the menu bar.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.leading)
@@ -101,20 +107,80 @@ struct OnboardingView: View {
             .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
             .accessibilityElement(children: .combine)
 
-            VStack(spacing: 8) {
-                Button("Start Using Polishly") {
+            providerSetupCard
+
+            HStack(spacing: 12) {
+                Button("Skip — Use Demo Mode") {
+                    appState.selectedProvider = .demo
                     appState.onboardingState = .ready
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(.bordered)
                 .controlSize(.large)
-                .keyboardShortcut(.defaultAction)
-                .accessibilityLabel("Complete onboarding and start using Polishly in Demo mode")
+                .accessibilityLabel("Skip provider setup and start using Polishly in Demo mode")
 
-                Text("You can configure AI providers anytime from the menu bar.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                if appState.onboardingState == .providerConnected {
+                    Button("Continue") {
+                        appState.onboardingState = .ready
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .accessibilityLabel("Continue and start using Polishly with \(appState.selectedProvider.displayName)")
+                }
             }
         }
+    }
+
+    private var providerSetupCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Picker("Provider", selection: $appState.selectedProvider) {
+                ForEach(LLMProvider.allCases.filter { $0 != .demo }) { provider in
+                    Text(provider.displayName).tag(provider)
+                }
+            }
+            .labelsHidden()
+            .accessibilityLabel("Rewrite provider")
+
+            HStack {
+                TextField("Model", text: $appState.modelName)
+                    .textFieldStyle(.roundedBorder)
+                Button("Default") {
+                    appState.resetModelToDefault()
+                }
+            }
+
+            LabeledContent("API Key") {
+                SecureField(appState.selectedProvider.keyPlaceholder, text: $appState.apiKey)
+                    .labelsHidden()
+                    .textFieldStyle(.roundedBorder)
+                    // Never expose the key value through accessibility.
+                    .accessibilityLabel("\(appState.selectedProvider.displayName) API key")
+                    .accessibilityHint("Secure field. Value is not spoken.")
+            }
+
+            Button(appState.isTestingProviderConnection ? "Testing…" : "Save & Test Connection") {
+                appState.saveAPIKey()
+            }
+            .keyboardShortcut(.defaultAction)
+            .disabled(
+                appState.rewriteAPIKey.isEmpty
+                || appState.providerConfigurationError != nil
+                || appState.isTestingProviderConnection
+            )
+            .accessibilityLabel("Save and test the \(appState.selectedProvider.displayName) connection")
+
+            if !appState.providerStatusMessage.isEmpty {
+                Label(appState.providerStatusMessage, systemImage: appState.providerConnectionState.systemImage)
+                    .font(.caption)
+                    .foregroundStyle(appState.providerConnectionState.color)
+                    .accessibilityLabel(appState.providerStatusMessage)
+            }
+
+            Text(appState.selectedProvider.privacyDescription)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding(18)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 14))
     }
 }

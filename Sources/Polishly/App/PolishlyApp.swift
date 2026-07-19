@@ -69,6 +69,7 @@ final class SettingsWindowController: NSWindowController {
     }
 }
 
+@MainActor
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Hide dock icon entirely (already set in Info.plist, but ensure it behaves as UIElement)
@@ -99,7 +100,10 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         case startSilently
     }
 
-    static func launchDecision(showOnboarding: Bool) -> LaunchDecision {
+    // A pure function of its argument — no reason to require the main actor
+    // to call it, and forcing that would needlessly make every caller (and
+    // every test of it) async.
+    nonisolated static func launchDecision(showOnboarding: Bool) -> LaunchDecision {
         return showOnboarding ? .showOnboarding : .startSilently
     }
 
