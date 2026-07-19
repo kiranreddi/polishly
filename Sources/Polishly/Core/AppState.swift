@@ -153,6 +153,15 @@ enum ProviderConnectionState {
     }
 }
 
+enum OnboardingState: Equatable {
+    case accessibilityMissing
+    case accessibilityGranted
+    case providerMissing
+    case providerConnected
+    case ready
+}
+
+
 class AppState: ObservableObject {
     static let shared = AppState()
 
@@ -172,7 +181,21 @@ class AppState: ObservableObject {
     @Published var providerStatusMessage = ""
     @Published private(set) var isTestingProviderConnection = false
     @Published private(set) var providerConnectionState: ProviderConnectionState = .idle
-    @Published var showOnboarding = false
+    @Published var onboardingState: OnboardingState = .ready {
+        didSet {
+            if onboardingState == .ready {
+                UserDefaults.standard.set(true, forKey: "onboardingCompleted")
+            }
+        }
+    }
+
+    var showOnboarding: Bool {
+        get { onboardingState != .ready }
+        set {
+            if !newValue { onboardingState = .ready }
+        }
+    }
+
     @Published var selectedProvider: LLMProvider {
         didSet {
             guard selectedProvider != oldValue else { return }
@@ -260,8 +283,17 @@ class AppState: ObservableObject {
             loadStoredAPIKeyAsync(allowInteraction: false, showMissingMessage: false)
         }
 
-        checkAccessibility()
-        showOnboarding = !isAccessibilityTrusted
+        let trusted = AXIsProcessTrusted()
+        self.isAccessibilityTrusted = trusted
+
+        let onboardingCompleted = UserDefaults.standard.bool(forKey: "onboardingCompleted")
+        if !trusted {
+            self.onboardingState = .accessibilityMissing
+        } else if !onboardingCompleted {
+            self.onboardingState = .providerMissing
+        } else {
+            self.onboardingState = .ready
+        }
 
         // System Settings changes TCC state outside our process. Refresh on return
         // and while a permission window is open so the label cannot remain stale.
@@ -289,6 +321,14 @@ class AppState: ObservableObject {
         // view would re-render each second.
         if trusted != isAccessibilityTrusted {
             isAccessibilityTrusted = trusted
+
+            if trusted && onboardingState == .accessibilityMissing {
+                onboardingState = .accessibilityGranted
+            } else if !trusted && onboardingState == .ready {
+                // If trust is lost after onboarding, we can optionally reshow it,
+                // but requirements say "reappear when Accessibility trust is lost"
+                onboardingState = .accessibilityMissing
+            }
         }
     }
 

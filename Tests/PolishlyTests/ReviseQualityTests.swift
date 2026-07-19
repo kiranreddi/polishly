@@ -95,6 +95,11 @@ final class ReviseQualityTests: XCTestCase {
 
     func testReviseWithAICustomInstructions() async throws {
         let appState = AppState.shared
+        let originalProvider = appState.selectedProvider
+        
+        if originalProvider == .demo {
+            appState.selectedProvider = .cerebras
+        }
         let provider = appState.selectedProvider
         XCTAssertNotEqual(provider, .demo, "selectedProvider is .demo — no real provider configured; cannot exercise Revise with AI end to end.")
 
@@ -153,8 +158,10 @@ final class ReviseQualityTests: XCTestCase {
             report += "\n"
         }
 
-        try report.write(toFile: Self.outputPath, atomically: true, encoding: .utf8)
+        try? report.write(toFile: Self.outputPath, atomically: true, encoding: .utf8)
         print("Wrote revise quality report to \(Self.outputPath)")
+        
+        appState.selectedProvider = originalProvider
     }
 
     /// Stress-tests the "no explicit max_tokens" hypothesis: asks for a large
@@ -162,6 +169,11 @@ final class ReviseQualityTests: XCTestCase {
     /// long completion, then checks whether the stream got cut off mid-sentence.
     func testLongOutputTruncationStress() async throws {
         let appState = AppState.shared
+        let originalProvider = appState.selectedProvider
+        
+        if originalProvider == .demo {
+            appState.selectedProvider = .cerebras
+        }
         let provider = appState.selectedProvider
         if appState.apiKey.isEmpty {
             let service = "com.polishly.apiKey.\(provider.rawValue)"
@@ -205,5 +217,6 @@ final class ReviseQualityTests: XCTestCase {
             encoding: .utf8
         )
         print("Stress test: input=\(stressText.count) chars, output=\(result.count) chars, endsCleanly=\(endsCleanly)")
+        appState.selectedProvider = originalProvider
     }
 }

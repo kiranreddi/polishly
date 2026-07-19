@@ -14,14 +14,17 @@ struct SettingsView: View {
                             get: { (appState.shortcutModifiers & 4096) != 0 },
                             set: { if $0 { appState.shortcutModifiers |= 4096 } else { appState.shortcutModifiers &= ~4096 } }
                         ))
+                        .accessibilityLabel("Control Modifier")
                         Toggle("Option", isOn: Binding(
                             get: { (appState.shortcutModifiers & 2048) != 0 },
                             set: { if $0 { appState.shortcutModifiers |= 2048 } else { appState.shortcutModifiers &= ~2048 } }
                         ))
+                        .accessibilityLabel("Option Modifier")
                         Toggle("Command", isOn: Binding(
                             get: { (appState.shortcutModifiers & 256) != 0 },
                             set: { if $0 { appState.shortcutModifiers |= 256 } else { appState.shortcutModifiers &= ~256 } }
                         ))
+                        .accessibilityLabel("Command Modifier")
                     }
                 }
                 LabeledContent("Key") {
@@ -39,6 +42,7 @@ struct SettingsView: View {
                 Button("Apply Shortcut") {
                     ShortcutManager.shared.registerGlobalShortcut()
                 }
+                .accessibilityLabel("Apply Keyboard Shortcut")
 
                 if appState.hasShortcutConflict {
                     Label("Shortcut unavailable — pick at least one modifier, and a combination no other app or system feature already uses.", systemImage: "exclamationmark.triangle.fill")
@@ -94,10 +98,12 @@ struct SettingsView: View {
                         Button("Open Settings") {
                             appState.openAccessibilitySettings()
                         }
+                        .accessibilityHint("Opens Privacy & Security in System Settings")
                     }
                     Button("Refresh") {
                         appState.checkAccessibility()
                     }
+                    .accessibilityHint("Manually refresh accessibility status")
                 }
                 Text("This status refreshes automatically when you return from System Settings.")
                     .font(.caption)

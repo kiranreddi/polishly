@@ -25,8 +25,8 @@ struct PolishlyApp: App {
 
         Window("Onboarding", id: "onboarding") {
             OnboardingView()
-                .onReceive(appState.$showOnboarding) { show in
-                    if !show {
+                .onReceive(appState.$onboardingState) { state in
+                    if state == .ready {
                         NSApp.windows.first(where: { $0.title == "Onboarding" })?.close()
                     }
                 }
