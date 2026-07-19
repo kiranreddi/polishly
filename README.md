@@ -25,7 +25,7 @@ Select text  →  ⌃⌥Space  →  review rewrite + inline diff  →  Accept
 </p>
 
 <p align="center">
-  <a href="https://raw.githubusercontent.com/kiranreddi/polishly/main/docs/video/polishly-promo.mp4">▶ Watch the full 52s demo with narration</a>
+  <a href="https://raw.githubusercontent.com/kiranreddi/polishly/main/docs/video/polishly-promo.mp4">Download the full 52s demo (mp4, with narration)</a>
 </p>
 
 <p align="center">
