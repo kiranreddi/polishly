@@ -6,5 +6,8 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "npm run build && node scripts/dev.mjs"
+  },
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
   }
 }
