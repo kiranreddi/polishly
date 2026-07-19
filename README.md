@@ -4,6 +4,12 @@
 
 # Polishly
 
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-13b8a4.svg" alt="MIT License" /></a>
+  <img src="https://img.shields.io/badge/platform-macOS%2014%2B-13b8a4.svg" alt="macOS 14+" />
+  <img src="https://img.shields.io/badge/Swift-SwiftUI%20%2B%20AppKit-13b8a4.svg" alt="Swift, SwiftUI + AppKit" />
+</p>
+
 **Select text anywhere on your Mac. Press one hotkey. Get a real, in-place rewrite.**
 
 Polishly is a free, open-source macOS menu-bar app. No subscription. No background scanning. No middleman — you bring a free (or paid) API key, and your text goes straight from your Mac to the provider you chose.
@@ -12,8 +18,13 @@ Polishly is a free, open-source macOS menu-bar app. No subscription. No backgrou
 Select text  →  ⌃⌥Space  →  review rewrite + inline diff  →  Accept
 ```
 
+**[polishly.info](https://polishly.info)** — website, download, and full feature tour.
+
 <p align="center">
-  <img src="docs/images/rewrite-card.png" width="480" alt="Polishly rewrite card showing an inline diff" />
+  <video src="docs/video/polishly-promo.mp4" poster="docs/video/polishly-promo-poster.jpg" width="820" controls muted playsinline>
+    Your Markdown viewer can't play inline video — watch it at
+    <a href="docs/video/polishly-promo.mp4">docs/video/polishly-promo.mp4</a>.
+  </video>
 </p>
 
 <p align="center">
@@ -185,7 +196,7 @@ Polishly only sends text when you explicitly invoke the hotkey. Your selection g
 
 ## Contributing
 
-Issues and PRs welcome. Small personal open-source project — be reasonable.
+[Issues](https://github.com/kiranreddi/polishly/issues) and PRs welcome. Small personal open-source project — be reasonable.
 
 ## License
 
