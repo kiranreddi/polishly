@@ -6,6 +6,7 @@ DerivedData/
 dist/
 release/
 *.dmg
+!website/assets/releases/*.dmg
 xcuserdata/
 *.xcuserstate
 .DS_Store
