@@ -6,6 +6,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "4173", "--directory", "website"],
       "port": 4173
+    },
+    {
+      "name": "promo-video",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["--yes", "hyperframes@0.7.64", "preview", "--port=3002", "--no-open", "videos/polishly-promo"],
+      "port": 3002
     }
   ]
 }
