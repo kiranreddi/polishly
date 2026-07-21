@@ -157,7 +157,7 @@ code { padding: 2px 6px; border-radius: 5px; color: var(--teal); background: var
 .route-node strong { font-size: 13px; line-height: 1.3; }
 .route-node small { color: var(--quiet); font-size: 10.5px; line-height: 1.4; }
 .route-label { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 8px; color: var(--teal); background: var(--teal-wash); font: 800 10px/1 "SF Mono", monospace; }
-.route-arrow { align-self: center; color: var(--teal); font-size: 20px; }
+.route-arrow { align-self: center; justify-self: center; color: var(--teal); font-size: 20px; }
 .no-server { grid-column: 1 / -1; margin-top: 5px; padding: 10px 14px; border: 1px dashed #3a4354; border-radius: 10px; color: var(--quiet); text-align: center; font-size: 12px; }
 .no-server span { display: inline-grid; width: 17px; height: 17px; margin-right: 5px; place-items: center; border-radius: 50%; color: var(--bg); background: var(--quiet); font-weight: 900; }
 
