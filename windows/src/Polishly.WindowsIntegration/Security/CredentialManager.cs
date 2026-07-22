@@ -24,38 +24,36 @@ public class CredentialManager : ICredentialStore
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
+            var targetName = TargetPrefix + providerId;
+            var bytes = Encoding.Unicode.GetBytes(apiKey);
+            var blobPtr = Marshal.AllocHGlobal(bytes.Length);
             try
             {
-                var targetName = TargetPrefix + providerId;
-                var bytes = Encoding.Unicode.GetBytes(apiKey);
-                var blobPtr = Marshal.AllocHGlobal(bytes.Length);
-                try
-                {
-                    Marshal.Copy(bytes, 0, blobPtr, bytes.Length);
+                Marshal.Copy(bytes, 0, blobPtr, bytes.Length);
 
-                    var credential = new Native.Win32Native.CREDENTIAL
-                    {
-                        Type = 1, // CRED_TYPE_GENERIC
-                        TargetName = targetName,
-                        CredentialBlobSize = (uint)bytes.Length,
-                        CredentialBlob = blobPtr,
-                        Persist = 2, // CRED_PERSIST_LOCAL_MACHINE
-                        UserName = providerId,
-                        Comment = "Polishly AI Provider Key"
-                    };
-
-                    Native.Win32Native.CredWrite(ref credential, 0);
-                }
-                finally
+                var credential = new Native.Win32Native.CREDENTIAL
                 {
-                    Marshal.FreeHGlobal(blobPtr);
+                    Type = 1, // CRED_TYPE_GENERIC
+                    TargetName = targetName,
+                    CredentialBlobSize = (uint)bytes.Length,
+                    CredentialBlob = blobPtr,
+                    Persist = 2, // CRED_PERSIST_LOCAL_MACHINE
+                    UserName = providerId,
+                    Comment = "Polishly AI Provider Key"
+                };
+
+                if (!Native.Win32Native.CredWrite(ref credential, 0))
+                {
+                    int errorCode = Marshal.GetLastWin32Error();
+                    throw new System.ComponentModel.Win32Exception(errorCode, $"Failed to write credential to Windows Credential Manager for provider '{providerId}'. Error code: {errorCode}");
                 }
             }
-            catch
+            finally
             {
-                // Fall back to safely isolated in-memory storage if Win32 API fails
+                Marshal.FreeHGlobal(blobPtr);
             }
         }
+
 
         return Task.CompletedTask;
     }
