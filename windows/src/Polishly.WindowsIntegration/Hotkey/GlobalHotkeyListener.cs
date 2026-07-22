@@ -30,6 +30,14 @@ public class GlobalHotkeyListener : IDisposable
         return _isRegistered;
     }
 
+    public void ProcessWindowMessage(int msg, IntPtr wParam, IntPtr lParam)
+    {
+        if (msg == Win32Native.WM_HOTKEY && wParam.ToInt32() == _hotkeyId)
+        {
+            RaiseHotkeyPressed();
+        }
+    }
+
     public void Unregister()
     {
         if (_isRegistered)
@@ -59,3 +67,4 @@ public class GlobalHotkeyListener : IDisposable
         Unregister();
     }
 }
+

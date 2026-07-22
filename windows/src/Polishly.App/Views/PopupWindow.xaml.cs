@@ -25,9 +25,12 @@ public partial class PopupWindow : Window
         DataContext = viewModel;
     }
 
+#if !HAS_WPF
     private void InitializeComponent()
     {
     }
+#endif
+
 
     private void OnSourceInitialized(object? sender, EventArgs e)
     {
