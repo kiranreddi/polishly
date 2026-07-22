@@ -7,6 +7,8 @@ namespace Polishly.WindowsIntegration.Capture;
 
 public class WindowTracker
 {
+    private readonly Security.ElevationDetector _elevationDetector = new();
+
     public TargetWindow GetForegroundWindowInfo()
     {
         if (!OperatingSystem.IsWindows())
@@ -24,7 +26,7 @@ public class WindowTracker
 
             Win32Native.GetWindowThreadProcessId(hWnd, out var processId);
             string processName = "unknown";
-            bool isElevated = false;
+            bool isElevated = _elevationDetector.IsElevatedProcess((int)processId);
 
             try
             {

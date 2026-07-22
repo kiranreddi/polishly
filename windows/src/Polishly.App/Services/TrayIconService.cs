@@ -43,6 +43,18 @@ public class TrayIconService : IDisposable
         }
     }
 
+    public void ProcessWindowMessage(int msg, IntPtr wParam, IntPtr lParam)
+    {
+        if (msg == WM_TRAYICON)
+        {
+            int mouseMsg = lParam.ToInt32() & 0xFFFF;
+            if (mouseMsg == 0x0205 || mouseMsg == 0x0202 || mouseMsg == 0x0203 || mouseMsg == 0x0206)
+            {
+                ShowContextMenu();
+            }
+        }
+    }
+
     public void ShowContextMenu()
     {
         if (!OperatingSystem.IsWindows()) return;

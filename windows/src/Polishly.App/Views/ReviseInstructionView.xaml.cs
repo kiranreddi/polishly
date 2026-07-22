@@ -22,9 +22,11 @@ public partial class ReviseInstructionView : Window
         _savedTargetWindowHandle = viewModel.TargetWindowHandle;
     }
 
+#if !HAS_WPF
     private void InitializeComponent()
     {
     }
+#endif
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {

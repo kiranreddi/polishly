@@ -87,9 +87,18 @@ public class RedactedLogger : IRedactedLogger
 
     public void LogApiKeyUsage(string providerId, string apiKey)
     {
-        string redactedKey = Redact(apiKey);
-        AddLog($"[INFO] Provider '{providerId}' API Key: {redactedKey}");
+        string maskedKey;
+        if (string.IsNullOrEmpty(apiKey))
+        {
+            maskedKey = "****";
+        }
+        else
+        {
+            maskedKey = "[REDACTED_API_KEY]";
+        }
+        AddLog($"[INFO] Provider '{providerId}' API Key: {maskedKey}");
     }
+
 
     public IReadOnlyList<string> GetLogs()
     {

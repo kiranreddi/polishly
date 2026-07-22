@@ -16,7 +16,9 @@ public partial class OnboardingWindow : Window
         viewModel.OnboardingCompleted += (s, e) => Close();
     }
 
+#if !HAS_WPF
     private void InitializeComponent()
     {
     }
+#endif
 }
