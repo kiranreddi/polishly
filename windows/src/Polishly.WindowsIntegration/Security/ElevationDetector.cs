@@ -20,10 +20,23 @@ public class ElevationDetector
         try
         {
             hProcess = Win32Native.OpenProcess(Win32Native.PROCESS_QUERY_LIMITED_INFORMATION, false, (uint)processId);
-            if (hProcess == IntPtr.Zero) return false;
+            if (hProcess == IntPtr.Zero)
+            {
+                int errorCode = Marshal.GetLastWin32Error();
+                if (errorCode == 5 || errorCode == 0x05)
+                {
+                    return true;
+                }
+                return false;
+            }
 
             if (!Win32Native.OpenProcessToken(hProcess, Win32Native.TOKEN_QUERY, out hToken))
             {
+                int errorCode = Marshal.GetLastWin32Error();
+                if (errorCode == 5 || errorCode == 0x05)
+                {
+                    return true;
+                }
                 return false;
             }
 

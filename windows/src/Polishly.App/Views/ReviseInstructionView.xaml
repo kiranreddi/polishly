@@ -8,21 +8,27 @@
         WindowStyle="SingleBorderWindow"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
-        Width="400" Height="200" Resizablity="NoResize">
-    <Grid Padding="16" Background="#252526">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+        Width="400" Height="200" ResizeMode="NoResize">
+    <Border Padding="16" Background="#252526">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Enter instructions for AI revision:" Foreground="White" FontSize="13" Margin="0,0,0,8" FontWeight="SemiBold"/>
-        <TextBox Grid.Row="1" x:Name="InstructionTextBox" Text="{Binding InstructionText, UpdateSourceTrigger=PropertyChanged}"
-                 AcceptsReturn="True" TextWrapping="Wrap" Background="#1E1E1E" Foreground="White" BorderBrush="#3F3F46" Padding="6" Margin="0,0,0,12"/>
+            <TextBlock Grid.Row="0" Text="Enter instructions for AI revision:" Foreground="White" FontSize="13" Margin="0,0,0,8" FontWeight="SemiBold"/>
+            <TextBox Grid.Row="1" x:Name="InstructionTextBox" Text="{Binding InstructionText, UpdateSourceTrigger=PropertyChanged}"
+                     AcceptsReturn="True" TextWrapping="Wrap" Background="#1E1E1E" Foreground="White" BorderBrush="#3F3F46" Padding="6" Margin="0,0,0,12"/>
 
-        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Cancel" Command="{Binding CancelCommand}" Margin="0,0,8,0" Padding="16,6" Background="#3E3E42" Foreground="White" BorderThickness="0" CornerRadius="4"/>
-            <Button Content="Submit" Command="{Binding SubmitCommand}" IsDefault="True" Padding="16,6" Background="#0E639C" Foreground="White" BorderThickness="0" CornerRadius="4"/>
-        </StackPanel>
-    </Grid>
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Border CornerRadius="4" Margin="0,0,8,0" Background="#3E3E42">
+                    <Button Content="Cancel" Command="{Binding CancelCommand}" Padding="16,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                </Border>
+                <Border CornerRadius="4" Background="#0E639C">
+                    <Button Content="Submit" Command="{Binding SubmitCommand}" IsDefault="True" Padding="16,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Border>
 </Window>

@@ -2,12 +2,16 @@ using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using System.Windows.Input;
+using Polishly.WindowsIntegration.Security;
 
 namespace Polishly.App.ViewModels;
 
 public class SettingsViewModel : INotifyPropertyChanged
 {
+    private readonly ICredentialStore? _credentialStore;
+
     private string _activeProviderId = "demo";
     private string _apiKey = string.Empty;
     private string _hotkeyShortcut = "Ctrl+Shift+P";
@@ -43,7 +47,7 @@ public class SettingsViewModel : INotifyPropertyChanged
             {
                 _activeProviderId = value ?? "demo";
                 OnPropertyChanged();
-                ValidateApiKey(_activeProviderId, ApiKey);
+                _ = LoadApiKeyForProviderAsync(_activeProviderId);
             }
         }
     }
@@ -136,14 +140,38 @@ public class SettingsViewModel : INotifyPropertyChanged
     public ICommand AddBlocklistCommand { get; }
     public ICommand RemoveBlocklistCommand { get; }
 
-    public SettingsViewModel()
+    public SettingsViewModel() : this(null)
     {
+    }
+
+    public SettingsViewModel(ICredentialStore? credentialStore)
+    {
+        _credentialStore = credentialStore;
+
         SaveCommand = new RelayCommand(Save);
         ValidateApiKeyCommand = new RelayCommand(() => ValidateApiKey(ActiveProviderId, ApiKey));
         AddBlocklistCommand = new RelayCommand(AddBlockedApplication, CanAddBlockedApplication);
         RemoveBlocklistCommand = new RelayCommand<string>(RemoveBlockedApplication);
 
-        ValidateApiKey(ActiveProviderId, ApiKey);
+        _ = LoadApiKeyForProviderAsync(ActiveProviderId);
+    }
+
+    public async Task LoadApiKeyForProviderAsync(string providerId)
+    {
+        if (_credentialStore != null && !string.IsNullOrEmpty(providerId))
+        {
+            try
+            {
+                var storedKey = await _credentialStore.GetApiKeyAsync(providerId);
+                _apiKey = storedKey ?? string.Empty;
+                OnPropertyChanged(nameof(ApiKey));
+            }
+            catch
+            {
+                // Fallback for store failure
+            }
+        }
+        ValidateApiKey(providerId, ApiKey);
     }
 
     public bool ValidateApiKey(string providerId, string apiKey)
@@ -195,9 +223,20 @@ public class SettingsViewModel : INotifyPropertyChanged
         BlockedApplications.Remove(appName);
     }
 
-    public void Save()
+    public async void Save()
     {
         ValidateApiKey(ActiveProviderId, ApiKey);
+        if (_credentialStore != null && !string.IsNullOrEmpty(ActiveProviderId))
+        {
+            try
+            {
+                await _credentialStore.SaveApiKeyAsync(ActiveProviderId, ApiKey);
+            }
+            catch
+            {
+                // Store save exception fallback
+            }
+        }
         SettingsSaved?.Invoke(this, EventArgs.Empty);
     }
 

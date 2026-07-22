@@ -1,14 +1,16 @@
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Polishly.Core.Models;
 using Polishly.WindowsIntegration.Native;
 
 namespace Polishly.WindowsIntegration.Clipboard;
 
-
 public class GuardedClipboardTransaction : IClipboardTransaction
 {
     private readonly Func<uint>? _getClipboardSequenceFunc;
     private uint _lastSequenceNumber;
+
+    private record ClipboardFormatEntry(uint Format, byte[] Data);
 
     public GuardedClipboardTransaction(Func<uint>? getClipboardSequenceFunc = null)
     {
@@ -76,7 +78,7 @@ public class GuardedClipboardTransaction : IClipboardTransaction
 
         uint initialSeq = await GetSequenceNumberAsync(ct);
 
-        string? originalClipboardText = null;
+        var snapshotFormats = new List<ClipboardFormatEntry>();
         if (OperatingSystem.IsWindows())
         {
             try
@@ -85,19 +87,30 @@ public class GuardedClipboardTransaction : IClipboardTransaction
                 {
                     try
                     {
-                        IntPtr hData = Win32Native.GetClipboardData(Win32Native.CF_UNICODETEXT);
-                        if (hData != IntPtr.Zero)
+                        // Multi-Format Clipboard Preservation: Enumerate and snapshot all available formats
+                        uint fmt = 0;
+                        while ((fmt = Win32Native.EnumClipboardFormats(fmt)) != 0)
                         {
-                            IntPtr pData = Win32Native.GlobalLock(hData);
-                            if (pData != IntPtr.Zero)
+                            IntPtr hData = Win32Native.GetClipboardData(fmt);
+                            if (hData != IntPtr.Zero)
                             {
-                                try
+                                UIntPtr size = Win32Native.GlobalSize(hData);
+                                if (size != UIntPtr.Zero)
                                 {
-                                    originalClipboardText = Marshal.PtrToStringUni(pData);
-                                }
-                                finally
-                                {
-                                    Win32Native.GlobalUnlock(hData);
+                                    IntPtr pData = Win32Native.GlobalLock(hData);
+                                    if (pData != IntPtr.Zero)
+                                    {
+                                        try
+                                        {
+                                            byte[] bytes = new byte[(int)size];
+                                            Marshal.Copy(pData, bytes, 0, bytes.Length);
+                                            snapshotFormats.Add(new ClipboardFormatEntry(fmt, bytes));
+                                        }
+                                        finally
+                                        {
+                                            Win32Native.GlobalUnlock(hData);
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -131,22 +144,28 @@ public class GuardedClipboardTransaction : IClipboardTransaction
 
                     await Task.Delay(50, ct);
 
-                    // Restore original text if sequence number didn't change from user interaction
-                    if (originalClipboardText != null && Win32Native.OpenClipboard(targetContext.WindowHandle))
+                    // Re-verify target window handle ownership prior to restoring clipboard data
+                    IntPtr windowBeforeRestore = IntPtr.Zero;
+                    try { windowBeforeRestore = Win32Native.GetForegroundWindow(); } catch { windowBeforeRestore = IntPtr.Zero; }
+
+                    if ((windowBeforeRestore == targetContext.WindowHandle || targetContext.WindowHandle == IntPtr.Zero) &&
+                        snapshotFormats.Count > 0 && Win32Native.OpenClipboard(targetContext.WindowHandle))
                     {
                         try
                         {
                             Win32Native.EmptyClipboard();
-                            byte[] origBytes = System.Text.Encoding.Unicode.GetBytes(originalClipboardText + "\0");
-                            IntPtr hOrigGlobal = Win32Native.GlobalAlloc(Win32Native.GMEM_MOVEABLE, (UIntPtr)origBytes.Length);
-                            if (hOrigGlobal != IntPtr.Zero)
+                            foreach (var entry in snapshotFormats)
                             {
-                                IntPtr pOrigGlobal = Win32Native.GlobalLock(hOrigGlobal);
-                                if (pOrigGlobal != IntPtr.Zero)
+                                IntPtr hOrigGlobal = Win32Native.GlobalAlloc(Win32Native.GMEM_MOVEABLE, (UIntPtr)entry.Data.Length);
+                                if (hOrigGlobal != IntPtr.Zero)
                                 {
-                                    Marshal.Copy(origBytes, 0, pOrigGlobal, origBytes.Length);
-                                    Win32Native.GlobalUnlock(hOrigGlobal);
-                                    Win32Native.SetClipboardData(Win32Native.CF_UNICODETEXT, hOrigGlobal);
+                                    IntPtr pOrigGlobal = Win32Native.GlobalLock(hOrigGlobal);
+                                    if (pOrigGlobal != IntPtr.Zero)
+                                    {
+                                        Marshal.Copy(entry.Data, 0, pOrigGlobal, entry.Data.Length);
+                                        Win32Native.GlobalUnlock(hOrigGlobal);
+                                        Win32Native.SetClipboardData(entry.Format, hOrigGlobal);
+                                    }
                                 }
                             }
                         }
@@ -178,7 +197,7 @@ public class GuardedClipboardTransaction : IClipboardTransaction
         }
 
         // Safety Guard 4: Ensure clipboard sequence number matches before restoring original contents
-        bool seqMatched = finalSeq == initialSeq || initialSeq == 0 || OperatingSystem.IsWindows();
+        bool seqMatched = (finalSeq == initialSeq) || initialSeq == 0;
 
         if (!seqMatched)
         {
@@ -196,7 +215,5 @@ public class GuardedClipboardTransaction : IClipboardTransaction
             FallbackToCopy: false,
             ErrorMessage: null
         );
-
     }
 }
-

@@ -16,7 +16,9 @@ public partial class SettingsWindow : Window
         viewModel.SettingsSaved += (s, e) => Close();
     }
 
+#if !HAS_WPF
     private void InitializeComponent()
     {
     }
+#endif
 }
