@@ -40,6 +40,17 @@ public static class Program
     {
         Console.WriteLine("=== Polishly Windows Companion App Starting ===");
 
+        bool demoRewrite = args.Any(a => string.Equals(a, "--demo-rewrite", StringComparison.OrdinalIgnoreCase));
+        string? demoText = null;
+        for (int i = 0; i < args.Length - 1; i++)
+        {
+            if (string.Equals(args[i], "--text", StringComparison.OrdinalIgnoreCase))
+            {
+                demoText = args[i + 1];
+                break;
+            }
+        }
+
         // 1. Dependency Composition & Service Registration
         _capabilityRules = new Polishly.Core.Capabilities.AppCapabilityRules();
 
@@ -50,6 +61,14 @@ public static class Program
         _credentialManager = new CredentialManager();
         _stateMachine = new Polishly.Core.StateMachine.RewriteStateMachine();
 
+        if (demoRewrite)
+        {
+            _captureEngine.TestFallbackText = string.IsNullOrWhiteSpace(demoText)
+                ? "I think we should push the meeting to next week because several people are out."
+                : demoText;
+            RunDemoRewriteAndExit().GetAwaiter().GetResult();
+            return;
+        }
 
         // 2. Native Message Window Initialization
         _messageWindow = new NativeMessageWindow();
@@ -101,6 +120,94 @@ public static class Program
         keepAliveEvent.WaitOne();
 
         ShutdownApp();
+    }
+
+    /// <summary>
+    /// Headless end-to-end rewrite demo: capture → stream (DemoProvider) → word-diff → accept/inject → exit.
+    /// Usage: Polishly.App --demo-rewrite [--text "selected text"]
+    /// </summary>
+    private static async Task RunDemoRewriteAndExit()
+    {
+        if (_stateMachine == null || _captureEngine == null || _injectorEngine == null)
+        {
+            Console.Error.WriteLine("[Polishly] Demo rewrite failed: services not initialized.");
+            Environment.ExitCode = 1;
+            return;
+        }
+
+        Console.WriteLine("[Polishly] Demo rewrite mode — exercising capture → stream → diff → inject.");
+        try
+        {
+            _stateMachine.Transition(RewriteEvent.TriggerHotkey);
+            var selection = await _captureEngine.CaptureSelectionAsync();
+            Console.WriteLine($"[Polishly] Captured from '{selection.TargetContext.ProcessName}': \"{selection.SelectedText}\"");
+
+            _stateMachine.Transition(RewriteEvent.CaptureSuccess);
+
+            var diffEngine = new Polishly.Core.Diff.WordDiffEngine();
+            var popupVm = new PopupViewModel(_stateMachine, diffEngine);
+            popupVm.Reset(selection.SelectedText);
+            popupVm.TargetWindowHandle = selection.TargetContext.WindowHandle;
+
+            var provider = await ResolveProviderAsync();
+            var req = new Polishly.Core.Models.RewriteRequest(
+                InputText: selection.SelectedText,
+                Mode: Polishly.Core.Models.RewriteMode.Improve,
+                CustomInstruction: null
+            );
+
+            _stateMachine.Transition(RewriteEvent.StartStreaming);
+            Console.Write("[Polishly] Streaming: ");
+            await foreach (var token in provider.StreamRewriteAsync(req))
+            {
+                Console.Write(token.Text);
+                popupVm.AppendStreamingToken(token.Text);
+                _stateMachine.Transition(RewriteEvent.ReceiveToken);
+            }
+            Console.WriteLine();
+
+            popupVm.CompleteStream();
+            _stateMachine.Transition(RewriteEvent.StreamFinished);
+
+            Console.WriteLine($"[Polishly] Original : {popupVm.OriginalText}");
+            Console.WriteLine($"[Polishly] Rewritten: {popupVm.RewrittenText}");
+            Console.WriteLine("[Polishly] Diff segments:");
+            foreach (var seg in popupVm.DiffSegments)
+            {
+                Console.WriteLine($"  [{seg.Type}] {seg.Text}");
+            }
+
+            var pasteDone = new TaskCompletionSource<Polishly.WindowsIntegration.Injection.InjectionResult>();
+            popupVm.RequestPaste += async (s, rewrittenText) =>
+            {
+                try
+                {
+                    var result = await _injectorEngine.InjectTextAsync(selection.TargetContext, rewrittenText);
+                    _stateMachine.Transition(result.Success ? RewriteEvent.ReplaceSuccess : RewriteEvent.ReplaceFailed,
+                        result.ErrorMessage);
+                    pasteDone.TrySetResult(result);
+                }
+                catch (Exception ex)
+                {
+                    _stateMachine.Transition(RewriteEvent.ReplaceFailed, ex.Message);
+                    pasteDone.TrySetException(ex);
+                }
+            };
+
+            popupVm.Accept();
+            var injectResult = await pasteDone.Task;
+
+            Console.WriteLine($"[Polishly] Inject result: Success={injectResult.Success}, Method={injectResult.MethodUsed}");
+            Console.WriteLine($"[Polishly] Final state: {_stateMachine.CurrentState}");
+            Console.WriteLine("[Polishly] Demo rewrite completed successfully.");
+            Environment.ExitCode = injectResult.Success ? 0 : 1;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[Polishly] Demo rewrite error: {ex.Message}");
+            _stateMachine?.Transition(RewriteEvent.Error, ex.Message);
+            Environment.ExitCode = 1;
+        }
     }
 
     private static SettingsViewModel? _settingsViewModel;
@@ -175,6 +282,8 @@ public static class Program
                 {
                     var injectResult = await _injectorEngine.InjectTextAsync(selection.TargetContext, rewrittenText);
                     Console.WriteLine($"[Polishly] Safe replacement result: Success={injectResult.Success}, Method={injectResult.MethodUsed}");
+                    _stateMachine?.Transition(injectResult.Success ? RewriteEvent.ReplaceSuccess : RewriteEvent.ReplaceFailed,
+                        injectResult.ErrorMessage);
                 }
                 popupWin?.Close();
             };
@@ -183,7 +292,7 @@ public static class Program
             {
                 if (OperatingSystem.IsWindows())
                 {
-                    try { Clipboard.SetText(text); } catch { }
+                    try { System.Windows.Clipboard.SetText(text); } catch { }
                 }
                 popupWin?.Close();
             };
@@ -191,7 +300,10 @@ public static class Program
             popupVm.RequestRevise += (s, e) =>
             {
                 popupWin?.Close();
-                var reviseVm = new ReviseInstructionViewModel(selection.SelectedText, selection.TargetContext.WindowHandle);
+                var reviseVm = new ReviseInstructionViewModel
+                {
+                    TargetWindowHandle = selection.TargetContext.WindowHandle
+                };
                 var reviseWin = new ReviseInstructionView(reviseVm);
                 reviseVm.InstructionSubmitted += (sender, prompt) =>
                 {

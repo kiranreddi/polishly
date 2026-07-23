@@ -13,7 +13,8 @@ public class WindowTracker
     {
         if (!OperatingSystem.IsWindows())
         {
-            return new TargetWindow(IntPtr.Zero, 0, "unknown", "Unknown", false);
+            // Cross-platform headless stub: emulate a Notepad-like target for local demos/tests.
+            return new TargetWindow(IntPtr.Zero, 0, "notepad", "Untitled - Notepad", false);
         }
 
         try

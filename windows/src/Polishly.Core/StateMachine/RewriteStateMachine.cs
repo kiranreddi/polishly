@@ -52,6 +52,8 @@ public class RewriteStateMachine : IRewriteStateMachine
             (RewriteEvent.Accept, RewriteState.StreamComplete) => RewriteState.Replacing,
             (RewriteEvent.Copy, RewriteState.StreamComplete) => RewriteState.Copied,
             (RewriteEvent.Copy, RewriteState.Failed) => RewriteState.Copied,
+            (RewriteEvent.ReplaceSuccess, RewriteState.Replacing) => RewriteState.Accepted,
+            (RewriteEvent.ReplaceFailed, RewriteState.Replacing) => RewriteState.Failed,
             (RewriteEvent.Reject, _) => RewriteState.Cancelled,
             (RewriteEvent.Error, _) => RewriteState.Failed,
             _ => current
