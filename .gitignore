@@ -11,3 +11,12 @@ xcuserdata/
 *.xcuserstate
 .DS_Store
 videos/
+bin/
+obj/
+*.user
+.agents/
+.dotnet_home/
+.home/
+.tmp/
+.nuget_scratch/
+.nuget_packages/

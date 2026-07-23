@@ -1,0 +1,84 @@
+<Window x:Class="Polishly.App.Views.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Polishly Settings"
+        Width="540" Height="480"
+        WindowStartupLocation="CenterScreen"
+        Background="#1E1E1E">
+    <Border Padding="20">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Polishly Settings" Foreground="White" FontSize="18" FontWeight="Bold" Margin="0,0,0,16"/>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="0,0,12,0">
+                    <!-- AI Provider Section -->
+                    <GroupBox Header="AI Provider Configuration" Foreground="White" Padding="12" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Select Provider:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding AvailableProviders}" SelectedItem="{Binding ActiveProviderId}" Margin="0,0,0,12" Height="28"/>
+
+                            <TextBlock Text="API Key:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                            <PasswordBox x:Name="ApiKeyBox" PasswordChanged="ApiKeyBox_PasswordChanged" Margin="0,0,0,4" Height="28" Padding="4"/>
+                            <TextBlock Text="{Binding ValidationStatus}" Foreground="#4EC9B0" FontSize="11" Margin="0,0,0,8"/>
+
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Shortcut & Startup Section -->
+                    <GroupBox Header="Shortcuts &amp; Startup" Foreground="White" Padding="12" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Global Hotkey:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                            <TextBox Text="{Binding HotkeyShortcut, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12" Height="28" Padding="4"/>
+
+                            <CheckBox Content="Launch Polishly at Windows Startup" IsChecked="{Binding LaunchAtStartup}" Foreground="White" Margin="0,0,0,8"/>
+
+                            <TextBlock Text="Theme:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding AvailableThemes}" SelectedItem="{Binding Theme}" Height="28"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <!-- Blocklist Section -->
+                    <GroupBox Header="Per-Application Blocklist" Foreground="White" Padding="12" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Prevent Polishly activation in specified apps:" Foreground="#CCCCCC" Margin="0,0,0,8"/>
+
+                            <Grid Margin="0,0,0,8">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Grid.Column="0" Text="{Binding NewBlockedAppName, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="4" Margin="0,0,8,0"/>
+                                <Button Grid.Column="1" Content="Add" Command="{Binding AddBlocklistCommand}" Padding="16,4" Background="#0E639C" Foreground="White" BorderThickness="0"/>
+                            </Grid>
+
+                            <ListBox ItemsSource="{Binding BlockedApplications}" Height="100" Background="#252526" Foreground="White">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid>
+                                            <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </ScrollViewer>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+                <Border CornerRadius="4" Background="#0E639C">
+                    <Button Content="Save &amp; Close" Command="{Binding SaveCommand}" Padding="20,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>
