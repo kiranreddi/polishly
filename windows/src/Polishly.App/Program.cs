@@ -10,7 +10,9 @@ using Polishly.Core.Diff;
 using Polishly.Core.StateMachine;
 using Polishly.Providers.Demo;
 
+using Polishly.Providers.Abstractions;
 using Polishly.WindowsIntegration.Capture;
+
 using Polishly.WindowsIntegration.Clipboard;
 using Polishly.WindowsIntegration.Hotkey;
 using Polishly.WindowsIntegration.Injection;
@@ -101,7 +103,28 @@ public static class Program
         ShutdownApp();
     }
 
-    private static async void ExecuteRewriteWorkflow()
+    private static SettingsViewModel? _settingsViewModel;
+
+    private static async Task<IAiProvider> ResolveProviderAsync()
+    {
+        string providerId = _settingsViewModel?.ActiveProviderId ?? "demo";
+        string? apiKey = null;
+        if (_credentialManager != null && providerId != "demo")
+        {
+            apiKey = await _credentialManager.GetApiKeyAsync(providerId);
+        }
+
+        return providerId.ToLowerInvariant() switch
+        {
+            "openai" => new Polishly.Providers.OpenAI.OpenAiProvider(apiKey ?? string.Empty),
+            "anthropic" => new Polishly.Providers.Anthropic.AnthropicProvider(apiKey ?? string.Empty),
+            "groq" => new Polishly.Providers.Groq.GroqProvider(apiKey ?? string.Empty),
+            "cerebras" => new Polishly.Providers.Cerebras.CerebrasProvider(apiKey ?? string.Empty),
+            _ => new Polishly.Providers.Demo.DemoProvider()
+        };
+    }
+
+    private static async void ExecuteRewriteWorkflow(string? customInstruction = null)
     {
         if (_stateMachine == null || _captureEngine == null || _injectorEngine == null) return;
         if (_trayIconService != null && _trayIconService.IsPaused)
@@ -124,6 +147,28 @@ public static class Program
             popupVm.Reset(selection.SelectedText);
             popupVm.TargetWindowHandle = selection.TargetContext.WindowHandle;
 
+#if HAS_WPF
+            PopupWindow? popupWin = null;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                popupWin = new PopupWindow(popupVm);
+
+                // Position popup window near target window using PopupPositioner
+                var positioner = new PopupPositioner();
+                var targetRect = new ScreenRect(100, 100, 400, 200);
+                var workArea = new ScreenRect(0, 0, 1920, 1080);
+                var pos = positioner.CalculatePosition(targetRect, workArea, popupWin.Width > 0 ? popupWin.Width : 400, popupWin.Height > 0 ? popupWin.Height : 250);
+                popupWin.Left = pos.X;
+                popupWin.Top = pos.Y;
+
+                popupWin.Show();
+            }
+
+            popupVm.RequestClose += (s, e) =>
+            {
+                popupWin?.Close();
+            };
+
             popupVm.RequestPaste += async (s, rewrittenText) =>
             {
                 if (_injectorEngine != null)
@@ -131,20 +176,37 @@ public static class Program
                     var injectResult = await _injectorEngine.InjectTextAsync(selection.TargetContext, rewrittenText);
                     Console.WriteLine($"[Polishly] Safe replacement result: Success={injectResult.Success}, Method={injectResult.MethodUsed}");
                 }
+                popupWin?.Close();
             };
 
-#if HAS_WPF
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            popupVm.RequestCopy += (s, text) =>
             {
-                var popupWin = new PopupWindow(popupVm);
-                popupWin.Show();
-            }
+                if (OperatingSystem.IsWindows())
+                {
+                    try { Clipboard.SetText(text); } catch { }
+                }
+                popupWin?.Close();
+            };
+
+            popupVm.RequestRevise += (s, e) =>
+            {
+                popupWin?.Close();
+                var reviseVm = new ReviseInstructionViewModel(selection.SelectedText, selection.TargetContext.WindowHandle);
+                var reviseWin = new ReviseInstructionView(reviseVm);
+                reviseVm.InstructionSubmitted += (sender, prompt) =>
+                {
+                    ExecuteRewriteWorkflow(prompt);
+                };
+                reviseWin.ShowDialog();
+            };
 #endif
 
-            var provider = new DemoProvider();
+            var provider = await ResolveProviderAsync();
+            var mode = string.IsNullOrEmpty(customInstruction) ? Polishly.Core.Models.RewriteMode.Improve : Polishly.Core.Models.RewriteMode.Custom;
             var req = new Polishly.Core.Models.RewriteRequest(
                 InputText: selection.SelectedText,
-                Mode: Polishly.Core.Models.RewriteMode.Improve
+                Mode: mode,
+                CustomInstruction: customInstruction
             );
 
             _stateMachine.Transition(RewriteEvent.StartStreaming);
@@ -163,7 +225,6 @@ public static class Program
             Console.WriteLine($"[Polishly] Rewrite workflow error: {ex.Message}");
             _stateMachine?.Transition(RewriteEvent.Error, ex.Message);
         }
-
     }
 
     private static void OpenSettingsWindow()
@@ -172,12 +233,13 @@ public static class Program
 #if HAS_WPF
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            var settingsVm = new SettingsViewModel(_credentialManager);
-            var settingsWin = new SettingsWindow(settingsVm);
+            _settingsViewModel ??= new SettingsViewModel(_credentialManager);
+            var settingsWin = new SettingsWindow(_settingsViewModel);
             settingsWin.Show();
         }
 #endif
     }
+
 
     private static void ShutdownApp()
     {

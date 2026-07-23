@@ -11,11 +11,13 @@ public class TrayIconService : IDisposable
     public const uint NIM_ADD = 0x00000000;
     public const uint NIM_MODIFY = 0x00000001;
     public const uint NIM_DELETE = 0x00000002;
+    public const uint NIF_MESSAGE = 0x00000001;
     public const uint NIF_ICON = 0x00000002;
     public const uint NIF_TIP = 0x00000004;
     public const uint NIF_INFO = 0x00000010;
 
     public const uint WM_TRAYICON = 0x0401;
+    public const int IDI_APPLICATION = 32512;
 
     private bool _isVisible;
     private bool _isPaused;
@@ -34,14 +36,18 @@ public class TrayIconService : IDisposable
     public void Initialize(IntPtr hWnd = default)
     {
         _windowHandle = hWnd;
-        _isVisible = true;
 
         if (OperatingSystem.IsWindows())
         {
             NOTIFYICONDATA nid = CreateNotifyData(_windowHandle, "Polishly Companion", "Polishly AI Assistant is active.");
-            Shell_NotifyIcon(NIM_ADD, ref nid);
+            _isVisible = Shell_NotifyIcon(NIM_ADD, ref nid);
+        }
+        else
+        {
+            _isVisible = true;
         }
     }
+
 
     public void ProcessWindowMessage(int msg, IntPtr wParam, IntPtr lParam)
     {
@@ -158,12 +164,12 @@ public class TrayIconService : IDisposable
         nid.cbSize = (uint)Marshal.SizeOf(nid);
         nid.hWnd = hWnd;
         nid.uID = 1;
-        nid.uFlags = NIF_ICON | NIF_TIP;
+        nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
         nid.uCallbackMessage = WM_TRAYICON;
+        nid.hIcon = OperatingSystem.IsWindows() ? LoadIcon(IntPtr.Zero, (IntPtr)IDI_APPLICATION) : IntPtr.Zero;
         nid.szTip = tip;
         return nid;
     }
-
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct NOTIFYICONDATA
@@ -186,9 +192,14 @@ public class TrayIconService : IDisposable
         public uint dwInfoFlags;
     }
 
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
+
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern bool Shell_NotifyIcon(uint dwMessage, ref NOTIFYICONDATA lpData);
 }
+
+
 
 public class NavigationService
 {

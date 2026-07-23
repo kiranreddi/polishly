@@ -9,6 +9,7 @@ using Polishly.WindowsIntegration.Security;
 using System.Windows.Automation;
 #endif
 
+
 namespace Polishly.WindowsIntegration.Capture;
 
 public class UIAutomationCapture : ICaptureEngine
@@ -17,7 +18,10 @@ public class UIAutomationCapture : ICaptureEngine
     private readonly AppCapabilityRules _capabilityRules;
     private readonly SensitiveFieldDetector _sensitiveDetector = new();
 
+    public string? TestFallbackText { get; set; }
+
     public UIAutomationCapture(WindowTracker windowTracker, AppCapabilityRules capabilityRules)
+
     {
         _windowTracker = windowTracker;
         _capabilityRules = capabilityRules;
@@ -27,6 +31,13 @@ public class UIAutomationCapture : ICaptureEngine
     {
         var window = _windowTracker.GetForegroundWindowInfo();
         var profile = _capabilityRules.GetProfile(window.ProcessName);
+
+        // Security Guard 1: Verify window elevation & sensitive application blocklist
+        var sensitiveStatus = _sensitiveDetector.IsSensitiveField(window);
+        if (sensitiveStatus.IsSensitive || window.IsElevated)
+        {
+            throw new InvalidOperationException($"Selection capture blocked: target application '{window.ProcessName}' is sensitive or elevated ({sensitiveStatus.Reason}).");
+        }
 
         bool isPassword = false;
         string capturedText = string.Empty;
@@ -44,6 +55,12 @@ public class UIAutomationCapture : ICaptureEngine
                     if (isPassProp is bool b && b)
                     {
                         isPassword = true;
+                    }
+
+                    // Security Guard 2: Abort capture immediately if target element is a password field
+                    if (isPassword)
+                    {
+                        throw new InvalidOperationException("Selection capture blocked: focused target element is a password field (IsPassword=true).");
                     }
 
                     if (isDirectUia)
@@ -64,23 +81,23 @@ public class UIAutomationCapture : ICaptureEngine
                     }
                 }
             }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
             catch
             {
                 // UIA lookup exception fallback
             }
 #endif
 
-            var sensitiveStatus = _sensitiveDetector.IsSensitiveField(window);
-            if (sensitiveStatus.IsSensitive)
-            {
-                isPassword = true;
-            }
-
-            // Fall back to GuardedClipboard clipboard capture if UIA direct capture yielded empty text or profile mandates clipboard
-            if (string.IsNullOrEmpty(capturedText))
+            // Fall back to GuardedClipboard clipboard capture if UIA direct capture yielded empty text and field is not sensitive
+            if (string.IsNullOrEmpty(capturedText) && !isPassword)
             {
                 try
                 {
+                    uint initialSeq = Win32Native.GetClipboardSequenceNumber();
+
                     // Synthesize Ctrl+C to copy selected text to clipboard
                     var inputs = new Win32Native.INPUT[4];
                     inputs[0] = new Win32Native.INPUT { type = Win32Native.INPUT_KEYBOARD, ki = new Win32Native.KEYBDINPUT { wVk = Win32Native.VK_CONTROL } };
@@ -91,7 +108,9 @@ public class UIAutomationCapture : ICaptureEngine
 
                     Thread.Sleep(50);
 
-                    if (Win32Native.OpenClipboard(window.Handle))
+                    uint newSeq = Win32Native.GetClipboardSequenceNumber();
+                    // Verify that Ctrl+C actually modified the clipboard sequence number before reading
+                    if (newSeq != initialSeq && Win32Native.OpenClipboard(window.Handle))
                     {
                         try
                         {
@@ -127,8 +146,17 @@ public class UIAutomationCapture : ICaptureEngine
 
         if (string.IsNullOrEmpty(capturedText))
         {
-            capturedText = "Sample text to be rewritten.";
+            if (!OperatingSystem.IsWindows() || !string.IsNullOrEmpty(TestFallbackText))
+            {
+                capturedText = TestFallbackText ?? "Sample selected text";
+            }
+            else
+            {
+                throw new InvalidOperationException("Selection capture failed: no text selected or active application did not return text selection.");
+            }
         }
+
+
 
 
         var targetContext = new TargetContext(

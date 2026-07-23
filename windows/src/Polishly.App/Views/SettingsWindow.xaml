@@ -27,8 +27,9 @@
                             <ComboBox ItemsSource="{Binding AvailableProviders}" SelectedItem="{Binding ActiveProviderId}" Margin="0,0,0,12" Height="28"/>
 
                             <TextBlock Text="API Key:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
-                            <TextBox Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,4" Height="28" Padding="4"/>
+                            <PasswordBox x:Name="ApiKeyBox" PasswordChanged="ApiKeyBox_PasswordChanged" Margin="0,0,0,4" Height="28" Padding="4"/>
                             <TextBlock Text="{Binding ValidationStatus}" Foreground="#4EC9B0" FontSize="11" Margin="0,0,0,8"/>
+
                         </StackPanel>
                     </GroupBox>
 

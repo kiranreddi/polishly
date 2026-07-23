@@ -20,7 +20,10 @@ public partial class ReviseInstructionView : Window
     {
         DataContext = viewModel;
         _savedTargetWindowHandle = viewModel.TargetWindowHandle;
+        viewModel.InstructionSubmitted += (s, e) => Close();
+        viewModel.Cancelled += (s, e) => Close();
     }
+
 
 #if !HAS_WPF
     private void InitializeComponent()

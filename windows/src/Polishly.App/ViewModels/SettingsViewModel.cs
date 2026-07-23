@@ -225,20 +225,26 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     public async void Save()
     {
-        ValidateApiKey(ActiveProviderId, ApiKey);
+        if (!ValidateApiKey(ActiveProviderId, ApiKey))
+        {
+            return;
+        }
+
         if (_credentialStore != null && !string.IsNullOrEmpty(ActiveProviderId))
         {
             try
             {
                 await _credentialStore.SaveApiKeyAsync(ActiveProviderId, ApiKey);
             }
-            catch
+            catch (Exception ex)
             {
-                // Store save exception fallback
+                ValidationStatus = $"Credential save error: {ex.Message}";
+                return;
             }
         }
         SettingsSaved?.Invoke(this, EventArgs.Empty);
     }
+
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
