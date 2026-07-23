@@ -25,7 +25,9 @@ public enum RewriteEvent
     Accept,
     Copy,
     Reject,
-    Error
+    Error,
+    ReplaceSuccess,
+    ReplaceFailed
 }
 
 public interface IRewriteStateMachine

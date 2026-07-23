@@ -87,6 +87,49 @@ public class PopupViewModelTests
     }
 
     [Fact]
+    public void PopupViewModel_AcceptThenReplaceSuccess_ReachesAccepted()
+    {
+        var stateMachine = new RewriteStateMachine();
+        var diffEngine = new WordDiffEngine();
+        var vm = new PopupViewModel(stateMachine, diffEngine);
+
+        vm.Reset("apple");
+        stateMachine.Transition(RewriteEvent.TriggerHotkey);
+        stateMachine.Transition(RewriteEvent.CaptureSuccess);
+        stateMachine.Transition(RewriteEvent.StartStreaming);
+        vm.AppendStreamingToken("banana");
+        stateMachine.Transition(RewriteEvent.StreamFinished);
+
+        vm.Accept();
+        Assert.Equal(RewriteState.Replacing, stateMachine.CurrentState);
+
+        stateMachine.Transition(RewriteEvent.ReplaceSuccess);
+        Assert.Equal(RewriteState.Accepted, stateMachine.CurrentState);
+        Assert.Equal("Accepted", vm.StateDescription);
+    }
+
+    [Fact]
+    public void PopupViewModel_AcceptThenReplaceFailed_ReachesFailed()
+    {
+        var stateMachine = new RewriteStateMachine();
+        var diffEngine = new WordDiffEngine();
+        var vm = new PopupViewModel(stateMachine, diffEngine);
+
+        vm.Reset("apple");
+        stateMachine.Transition(RewriteEvent.TriggerHotkey);
+        stateMachine.Transition(RewriteEvent.CaptureSuccess);
+        stateMachine.Transition(RewriteEvent.StartStreaming);
+        vm.AppendStreamingToken("banana");
+        stateMachine.Transition(RewriteEvent.StreamFinished);
+
+        vm.Accept();
+        stateMachine.Transition(RewriteEvent.ReplaceFailed, "paste aborted");
+        Assert.Equal(RewriteState.Failed, stateMachine.CurrentState);
+        Assert.True(vm.HasError);
+        Assert.Equal("paste aborted", vm.ErrorMessage);
+    }
+
+    [Fact]
     public void PopupViewModel_CopyCommand_TransitionsStateAndRaisesEvent()
     {
         var stateMachine = new RewriteStateMachine();
