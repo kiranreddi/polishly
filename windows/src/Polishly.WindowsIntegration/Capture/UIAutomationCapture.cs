@@ -29,6 +29,29 @@ public class UIAutomationCapture : ICaptureEngine
 
     public Task<SelectionContext> CaptureSelectionAsync(CancellationToken ct = default)
     {
+        // Explicit test seam: bypass live UIA/clipboard when fallback text is provided
+        // (needed for headless Windows CI where the foreground window may be pwsh/cmd).
+        if (!string.IsNullOrEmpty(TestFallbackText))
+        {
+            var testWindow = new TargetWindow(IntPtr.Zero, 0, "notepad", "Untitled - Notepad", false);
+            var testTarget = new TargetContext(
+                WindowHandle: testWindow.Handle,
+                ProcessId: testWindow.ProcessId,
+                ProcessName: testWindow.ProcessName,
+                AppTitle: testWindow.Title,
+                FieldId: "uia_field_1",
+                IsPassword: false,
+                IsElevated: false
+            );
+            return Task.FromResult(new SelectionContext(
+                SelectedText: TestFallbackText,
+                SurroundingText: TestFallbackText,
+                TargetContext: testTarget,
+                CapturedAt: DateTime.UtcNow,
+                DirectUiaCapture: true
+            ));
+        }
+
         var window = _windowTracker.GetForegroundWindowInfo();
         var profile = _capabilityRules.GetProfile(window.ProcessName);
 

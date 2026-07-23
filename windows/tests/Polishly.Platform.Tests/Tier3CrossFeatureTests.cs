@@ -26,25 +26,34 @@ public class Tier3CrossFeatureTests
     public async Task HotkeyAndUiaCapture_TriggersCaptureSequence()
     {
         using var hotkeyListener = new GlobalHotkeyListener();
-        var captureEngine = new UIAutomationCapture(_tracker, _capabilityRules);
+        var captureEngine = new UIAutomationCapture(_tracker, _capabilityRules)
+        {
+            // Force deterministic capture on headless Windows CI (no interactive selection).
+            TestFallbackText = "selected sample text"
+        };
         var stateMachine = new Polishly.Core.RewriteStateMachine();
 
-        bool hotkeyFired = false;
+        var tcs = new TaskCompletionSource<bool>();
         hotkeyListener.HotkeyPressed += async (sender, args) =>
         {
-            hotkeyFired = true;
-            stateMachine.Fire(RewriteTrigger.StartCapture);
-            var context = await captureEngine.CaptureSelectionAsync();
-            if (!context.IsEmpty)
+            try
             {
-                stateMachine.Fire(RewriteTrigger.CaptureCompleted);
+                stateMachine.Fire(RewriteTrigger.StartCapture);
+                var context = await captureEngine.CaptureSelectionAsync();
+                if (!context.IsEmpty)
+                {
+                    stateMachine.Fire(RewriteTrigger.CaptureCompleted);
+                }
+                tcs.TrySetResult(true);
+            }
+            catch (Exception ex)
+            {
+                tcs.TrySetException(ex);
             }
         };
 
         hotkeyListener.RaiseHotkeyPressed();
-        await Task.CompletedTask;
-
-        Assert.True(hotkeyFired);
+        Assert.True(await tcs.Task);
         Assert.Equal(RewriteState.Requesting, stateMachine.CurrentState);
     }
 
@@ -74,7 +83,10 @@ public class Tier3CrossFeatureTests
     [Fact]
     public async Task SelectionCaptureAndProviderStreaming_PipelineIntegration()
     {
-        var captureEngine = new UIAutomationCapture(_tracker, _capabilityRules);
+        var captureEngine = new UIAutomationCapture(_tracker, _capabilityRules)
+        {
+            TestFallbackText = "hello world from capture pipeline"
+        };
         var provider = new DemoProvider();
         var stateMachine = new Polishly.Core.StateMachine.RewriteStateMachine();
         var diffEngine = new Polishly.Core.Diff.WordDiffEngine();

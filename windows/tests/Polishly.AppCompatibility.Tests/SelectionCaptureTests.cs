@@ -13,7 +13,10 @@ public class SelectionCaptureTests
     [Fact]
     public async Task CaptureSelectionAsync_StandardWindow_ReturnsValidSelectionContext()
     {
-        var captureEngine = new UIAutomationCapture(_tracker, _rules);
+        var captureEngine = new UIAutomationCapture(_tracker, _rules)
+        {
+            TestFallbackText = "Sample selected text"
+        };
         var context = await captureEngine.CaptureSelectionAsync();
 
         Assert.NotNull(context);
@@ -63,7 +66,10 @@ public class SelectionCaptureTests
     [Fact]
     public async Task CaptureSelectionAsync_WithCancellationToken_HonorsTokenState()
     {
-        var captureEngine = new UIAutomationCapture(_tracker, _rules);
+        var captureEngine = new UIAutomationCapture(_tracker, _rules)
+        {
+            TestFallbackText = "Sample selected text"
+        };
         using var cts = new CancellationTokenSource();
         
         var task = captureEngine.CaptureSelectionAsync(cts.Token);
