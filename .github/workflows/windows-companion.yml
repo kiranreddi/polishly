@@ -1,0 +1,56 @@
+name: Windows Companion
+
+on:
+  push:
+    branches: [main, feature/windows-companion]
+    paths:
+      - "windows/**"
+      - ".github/workflows/windows-companion.yml"
+  pull_request:
+    branches: [main, feature/windows-companion]
+    paths:
+      - "windows/**"
+      - ".github/workflows/windows-companion.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: windows-companion-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-demo:
+    name: Build, test, demo (windows-latest)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore Polishly.Windows.sln
+
+      - name: Build
+        run: dotnet build Polishly.Windows.sln --no-restore --configuration Release
+
+      # Custom Exe runners (IsTestProject=false) — must use `dotnet run`, not `dotnet test`.
+      - name: Core tests
+        run: dotnet run --project tests/Polishly.Core.Tests/Polishly.Core.Tests.csproj --configuration Release --no-build
+
+      - name: Platform tests
+        run: dotnet run --project tests/Polishly.Platform.Tests/Polishly.Platform.Tests.csproj --configuration Release --no-build
+
+      - name: App compatibility tests
+        run: dotnet run --project tests/Polishly.AppCompatibility.Tests/Polishly.AppCompatibility.Tests.csproj --configuration Release --no-build
+
+      - name: Headless demo rewrite
+        run: >
+          dotnet run --project src/Polishly.App/Polishly.App.csproj --configuration Release --no-build
+          -- --demo-rewrite --text "I think we should push the meeting to next week."

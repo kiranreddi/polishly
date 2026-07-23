@@ -10,6 +10,10 @@
 | Website (`website/`) | **Yes** | Vanilla static site; `cd website && npm run dev` → http://127.0.0.1:4173 |
 | macOS app (`Sources/`, Xcode) | **No** | Requires macOS + Xcode + XcodeGen |
 
+### CI
+
+GitHub Actions workflow `.github/workflows/windows-companion.yml` runs on **`windows-latest`**: restore, Release build, all three `dotnet run` test assemblies, and `--demo-rewrite`. Prefer that workflow for real Windows TFM/WPF compile verification. Monitor with `gh run list --workflow windows-companion.yml` / `gh run view <id> --log`.
+
 ### Windows companion (primary on `feature/windows-companion`)
 
 Standard commands are documented in `TEST_INFRA.md` / `TEST_READY.md`. Quick reference:
