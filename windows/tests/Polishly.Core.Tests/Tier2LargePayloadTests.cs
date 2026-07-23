@@ -74,7 +74,7 @@ public class Tier2LargePayloadTests
     [Fact]
     public async Task GuardedClipboardTransaction_LargePayload_HandlesBufferValidationSafely()
     {
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         string largeText = new string('Z', 150_000);
         var target = new TargetContext(IntPtr.Zero, 1, "notepad", "Notepad", "f1", false, false);
 

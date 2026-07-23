@@ -79,8 +79,12 @@ public class GuardedClipboardTransaction : IClipboardTransaction
         uint initialSeq = await GetSequenceNumberAsync(ct);
         uint seqAfterSet = initialSeq;
 
+        // When a sequence provider is injected, run in simulation mode (unit tests / CI)
+        // instead of touching the real interactive Windows clipboard session.
+        bool useNativeClipboard = OperatingSystem.IsWindows() && _getClipboardSequenceFunc == null;
+
         var snapshotFormats = new List<ClipboardFormatEntry>();
-        if (OperatingSystem.IsWindows())
+        if (useNativeClipboard)
         {
             if (!Win32Native.OpenClipboard(targetContext.WindowHandle))
             {
@@ -206,7 +210,7 @@ public class GuardedClipboardTransaction : IClipboardTransaction
         }
 
         // Only restore original snapshot formats after verifying sequence ownership
-        if (OperatingSystem.IsWindows() && snapshotFormats.Count > 0)
+        if (useNativeClipboard && snapshotFormats.Count > 0)
         {
             IntPtr windowBeforeRestore = IntPtr.Zero;
             try { windowBeforeRestore = Win32Native.GetForegroundWindow(); } catch { windowBeforeRestore = IntPtr.Zero; }
