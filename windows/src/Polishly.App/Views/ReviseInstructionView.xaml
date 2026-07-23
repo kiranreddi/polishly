@@ -1,0 +1,34 @@
+<Window x:Class="Polishly.App.Views.ReviseInstructionView"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        Title="Revise with AI"
+        WindowStyle="SingleBorderWindow"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        Width="400" Height="200" ResizeMode="NoResize">
+    <Border Padding="16" Background="#252526">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0" Text="Enter instructions for AI revision:" Foreground="White" FontSize="13" Margin="0,0,0,8" FontWeight="SemiBold"/>
+            <TextBox Grid.Row="1" x:Name="InstructionTextBox" Text="{Binding InstructionText, UpdateSourceTrigger=PropertyChanged}"
+                     AcceptsReturn="True" TextWrapping="Wrap" Background="#1E1E1E" Foreground="White" BorderBrush="#3F3F46" Padding="6" Margin="0,0,0,12"/>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                <Border CornerRadius="4" Margin="0,0,8,0" Background="#3E3E42">
+                    <Button Content="Cancel" Command="{Binding CancelCommand}" Padding="16,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                </Border>
+                <Border CornerRadius="4" Background="#0E639C">
+                    <Button Content="Submit" Command="{Binding SubmitCommand}" IsDefault="True" Padding="16,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(OS)' != 'Windows_NT'">net10.0</TargetFramework>
+    <TargetFramework Condition="'$(OS)' != 'Windows_NT' and ('$(NETCoreAppMaximumVersion)' == '' or '$(NETCoreAppMaximumVersion)' &lt; '10.0')">net7.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>false</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Polishly.Core\Polishly.Core.csproj" />
+    <ProjectReference Include="..\..\src\Polishly.App\Polishly.App.csproj" />
+    <ProjectReference Include="..\..\src\Polishly.WindowsIntegration\Polishly.WindowsIntegration.csproj" />
+    <ProjectReference Include="..\..\src\Polishly.Providers\Polishly.Providers.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\XunitFramework.cs" Link="XunitFramework.cs" />
+    <Compile Include="..\TestRunner.cs" Link="TestRunner.cs" />
+  </ItemGroup>
+
+</Project>
+

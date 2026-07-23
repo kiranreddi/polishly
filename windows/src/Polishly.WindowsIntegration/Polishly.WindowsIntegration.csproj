@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(OS)' != 'Windows_NT'">net10.0</TargetFramework>
+    <TargetFramework Condition="'$(OS)' != 'Windows_NT' and ('$(NETCoreAppMaximumVersion)' == '' or '$(NETCoreAppMaximumVersion)' &lt; '10.0')">net7.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWPF Condition="'$(OS)' != 'Windows_NT'">false</UseWPF>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <DefineConstants Condition="'$(OS)' == 'Windows_NT' and ('$(UseWPF)' == 'true' or '$(EnableWindowsTargeting)' == 'true')">$(DefineConstants);HAS_WPF</DefineConstants>
+  </PropertyGroup>
+
+
+
+  <ItemGroup>
+    <ProjectReference Include="..\Polishly.Core\Polishly.Core.csproj" />
+  </ItemGroup>
+
+</Project>
