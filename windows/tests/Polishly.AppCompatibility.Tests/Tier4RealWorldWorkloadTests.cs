@@ -41,7 +41,10 @@ public class Tier4RealWorldWorkloadTests
             IsElevated: false
         );
 
-        var captureEngine = new UIAutomationCapture(_tracker, _capabilityRules);
+        var captureEngine = new UIAutomationCapture(_tracker, _capabilityRules)
+        {
+            TestFallbackText = "Draft notes for the weekly status update."
+        };
         var selection = await captureEngine.CaptureSelectionAsync();
         Assert.False(selection.IsEmpty);
 

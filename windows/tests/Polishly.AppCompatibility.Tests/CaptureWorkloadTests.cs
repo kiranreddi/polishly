@@ -13,7 +13,10 @@ public class CaptureWorkloadTests
     [Fact]
     public async Task CaptureSelectionAsync_ProducesValidSelectionContext()
     {
-        var captureEngine = new UIAutomationCapture(_tracker, _rules);
+        var captureEngine = new UIAutomationCapture(_tracker, _rules)
+        {
+            TestFallbackText = "Sample selected text"
+        };
 
         var context = await captureEngine.CaptureSelectionAsync();
 
