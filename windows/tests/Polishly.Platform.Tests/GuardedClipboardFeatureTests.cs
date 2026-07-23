@@ -61,7 +61,7 @@ public class GuardedClipboardFeatureTests
     [Fact]
     public async Task ExecuteSafePasteAsync_ValidTarget_ExecutesPasteSuccessfully()
     {
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var validTarget = new TargetContext(
             WindowHandle: IntPtr.Zero, // Allows simulated matching
             ProcessId: 102,
@@ -82,7 +82,7 @@ public class GuardedClipboardFeatureTests
     [Fact]
     public async Task ExecuteSafePasteAsync_ResultProperties_MatchExpectedFormat()
     {
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var target = new TargetContext(IntPtr.Zero, 1, "test", "Test", "f1", false, false);
         var result = await transaction.ExecuteSafePasteAsync("Sample", target);
 

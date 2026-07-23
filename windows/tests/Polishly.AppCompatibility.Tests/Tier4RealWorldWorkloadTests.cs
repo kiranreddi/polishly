@@ -60,7 +60,7 @@ public class Tier4RealWorldWorkloadTests
         var diffs = diffEngine.ComputeDiff(selection.SelectedText, resultText);
         Assert.NotEmpty(diffs);
 
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var pasteResult = await transaction.ExecuteSafePasteAsync(resultText, target);
         Assert.True(pasteResult.Success);
         Assert.False(pasteResult.FallbackToCopy);
@@ -93,7 +93,7 @@ public class Tier4RealWorldWorkloadTests
         }
         string polishedMsg = string.Concat(tokens);
 
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var pasteResult = await transaction.ExecuteSafePasteAsync(polishedMsg, teamsTarget);
 
         Assert.True(pasteResult.Success);
@@ -143,7 +143,7 @@ public class Tier4RealWorldWorkloadTests
         Assert.Equal(Polishly.Core.StateMachine.RewriteState.StreamComplete, vm.CurrentState);
         Assert.True(vm.CanAccept());
 
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var pasteResult = await transaction.ExecuteSafePasteAsync(vm.RewrittenText, outlookTarget);
 
         Assert.True(pasteResult.Success);
@@ -205,7 +205,7 @@ public class Tier4RealWorldWorkloadTests
         var diffEngine = new Polishly.Core.Diff.WordDiffEngine();
         var diffs = diffEngine.ComputeDiff(codeComment, output);
 
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var result = await transaction.ExecuteSafePasteAsync(output, codeTarget);
 
         Assert.True(result.Success);
@@ -228,7 +228,7 @@ public class Tier4RealWorldWorkloadTests
             IsElevated: false
         );
 
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var result = await transaction.ExecuteSafePasteAsync("Gmail reply text rewrite", chromeTarget);
 
         Assert.True(result.Success);
@@ -254,7 +254,7 @@ public class Tier4RealWorldWorkloadTests
         Assert.True(sensitivity.IsSensitive);
         Assert.Contains("elevated", sensitivity.Reason, StringComparison.OrdinalIgnoreCase);
 
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var pasteResult = await transaction.ExecuteSafePasteAsync("Get-Process | Where-Object", elevatedTarget);
 
         Assert.False(pasteResult.Success);
@@ -280,7 +280,7 @@ public class Tier4RealWorldWorkloadTests
 
         Assert.True(sensitivity.IsSensitive);
 
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var result = await transaction.ExecuteSafePasteAsync("ExtremelySecurePassword123!", pwdTarget);
 
         Assert.False(result.Success);

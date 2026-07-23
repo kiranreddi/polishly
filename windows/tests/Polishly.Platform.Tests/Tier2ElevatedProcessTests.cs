@@ -72,7 +72,7 @@ public class Tier2ElevatedProcessTests
     [Fact]
     public async Task GuardedClipboardTransaction_NonElevatedNormalTarget_ProceedsWithoutElevationRestriction()
     {
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var normalTarget = new TargetContext(IntPtr.Zero, 1, "notepad", "Notepad", "f1", false, false);
 
         var result = await transaction.ExecuteSafePasteAsync("Text", normalTarget);

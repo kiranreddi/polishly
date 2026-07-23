@@ -52,7 +52,7 @@ public class Tier3CrossFeatureTests
     public async Task HotkeyAndGuardedClipboard_FallbackWhenUiaFails()
     {
         using var hotkeyListener = new GlobalHotkeyListener();
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var target = new TargetContext(IntPtr.Zero, 100, "notepad", "Notepad", "edit1", false, false);
 
         var tcs = new TaskCompletionSource<ClipboardTransactionResult>();
@@ -231,7 +231,7 @@ public class Tier3CrossFeatureTests
     public async Task RewriteStateMachineAndGuardedClipboard_StateTransitionsOnPasteSuccess()
     {
         var sm = new Polishly.Core.RewriteStateMachine();
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
         var target = new TargetContext(IntPtr.Zero, 500, "notepad", "Notepad", "f1", false, false);
 
         sm.Fire(RewriteTrigger.StartCapture);
@@ -270,7 +270,7 @@ public class Tier3CrossFeatureTests
         Assert.True(profile.RequireClipboardFallback);
 
         var target = new TargetContext(IntPtr.Zero, 701, "teams", "Microsoft Teams", "message_input", false, false);
-        var transaction = new GuardedClipboardTransaction();
+        var transaction = new GuardedClipboardTransaction(() => 1u);
 
         var result = await transaction.ExecuteSafePasteAsync("Meeting update notes", target);
 
