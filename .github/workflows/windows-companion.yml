@@ -94,7 +94,7 @@ jobs:
           -BaseUri "https://downloads.polishly.info/windows"
 
       - name: Upload package verification artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: polishly-windows-unsigned-${{ github.sha }}
           path: |
