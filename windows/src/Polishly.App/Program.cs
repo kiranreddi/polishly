@@ -97,6 +97,11 @@ public static class Program
 
         if (demoRewrite)
         {
+            // The CLI demo verifies orchestration without reading or replacing
+            // any interactive desktop content, including on Windows CI.
+            _clipboardTransaction = new GuardedClipboardTransaction(() => 1u);
+            _injectorEngine = new TextInjector(
+                _clipboardTransaction, _capabilityRules);
             _captureEngine.TestFallbackText = string.IsNullOrWhiteSpace(demoText)
                 ? "I think we should push the meeting to next week because several people are out."
                 : demoText;
@@ -232,7 +237,9 @@ public static class Program
 
             Console.WriteLine($"[Polishly] Inject result: Success={injectResult.Success}, Method={injectResult.MethodUsed}");
             Console.WriteLine($"[Polishly] Final state: {_stateMachine.CurrentState}");
-            Console.WriteLine("[Polishly] Demo rewrite completed successfully.");
+            Console.WriteLine(injectResult.Success
+                ? "[Polishly] Demo rewrite completed successfully."
+                : "[Polishly] Demo rewrite failed safely.");
             Environment.ExitCode = injectResult.Success ? 0 : 1;
         }
         catch (Exception ex)
