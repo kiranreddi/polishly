@@ -358,7 +358,8 @@ public static class Program
             popupVm.RequestClose += (s, e) =>
             {
                 popupWin?.Close();
-                if (_stateMachine?.CurrentState != RewriteState.Replacing)
+                if (_stateMachine?.CurrentState !=
+                    Polishly.Core.StateMachine.RewriteState.Replacing)
                 {
                     CompleteRewriteWorkflow();
                 }
