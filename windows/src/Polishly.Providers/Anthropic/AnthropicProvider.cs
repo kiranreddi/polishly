@@ -87,10 +87,11 @@ public class AnthropicProvider : IAiProvider
 
         RewriteToken? pendingToken = null;
 
-        while (!reader.EndOfStream)
+        while (true)
         {
             ct.ThrowIfCancellationRequested();
             string? line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
+            if (line == null) break;
             if (string.IsNullOrWhiteSpace(line))
             {
                 continue;

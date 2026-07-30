@@ -6,6 +6,7 @@ using Polishly.WindowsIntegration.Native;
 using Polishly.WindowsIntegration.Security;
 #if HAS_WPF
 using System.Windows.Automation;
+using System.Windows.Automation.Text;
 #endif
 
 namespace Polishly.WindowsIntegration.Capture;
