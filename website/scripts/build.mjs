@@ -18,8 +18,9 @@ for (const file of [
   "robots.txt", 
   "sitemap.xml", 
   "groq-setup.html", 
-  "privacy.html", 
-  "grammarly-alternative.html"
+  "privacy.html",
+  "grammarly-alternative.html",
+  "contact.html"
 ]) {
   await cp(resolve(root, file), resolve(client, file), { recursive: true });
 }
