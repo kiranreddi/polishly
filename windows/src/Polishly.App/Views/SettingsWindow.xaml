@@ -21,43 +21,43 @@
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="0,0,12,0">
                     <!-- AI Provider Section -->
-                    <GroupBox Header="AI Provider Configuration" Foreground="White" Padding="12" Margin="0,0,0,16">
+                    <GroupBox Header="AI Provider Configuration" Foreground="{DynamicResource Polishly.Text}" Padding="12" Margin="0,0,0,16">
                         <StackPanel>
-                            <TextBlock Text="Select Provider:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                            <TextBlock Text="Select Provider:" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding AvailableProviders}" SelectedItem="{Binding ActiveProviderId}" Margin="0,0,0,12" Height="28"/>
 
-                            <TextBlock Text="Model:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                            <TextBlock Text="Model:" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding AvailableModels}" SelectedItem="{Binding ActiveModel}" Margin="0,0,0,12" Height="28"/>
 
-                            <TextBlock Text="API Key:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                            <TextBlock Text="API Key:" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,4"/>
                             <PasswordBox x:Name="ApiKeyBox" PasswordChanged="ApiKeyBox_PasswordChanged" Margin="0,0,0,4" Height="28" Padding="4"/>
                             <TextBlock Text="{Binding ValidationStatus}" Foreground="#4EC9B0" FontSize="11" Margin="0,0,0,8" AutomationProperties.LiveSetting="Polite"/>
                             <StackPanel Orientation="Horizontal">
                                 <Button Content="Test connection" Command="{Binding TestConnectionCommand}" Padding="12,4" Margin="0,0,8,0"/>
                                 <Button Content="Remove saved key" Command="{Binding RemoveApiKeyCommand}" Padding="12,4"/>
                             </StackPanel>
-                            <TextBlock Text="{Binding ConnectionStatus}" Foreground="#CCCCCC" FontSize="11" Margin="0,8,0,0"
+                            <TextBlock Text="{Binding ConnectionStatus}" Foreground="{DynamicResource Polishly.Text}" FontSize="11" Margin="0,8,0,0"
                                        TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
                         </StackPanel>
                     </GroupBox>
 
                     <!-- Shortcut & Startup Section -->
-                    <GroupBox Header="Shortcuts &amp; Startup" Foreground="White" Padding="12" Margin="0,0,0,16">
+                    <GroupBox Header="Shortcuts &amp; Startup" Foreground="{DynamicResource Polishly.Text}" Padding="12" Margin="0,0,0,16">
                         <StackPanel>
-                            <TextBlock Text="Global Hotkey:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                            <TextBlock Text="Global Hotkey:" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,4"/>
                             <TextBox Text="{Binding HotkeyShortcut, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,12" Height="28" Padding="4"/>
 
-                            <CheckBox Content="Launch Polishly at Windows Startup" IsChecked="{Binding LaunchAtStartup}" Foreground="White" Margin="0,0,0,8"/>
+                            <CheckBox Content="Launch Polishly at Windows Startup" IsChecked="{Binding LaunchAtStartup}" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,8"/>
 
-                            <TextBlock Text="Theme:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                            <TextBlock Text="Theme:" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding AvailableThemes}" SelectedItem="{Binding Theme}" Height="28"/>
                         </StackPanel>
                     </GroupBox>
 
                     <!-- Blocklist Section -->
-                    <GroupBox Header="Per-Application Blocklist" Foreground="White" Padding="12" Margin="0,0,0,16">
+                    <GroupBox Header="Per-Application Blocklist" Foreground="{DynamicResource Polishly.Text}" Padding="12" Margin="0,0,0,16">
                         <StackPanel>
-                            <TextBlock Text="Prevent Polishly activation in specified apps:" Foreground="#CCCCCC" Margin="0,0,0,8"/>
+                            <TextBlock Text="Prevent Polishly activation in specified apps:" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,8"/>
 
                             <Grid Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
@@ -68,7 +68,7 @@
                                 <Button Grid.Column="1" Content="Add" Command="{Binding AddBlocklistCommand}" Padding="16,4" Background="#0E639C" Foreground="White" BorderThickness="0"/>
                             </Grid>
 
-                            <ListBox ItemsSource="{Binding BlockedApplications}" Height="100" Background="#252526" Foreground="White">
+                            <ListBox ItemsSource="{Binding BlockedApplications}" Height="100" Background="{DynamicResource Polishly.Surface}" Foreground="{DynamicResource Polishly.Text}">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
                                         <Grid Width="430">

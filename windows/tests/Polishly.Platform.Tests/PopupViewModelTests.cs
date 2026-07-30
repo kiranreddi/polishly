@@ -2,6 +2,7 @@ using System;
 using Xunit;
 using Polishly.App.ViewModels;
 using Polishly.Core.Diff;
+using Polishly.Core.Models;
 using Polishly.Core.StateMachine;
 
 namespace Polishly.Platform.Tests;
@@ -177,5 +178,19 @@ public class PopupViewModelTests
 
         Assert.Equal(RewriteState.Cancelled, stateMachine.CurrentState);
         Assert.False(vm.IsVisible);
+    }
+
+    [Fact]
+    public void PopupViewModel_SelectMode_RaisesRequestedMode()
+    {
+        var stateMachine = new RewriteStateMachine();
+        var vm = new PopupViewModel(stateMachine, new WordDiffEngine());
+        RewriteMode? requestedMode = null;
+        vm.RequestModeChange += (_, mode) => requestedMode = mode;
+
+        vm.SelectMode("Friendly");
+
+        Assert.Equal(RewriteMode.Friendly, vm.SelectedMode);
+        Assert.Equal(RewriteMode.Friendly, requestedMode);
     }
 }

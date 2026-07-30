@@ -63,7 +63,7 @@ public class OnboardingViewModel : INotifyPropertyChanged
     public string StepTitle => CurrentStep switch
     {
         1 => "Step 1: Welcome to Polishly",
-        2 => "Step 2: Permissions & Accessibility",
+        2 => "Step 2: Privacy & Safety",
         3 => "Step 3: AI Provider Configuration",
         4 => "Step 4: Hotkey Customization",
         5 => "Step 5: Interactive Practice",
@@ -74,7 +74,7 @@ public class OnboardingViewModel : INotifyPropertyChanged
     public string StepDescription => CurrentStep switch
     {
         1 => "Polishly helps you polish text in any Windows app instantly with AI.",
-        2 => "Polishly requires UI Automation and Clipboard permissions to read and replace text.",
+        2 => "Windows does not require a special accessibility permission. Polishly uses UI Automation and a guarded clipboard transaction only after you press the hotkey.",
         3 => "Choose your preferred AI provider (Demo, OpenAI, Anthropic, Groq, Cerebras) and enter an API key.",
         4 => "Set your global shortcut (default: Ctrl+Shift+P) to trigger Polishly anywhere.",
         5 => "Try triggering Polishly on the practice text below to see inline diff suggestions in action.",

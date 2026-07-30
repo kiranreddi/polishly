@@ -10,7 +10,7 @@ using Polishly.Core.StateMachine;
 
 namespace Polishly.App.ViewModels;
 
-public class PopupViewModel : INotifyPropertyChanged
+public class PopupViewModel : INotifyPropertyChanged, IDisposable
 {
     private readonly IRewriteStateMachine _stateMachine;
     private readonly WordDiffEngine _diffEngine;
@@ -20,6 +20,7 @@ public class PopupViewModel : INotifyPropertyChanged
     private IReadOnlyList<DiffSegment> _diffSegments = Array.Empty<DiffSegment>();
     private string _errorMessage = string.Empty;
     private bool _isVisible = false;
+    private RewriteMode _selectedMode = RewriteMode.Improve;
     private IntPtr _targetWindowHandle = IntPtr.Zero;
     private ScreenRect _targetSelectionRect;
 
@@ -29,6 +30,7 @@ public class PopupViewModel : INotifyPropertyChanged
     public event EventHandler<string>? RequestCopy;
     public event EventHandler? RequestRevise;
     public event EventHandler? RequestRetry;
+    public event EventHandler<RewriteMode>? RequestModeChange;
 
     public string OriginalText
     {
@@ -111,6 +113,17 @@ public class PopupViewModel : INotifyPropertyChanged
         }
     }
 
+    public RewriteMode SelectedMode
+    {
+        get => _selectedMode;
+        set
+        {
+            if (_selectedMode == value) return;
+            _selectedMode = value;
+            OnPropertyChanged();
+        }
+    }
+
     public IntPtr TargetWindowHandle
     {
         get => _targetWindowHandle;
@@ -137,6 +150,7 @@ public class PopupViewModel : INotifyPropertyChanged
     public ICommand RegenerateCommand { get; }
     public ICommand OpenReviseCommand { get; }
     public ICommand DismissCommand { get; }
+    public ICommand SelectModeCommand { get; }
 
     public PopupViewModel(IRewriteStateMachine stateMachine, WordDiffEngine diffEngine)
     {
@@ -151,6 +165,7 @@ public class PopupViewModel : INotifyPropertyChanged
         RegenerateCommand = new RelayCommand(Retry);
         OpenReviseCommand = new RelayCommand(OpenRevise);
         DismissCommand = new RelayCommand(Dismiss);
+        SelectModeCommand = new RelayCommand<string>(SelectMode);
     }
 
     public void Reset(string originalText)
@@ -245,6 +260,19 @@ public class PopupViewModel : INotifyPropertyChanged
         RequestRevise?.Invoke(this, EventArgs.Empty);
     }
 
+    public void SelectMode(string? modeName)
+    {
+        if (!Enum.TryParse(modeName, ignoreCase: true, out RewriteMode mode) ||
+            mode is RewriteMode.Custom ||
+            mode == SelectedMode)
+        {
+            return;
+        }
+
+        SelectedMode = mode;
+        RequestModeChange?.Invoke(this, mode);
+    }
+
     public void Dismiss()
     {
         _stateMachine.Transition(RewriteEvent.Reject);
@@ -274,6 +302,12 @@ public class PopupViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(HasError));
         ((RelayCommand)AcceptCommand).RaiseCanExecuteChanged();
         ((RelayCommand)CopyCommand).RaiseCanExecuteChanged();
+    }
+
+    public void Dispose()
+    {
+        _stateMachine.StateChanged -= OnStateMachineStateChanged;
+        GC.SuppressFinalize(this);
     }
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

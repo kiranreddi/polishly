@@ -38,6 +38,10 @@ public static class Program
     private static NativeMessageWindow? _messageWindow;
     private static IAppSettingsStore? _settingsStore;
     private static AppSettings _appSettings = new();
+    private static Mutex? _singleInstanceMutex;
+#if HAS_WPF
+    private static SettingsWindow? _settingsWindow;
+#endif
     private static readonly StartupRegistrationService StartupRegistration = new();
     private static int _rewriteWorkflowActive;
 
@@ -107,6 +111,21 @@ public static class Program
                 : demoText;
             RunDemoRewriteAndExit().GetAwaiter().GetResult();
             return;
+        }
+
+        if (OperatingSystem.IsWindows())
+        {
+            _singleInstanceMutex = new Mutex(
+                initiallyOwned: true,
+                name: @"Local\Polishly.WindowsCompanion",
+                createdNew: out bool isFirstInstance);
+            if (!isFirstInstance)
+            {
+                Console.WriteLine("[Polishly] Another instance is already running.");
+                _singleInstanceMutex.Dispose();
+                _singleInstanceMutex = null;
+                return;
+            }
         }
 
         // 2. Native Message Window Initialization
@@ -190,6 +209,7 @@ public static class Program
 
             var diffEngine = new Polishly.Core.Diff.WordDiffEngine();
             var popupVm = new PopupViewModel(_stateMachine, diffEngine);
+            using var popupVmLifetime = popupVm;
             popupVm.Reset(selection.SelectedText);
             popupVm.TargetWindowHandle = selection.TargetContext.WindowHandle;
             popupVm.IsVisible = true;
@@ -318,7 +338,11 @@ public static class Program
         }
     }
 
-    private static async void ExecuteRewriteWorkflow(string? customInstruction = null)
+    private static async void ExecuteRewriteWorkflow(
+        string? customInstruction = null,
+        SelectionContext? preservedSelection = null,
+        Polishly.Core.Models.RewriteMode requestedMode =
+            Polishly.Core.Models.RewriteMode.Improve)
     {
         if (_stateMachine == null || _captureEngine == null || _injectorEngine == null) return;
         if (_trayIconService != null && _trayIconService.IsPaused)
@@ -334,10 +358,13 @@ public static class Program
 
         Console.WriteLine("[Polishly] Global Hotkey Triggered — Executing Rewrite Workflow...");
         bool popupPresented = false;
+        using var workflowCancellation = new CancellationTokenSource();
         try
         {
             _stateMachine.Transition(RewriteEvent.TriggerHotkey);
-            var selection = await _captureEngine.CaptureSelectionAsync();
+            var selection = preservedSelection ??
+                            await _captureEngine.CaptureSelectionAsync(
+                                workflowCancellation.Token);
             Console.WriteLine(
                 $"[Polishly] Captured {selection.SelectedText.Length} characters from '{selection.TargetContext.ProcessName}'.");
 
@@ -347,12 +374,14 @@ public static class Program
             var popupVm = new PopupViewModel(_stateMachine, diffEngine);
             popupVm.Reset(selection.SelectedText);
             popupVm.TargetWindowHandle = selection.TargetContext.WindowHandle;
+            popupVm.SelectedMode = requestedMode;
 
 #if HAS_WPF
             PopupWindow? popupWin = null;
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 popupWin = new PopupWindow(popupVm);
+                popupWin.Closed += (_, _) => popupVm.Dispose();
 
                 popupWin.Show();
                 popupPresented = true;
@@ -368,6 +397,7 @@ public static class Program
                 if (_stateMachine?.CurrentState !=
                     Polishly.Core.StateMachine.RewriteState.Replacing)
                 {
+                    workflowCancellation.Cancel();
                     CompleteRewriteWorkflow();
                 }
             };
@@ -379,7 +409,10 @@ public static class Program
                     bool replacementSucceeded = false;
                     try
                     {
-                        var injectResult = await _injectorEngine.InjectTextAsync(selection.TargetContext, rewrittenText);
+                        var injectResult = await _injectorEngine.InjectTextAsync(
+                            selection.TargetContext,
+                            rewrittenText,
+                            workflowCancellation.Token);
                         Console.WriteLine($"[Polishly] Safe replacement result: Success={injectResult.Success}, Method={injectResult.MethodUsed}");
                         _stateMachine?.Transition(injectResult.Success ? RewriteEvent.ReplaceSuccess : RewriteEvent.ReplaceFailed,
                             injectResult.ErrorMessage);
@@ -409,28 +442,56 @@ public static class Program
 
             popupVm.RequestRevise += (s, e) =>
             {
+                workflowCancellation.Cancel();
                 popupWin?.Close();
                 var reviseVm = new ReviseInstructionViewModel
                 {
                     TargetWindowHandle = selection.TargetContext.WindowHandle
                 };
                 var reviseWin = new ReviseInstructionView(reviseVm);
+                bool submitted = false;
                 reviseVm.InstructionSubmitted += (sender, prompt) =>
                 {
-                    ExecuteRewriteWorkflow(prompt);
+                    submitted = true;
+                    CompleteRewriteWorkflow();
+                    ExecuteRewriteWorkflow(
+                        prompt,
+                        selection,
+                        Polishly.Core.Models.RewriteMode.Custom);
+                };
+                reviseWin.Closed += (_, _) =>
+                {
+                    if (!submitted)
+                    {
+                        CompleteRewriteWorkflow();
+                    }
                 };
                 reviseWin.ShowDialog();
             };
 
             popupVm.RequestRetry += (s, e) =>
             {
+                workflowCancellation.Cancel();
                 CompleteRewriteWorkflow();
-                ExecuteRewriteWorkflow(customInstruction);
+                ExecuteRewriteWorkflow(
+                    customInstruction,
+                    selection,
+                    requestedMode);
+            };
+
+            popupVm.RequestModeChange += (s, mode) =>
+            {
+                workflowCancellation.Cancel();
+                popupWin?.Close();
+                CompleteRewriteWorkflow();
+                ExecuteRewriteWorkflow(null, selection, mode);
             };
 #endif
 
             var provider = await ResolveProviderAsync();
-            var mode = string.IsNullOrEmpty(customInstruction) ? Polishly.Core.Models.RewriteMode.Improve : Polishly.Core.Models.RewriteMode.Custom;
+            var mode = string.IsNullOrEmpty(customInstruction)
+                ? requestedMode
+                : Polishly.Core.Models.RewriteMode.Custom;
             var req = new Polishly.Core.Models.RewriteRequest(
                 InputText: selection.SelectedText,
                 Mode: mode,
@@ -439,7 +500,9 @@ public static class Program
 
             _stateMachine.Transition(RewriteEvent.StartStreaming);
 
-            await foreach (var token in provider.StreamRewriteAsync(req))
+            await foreach (var token in provider.StreamRewriteAsync(
+                               req,
+                               workflowCancellation.Token))
             {
                 popupVm.AppendStreamingToken(token.Text);
             }
@@ -449,12 +512,20 @@ public static class Program
             CompleteRewriteWorkflow();
 #endif
         }
+        catch (OperationCanceledException) when (workflowCancellation.IsCancellationRequested)
+        {
+            // A deliberate Retry, Revise, mode change, or dismissal owns the
+            // next UI state. Do not surface cancellation as a provider failure.
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"[Polishly] Rewrite workflow error: {ex.Message}");
             _stateMachine?.Transition(RewriteEvent.Error, ex.Message);
             if (!popupPresented)
             {
+                _trayIconService?.ShowTrayNotification(
+                    "Rewrite unavailable",
+                    ex.Message);
                 CompleteRewriteWorkflow();
             }
         }
@@ -467,8 +538,20 @@ public static class Program
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             _settingsViewModel ??= CreateSettingsViewModel();
-            var settingsWin = new SettingsWindow(_settingsViewModel);
-            settingsWin.Show();
+            if (_settingsWindow == null)
+            {
+                _settingsWindow = new SettingsWindow(_settingsViewModel);
+                _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+                _settingsWindow.Show();
+            }
+            else
+            {
+                if (_settingsWindow.WindowState == System.Windows.WindowState.Minimized)
+                {
+                    _settingsWindow.WindowState = System.Windows.WindowState.Normal;
+                }
+                _settingsWindow.Activate();
+            }
         }
 #endif
     }
@@ -477,14 +560,14 @@ public static class Program
     {
         var viewModel = new SettingsViewModel(
             _credentialManager, _settingsStore, _appSettings);
-        viewModel.SettingsSaved += (_, settings) =>
+        viewModel.SettingsSaved += async (_, settings) =>
         {
             settings.OnboardingCompleted = _appSettings.OnboardingCompleted;
             _appSettings = settings;
             ThemeService.Apply(settings.Theme);
             try
             {
-                StartupRegistration.Apply(settings.LaunchAtStartup);
+                await StartupRegistration.ApplyAsync(settings.LaunchAtStartup);
             }
             catch (Exception ex)
             {
@@ -555,6 +638,9 @@ public static class Program
         _hotkeyListener?.Dispose();
         _trayIconService?.Dispose();
         _messageWindow?.Dispose();
+        _singleInstanceMutex?.ReleaseMutex();
+        _singleInstanceMutex?.Dispose();
+        _singleInstanceMutex = null;
         Environment.Exit(0);
     }
 

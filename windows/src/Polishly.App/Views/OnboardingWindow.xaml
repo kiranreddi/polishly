@@ -31,25 +31,25 @@
                     <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
                                 Visibility="{Binding IsStep1, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <TextBlock Text="✨ Polishly Companion for Windows" Foreground="#4EC9B0" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-                        <TextBlock Text="Enhance emails, documents, and messages anywhere with one hotkey." Foreground="#CCCCCC" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="400"/>
+                        <TextBlock Text="Enhance emails, documents, and messages anywhere with one hotkey." Foreground="{DynamicResource Polishly.Text}" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="400"/>
                     </StackPanel>
 
                     <StackPanel VerticalAlignment="Center"
                                 Visibility="{Binding IsStep2, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <TextBlock Text="Polishly reads only the text you explicitly select after pressing your hotkey."
-                                   Foreground="#CCCCCC" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                                   Foreground="{DynamicResource Polishly.Text}" TextWrapping="Wrap" Margin="0,0,0,12"/>
                         <TextBlock Text="Password fields, password managers, elevated apps, and apps on your blocklist are refused. Selected text is never written to diagnostics."
-                                   Foreground="#CCCCCC" TextWrapping="Wrap"/>
+                                   Foreground="{DynamicResource Polishly.Text}" TextWrapping="Wrap"/>
                     </StackPanel>
 
                     <StackPanel Visibility="{Binding IsStep3, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <TextBlock Text="Provider" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                        <TextBlock Text="Provider" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,4"/>
                         <ComboBox ItemsSource="{Binding Settings.AvailableProviders}"
                                   SelectedItem="{Binding Settings.ActiveProviderId}" Height="30" Margin="0,0,0,10"/>
-                        <TextBlock Text="Model" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                        <TextBlock Text="Model" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,4"/>
                         <ComboBox ItemsSource="{Binding Settings.AvailableModels}"
                                   SelectedItem="{Binding Settings.ActiveModel}" Height="30" Margin="0,0,0,10"/>
-                        <TextBlock Text="API key (not required for Demo)" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                        <TextBlock Text="API key (not required for Demo)" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,4"/>
                         <PasswordBox x:Name="OnboardingApiKeyBox" PasswordChanged="ApiKeyBox_PasswordChanged"
                                      Height="30" Padding="4" Margin="0,0,0,10"/>
                         <Button Content="Test connection" Command="{Binding Settings.TestConnectionCommand}"
@@ -60,30 +60,30 @@
 
                     <StackPanel VerticalAlignment="Center"
                                 Visibility="{Binding IsStep4, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <TextBlock Text="Global hotkey" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                        <TextBlock Text="Global hotkey" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,4"/>
                         <TextBox Text="{Binding Settings.HotkeyShortcut, UpdateSourceTrigger=PropertyChanged}"
                                  Height="32" Padding="6"/>
                         <TextBlock Text="Use Ctrl, Shift, Alt, or Win with a letter, number, Space, or F1–F24."
-                                   Foreground="#AAAAAA" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                   Foreground="{DynamicResource Polishly.Muted}" TextWrapping="Wrap" Margin="0,8,0,0"/>
                     </StackPanel>
 
                     <StackPanel Visibility="{Binding IsStep5, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <TextBlock Text="Practice text" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                        <TextBlock Text="Practice text" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,4"/>
                         <TextBox Text="{Binding PracticeInput, UpdateSourceTrigger=PropertyChanged}"
                                  AcceptsReturn="True" Height="70" Padding="6" TextWrapping="Wrap"/>
                         <Button Content="Rewrite practice text" Command="{Binding RewritePracticeCommand}"
                                 HorizontalAlignment="Left" Padding="14,5" Margin="0,10,0,8"/>
                         <TextBlock Text="{Binding PracticeOutput}" Foreground="#4EC9B0" TextWrapping="Wrap"/>
-                        <TextBlock Text="{Binding PracticeStatus}" Foreground="#AAAAAA" TextWrapping="Wrap"
+                        <TextBlock Text="{Binding PracticeStatus}" Foreground="{DynamicResource Polishly.Muted}" TextWrapping="Wrap"
                                    Margin="0,6,0,0" AutomationProperties.LiveSetting="Polite"/>
                     </StackPanel>
 
                     <StackPanel VerticalAlignment="Center"
                                 Visibility="{Binding IsStep6, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <CheckBox Content="Launch Polishly when I sign in to Windows"
-                                  IsChecked="{Binding Settings.LaunchAtStartup}" Foreground="White" Margin="0,0,0,12"/>
+                                  IsChecked="{Binding Settings.LaunchAtStartup}" Foreground="{DynamicResource Polishly.Text}" Margin="0,0,0,12"/>
                         <TextBlock Text="Finish saves non-secret preferences locally and provider keys in Windows Credential Manager."
-                                   Foreground="#CCCCCC" TextWrapping="Wrap"/>
+                                   Foreground="{DynamicResource Polishly.Text}" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Grid>
             </Border>
@@ -99,7 +99,7 @@
                 <Border Grid.Column="0" CornerRadius="4" Background="#3E3E42">
                     <Button Content="Back" Command="{Binding PreviousStepCommand}" Padding="16,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
                 </Border>
-                <TextBlock Grid.Column="1" Text="{Binding CurrentStep, StringFormat='Step {0} of 6'}" Foreground="#888888" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                <TextBlock Grid.Column="1" Text="{Binding CurrentStep, StringFormat='Step {0} of 6'}" Foreground="{DynamicResource Polishly.Muted}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 <Border Grid.Column="2" CornerRadius="4" Background="#0E639C">
                     <Button Content="{Binding NextButtonText}" Command="{Binding NextStepCommand}" Padding="20,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
                 </Border>

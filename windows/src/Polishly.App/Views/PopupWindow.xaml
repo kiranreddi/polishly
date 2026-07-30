@@ -66,6 +66,18 @@
             <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource Polishly.Danger}" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"
                        Visibility="{Binding HasError, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"/>
 
+            <StackPanel Orientation="Horizontal" Margin="0,12,0,0"
+                        AutomationProperties.Name="Rewrite mode">
+                <Button Content="Improve" Command="{Binding SelectModeCommand}" CommandParameter="Improve"
+                        AutomationProperties.Name="Rewrite for clarity" Padding="9,3" Margin="0,0,4,0"/>
+                <Button Content="Concise" Command="{Binding SelectModeCommand}" CommandParameter="Concise"
+                        AutomationProperties.Name="Make rewrite concise" Padding="9,3" Margin="0,0,4,0"/>
+                <Button Content="Friendly" Command="{Binding SelectModeCommand}" CommandParameter="Friendly"
+                        AutomationProperties.Name="Make rewrite friendly" Padding="9,3" Margin="0,0,4,0"/>
+                <Button Content="Expand" Command="{Binding SelectModeCommand}" CommandParameter="Expand"
+                        AutomationProperties.Name="Expand rewrite" Padding="9,3"/>
+            </StackPanel>
+
             <!-- Action Toolbar -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
                 <Border CornerRadius="4" Margin="4,0" Background="#0E639C">

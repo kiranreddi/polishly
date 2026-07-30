@@ -8,8 +8,9 @@
         WindowStyle="SingleBorderWindow"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
-        Width="400" Height="200" ResizeMode="NoResize">
-    <Border Padding="16" Background="#252526">
+        Width="400" Height="200" ResizeMode="NoResize"
+        Background="{DynamicResource Polishly.Background}">
+    <Border Padding="16" Background="{DynamicResource Polishly.Surface}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -17,9 +18,9 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Text="Enter instructions for AI revision:" Foreground="White" FontSize="13" Margin="0,0,0,8" FontWeight="SemiBold"/>
+            <TextBlock Grid.Row="0" Text="Enter instructions for AI revision:" Foreground="{DynamicResource Polishly.Text}" FontSize="13" Margin="0,0,0,8" FontWeight="SemiBold"/>
             <TextBox Grid.Row="1" x:Name="InstructionTextBox" Text="{Binding InstructionText, UpdateSourceTrigger=PropertyChanged}"
-                     AcceptsReturn="True" TextWrapping="Wrap" Background="#1E1E1E" Foreground="White" BorderBrush="#3F3F46" Padding="6" Margin="0,0,0,12"/>
+                     AcceptsReturn="True" TextWrapping="Wrap" Foreground="{DynamicResource Polishly.Text}" Padding="6" Margin="0,0,0,12"/>
 
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
                 <Border CornerRadius="4" Margin="0,0,8,0" Background="#3E3E42">
