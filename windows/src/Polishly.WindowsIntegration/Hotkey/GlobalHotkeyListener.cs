@@ -19,14 +19,8 @@ public class GlobalHotkeyListener : IDisposable
             _isRegistered = true;
             return true;
         }
-        try
-        {
-            _isRegistered = Win32Native.RegisterHotKey(hWnd, _hotkeyId, modifiers, vk);
-        }
-        catch
-        {
-            _isRegistered = true;
-        }
+        _isRegistered = hWnd != IntPtr.Zero &&
+                        Win32Native.RegisterHotKey(hWnd, _hotkeyId, modifiers, vk);
         return _isRegistered;
     }
 
@@ -67,4 +61,3 @@ public class GlobalHotkeyListener : IDisposable
         Unregister();
     }
 }
-

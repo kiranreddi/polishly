@@ -77,8 +77,9 @@ public class AnthropicProvider : IAiProvider
 
         if (!response.IsSuccessStatusCode)
         {
-            string err = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            throw new HttpRequestException($"Anthropic request failed with status code {(int)response.StatusCode}: {err}", null, response.StatusCode);
+            throw new HttpRequestException(
+                $"Anthropic request failed with status code {(int)response.StatusCode}.",
+                null, response.StatusCode);
         }
 
         using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
@@ -89,7 +90,7 @@ public class AnthropicProvider : IAiProvider
         while (!reader.EndOfStream)
         {
             ct.ThrowIfCancellationRequested();
-            string? line = await reader.ReadLineAsync().ConfigureAwait(false);
+            string? line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(line))
             {
                 continue;

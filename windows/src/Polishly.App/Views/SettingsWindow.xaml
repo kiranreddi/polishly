@@ -7,7 +7,7 @@
         Title="Polishly Settings"
         Width="540" Height="480"
         WindowStartupLocation="CenterScreen"
-        Background="#1E1E1E">
+        Background="{DynamicResource Polishly.Background}">
     <Border Padding="20">
         <Grid>
             <Grid.RowDefinitions>
@@ -16,7 +16,7 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Grid.Row="0" Text="Polishly Settings" Foreground="White" FontSize="18" FontWeight="Bold" Margin="0,0,0,16"/>
+            <TextBlock Grid.Row="0" Text="Polishly Settings" Foreground="{DynamicResource Polishly.Text}" FontSize="18" FontWeight="Bold" Margin="0,0,0,16"/>
 
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                 <StackPanel Margin="0,0,12,0">
@@ -26,10 +26,18 @@
                             <TextBlock Text="Select Provider:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
                             <ComboBox ItemsSource="{Binding AvailableProviders}" SelectedItem="{Binding ActiveProviderId}" Margin="0,0,0,12" Height="28"/>
 
+                            <TextBlock Text="Model:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                            <ComboBox ItemsSource="{Binding AvailableModels}" SelectedItem="{Binding ActiveModel}" Margin="0,0,0,12" Height="28"/>
+
                             <TextBlock Text="API Key:" Foreground="#CCCCCC" Margin="0,0,0,4"/>
                             <PasswordBox x:Name="ApiKeyBox" PasswordChanged="ApiKeyBox_PasswordChanged" Margin="0,0,0,4" Height="28" Padding="4"/>
-                            <TextBlock Text="{Binding ValidationStatus}" Foreground="#4EC9B0" FontSize="11" Margin="0,0,0,8"/>
-
+                            <TextBlock Text="{Binding ValidationStatus}" Foreground="#4EC9B0" FontSize="11" Margin="0,0,0,8" AutomationProperties.LiveSetting="Polite"/>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="Test connection" Command="{Binding TestConnectionCommand}" Padding="12,4" Margin="0,0,8,0"/>
+                                <Button Content="Remove saved key" Command="{Binding RemoveApiKeyCommand}" Padding="12,4"/>
+                            </StackPanel>
+                            <TextBlock Text="{Binding ConnectionStatus}" Foreground="#CCCCCC" FontSize="11" Margin="0,8,0,0"
+                                       TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
                         </StackPanel>
                     </GroupBox>
 
@@ -63,8 +71,15 @@
                             <ListBox ItemsSource="{Binding BlockedApplications}" Height="100" Background="#252526" Foreground="White">
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <Grid>
+                                        <Grid Width="430">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
                                             <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                            <Button Grid.Column="1" Content="Remove"
+                                                    Command="{Binding DataContext.RemoveBlocklistCommand, RelativeSource={RelativeSource AncestorType=ListBox}}"
+                                                    CommandParameter="{Binding}" Padding="8,2"/>
                                         </Grid>
                                     </DataTemplate>
                                 </ListBox.ItemTemplate>

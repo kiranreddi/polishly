@@ -276,6 +276,17 @@ code { padding: 2px 6px; border-radius: 5px; color: var(--teal); background: var
 .contact-links span { color: var(--quiet); font-size: 12.5px; line-height: 1.5; }
 .contact-note { margin-top: 20px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--quiet); font-size: 12.5px; }
 
+.windows-hero { padding-bottom: 90px; }
+.release-status-card {
+  padding: 34px;
+  border: 1px solid rgba(32,199,181,0.38);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(145deg, rgba(32,199,181,0.1), var(--panel) 62%);
+  box-shadow: 0 32px 80px -44px rgba(0,0,0,0.9);
+}
+.release-status-card h2 { margin-top: 8px; font-size: clamp(25px, 3vw, 34px); line-height: 1.15; letter-spacing: -0.03em; }
+.release-status-card > p { margin-top: 16px; color: var(--muted); }
+
 footer { padding: 34px 0; border-top: 1px solid var(--line); color: var(--quiet); font-size: 13px; }
 .footer-wrap { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
 .foot-links { display: flex; flex-wrap: wrap; gap: 20px; }
@@ -288,6 +299,7 @@ footer { padding: 34px 0; border-top: 1px solid var(--line); color: var(--quiet)
   .demo-frame { max-width: 760px; }
   .privacy-grid { grid-template-columns: 1fr; gap: 42px; }
   .contact-split { grid-template-columns: 1fr; gap: 42px; }
+  .release-status-card { max-width: 720px; }
 }
 
 @media (max-width: 780px) {
@@ -316,6 +328,7 @@ footer { padding: 34px 0; border-top: 1px solid var(--line); color: var(--quiet)
   .section-head { margin-bottom: 32px; }
   .section-head h2, .privacy-copy h2 { font-size: 31px; }
   .step-card, .download-main, .install-card, .example-card, .contact-card, .contact-aside { padding: 23px; }
+  .release-status-card { padding: 24px; }
   .mail-card { display: grid; width: 100%; padding: 18px 20px; }
   .contact-copy h2 { font-size: 28px; }
   .route-card { grid-template-columns: 1fr; padding: 18px; }

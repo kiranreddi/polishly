@@ -28,6 +28,7 @@ public class PopupViewModel : INotifyPropertyChanged
     public event EventHandler<string>? RequestPaste;
     public event EventHandler<string>? RequestCopy;
     public event EventHandler? RequestRevise;
+    public event EventHandler? RequestRetry;
 
     public string OriginalText
     {
@@ -207,8 +208,6 @@ public class PopupViewModel : INotifyPropertyChanged
 
         _stateMachine.Transition(RewriteEvent.Accept);
         RequestPaste?.Invoke(this, RewrittenText);
-        IsVisible = false;
-        RequestClose?.Invoke(this, EventArgs.Empty);
     }
 
     public bool CanCopy()
@@ -236,6 +235,9 @@ public class PopupViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(HasError));
 
         _stateMachine.Transition(RewriteEvent.TriggerHotkey);
+        IsVisible = false;
+        RequestClose?.Invoke(this, EventArgs.Empty);
+        RequestRetry?.Invoke(this, EventArgs.Empty);
     }
 
     public void OpenRevise()

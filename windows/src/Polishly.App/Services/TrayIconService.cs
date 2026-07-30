@@ -207,13 +207,3 @@ public class NavigationService
     public void OpenOnboarding() { }
     public void ShowPopup() { }
 }
-
-public class ThemeService
-{
-    public string CurrentTheme { get; set; } = "System";
-
-    public void ApplyTheme(string themeName)
-    {
-        CurrentTheme = themeName;
-    }
-}

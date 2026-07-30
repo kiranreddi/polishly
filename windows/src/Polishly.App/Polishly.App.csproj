@@ -12,6 +12,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <DefineConstants Condition="'$(UseWPF)' == 'true'">$(DefineConstants);HAS_WPF</DefineConstants>
+    <ApplicationManifest Condition="'$(OS)' == 'Windows_NT'">app.manifest</ApplicationManifest>
+    <RuntimeIdentifier Condition="'$(OS)' == 'Windows_NT'">win-x64</RuntimeIdentifier>
+    <PlatformTarget Condition="'$(OS)' == 'Windows_NT'">x64</PlatformTarget>
+    <PublishReadyToRun Condition="'$(OS)' == 'Windows_NT'">true</PublishReadyToRun>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseWPF)' != 'true'">
@@ -32,4 +36,3 @@
   </ItemGroup>
 
 </Project>
-

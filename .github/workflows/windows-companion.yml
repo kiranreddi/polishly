@@ -12,6 +12,12 @@ on:
       - "windows/**"
       - ".github/workflows/windows-companion.yml"
   workflow_dispatch:
+    inputs:
+      run_provider_smoke:
+        description: Run live provider validation and rewrite smoke tests
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: windows-companion-${{ github.workflow }}-${{ github.ref }}
@@ -38,7 +44,7 @@ jobs:
         run: dotnet restore Polishly.Windows.sln
 
       - name: Build
-        run: dotnet build Polishly.Windows.sln --no-restore --configuration Release
+        run: dotnet build Polishly.Windows.sln --no-restore --configuration Release -warnaserror
 
       # Custom Exe runners (IsTestProject=false) — must use `dotnet run`, not `dotnet test`.
       - name: Core tests
@@ -54,3 +60,47 @@ jobs:
         run: >
           dotnet run --project src/Polishly.App/Polishly.App.csproj --configuration Release --no-build
           -- --demo-rewrite --text "I think we should push the meeting to next week."
+
+      - name: OpenAI live smoke
+        if: ${{ inputs.run_provider_smoke }}
+        env:
+          POLISHLY_PROVIDER_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: dotnet run --project src/Polishly.App/Polishly.App.csproj --configuration Release --no-build -- --provider-smoke openai
+
+      - name: Anthropic live smoke
+        if: ${{ inputs.run_provider_smoke }}
+        env:
+          POLISHLY_PROVIDER_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: dotnet run --project src/Polishly.App/Polishly.App.csproj --configuration Release --no-build -- --provider-smoke anthropic
+
+      - name: Groq live smoke
+        if: ${{ inputs.run_provider_smoke }}
+        env:
+          POLISHLY_PROVIDER_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: dotnet run --project src/Polishly.App/Polishly.App.csproj --configuration Release --no-build -- --provider-smoke groq
+
+      - name: Cerebras live smoke
+        if: ${{ inputs.run_provider_smoke }}
+        env:
+          POLISHLY_PROVIDER_API_KEY: ${{ secrets.CEREBRAS_API_KEY }}
+        run: dotnet run --project src/Polishly.App/Polishly.App.csproj --configuration Release --no-build -- --provider-smoke cerebras
+
+      - name: Build unsigned MSIX bundle
+        shell: pwsh
+        run: >
+          ./packaging/Build-Package.ps1
+          -Version "0.0.${{ github.run_number }}.${{ github.run_attempt }}"
+          -Publisher "CN=Polishly"
+          -BaseUri "https://downloads.polishly.info/windows"
+
+      - name: Upload package verification artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: polishly-windows-unsigned-${{ github.sha }}
+          path: |
+            windows/artifacts/*.msix
+            windows/artifacts/*.msixbundle
+            windows/artifacts/*.appinstaller
+            windows/artifacts/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 7

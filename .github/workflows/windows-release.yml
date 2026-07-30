@@ -1,0 +1,111 @@
+name: Windows Release
+
+on:
+  push:
+    tags:
+      - "windows-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Four-part MSIX version
+        required: true
+        default: "1.0.0.0"
+      base_uri:
+        description: HTTPS directory hosting the bundle and AppInstaller
+        required: true
+        default: "https://downloads.polishly.info/windows"
+
+permissions:
+  contents: write
+
+jobs:
+  signed-release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Resolve release inputs
+        id: release
+        shell: pwsh
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_BASE_URI: ${{ inputs.base_uri }}
+        run: |
+          $version = $env:INPUT_VERSION
+          if (-not $version) {
+            $version = "${{ github.ref_name }}".Replace("windows-v", "")
+            if (($version.Split(".")).Count -eq 3) { $version = "$version.0" }
+          }
+          if ($version -notmatch '^\d+\.\d+\.\d+\.\d+$') {
+            throw "Release version '$version' must contain four numeric components."
+          }
+          $baseUri = if ($env:INPUT_BASE_URI) {
+            $env:INPUT_BASE_URI
+          } else {
+            "https://downloads.polishly.info/windows"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "base_uri=$baseUri" >> $env:GITHUB_OUTPUT
+
+      - name: Restore and test
+        working-directory: windows
+        run: |
+          dotnet restore Polishly.Windows.sln
+          dotnet build Polishly.Windows.sln --configuration Release --no-restore -warnaserror
+          dotnet run --project tests/Polishly.Core.Tests/Polishly.Core.Tests.csproj --configuration Release --no-build
+          dotnet run --project tests/Polishly.Platform.Tests/Polishly.Platform.Tests.csproj --configuration Release --no-build
+          dotnet run --project tests/Polishly.AppCompatibility.Tests/Polishly.AppCompatibility.Tests.csproj --configuration Release --no-build
+
+      - name: Import signing certificate
+        shell: pwsh
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_BASE64 }}
+        run: |
+          if (-not $env:CERTIFICATE_BASE64) {
+            throw "WINDOWS_SIGNING_CERTIFICATE_BASE64 is required for a release."
+          }
+          [IO.File]::WriteAllBytes(
+            "$env:RUNNER_TEMP\polishly-signing.pfx",
+            [Convert]::FromBase64String($env:CERTIFICATE_BASE64))
+
+      - name: Build and sign MSIX release
+        shell: pwsh
+        env:
+          CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_PASSWORD }}
+          CERTIFICATE_PUBLISHER: ${{ secrets.WINDOWS_SIGNING_CERTIFICATE_PUBLISHER }}
+        run: |
+          if (-not $env:CERTIFICATE_PASSWORD -or -not $env:CERTIFICATE_PUBLISHER) {
+            throw "Signing password and publisher secrets are required."
+          }
+          ./windows/packaging/Build-Package.ps1 `
+            -Version "${{ steps.release.outputs.version }}" `
+            -Publisher $env:CERTIFICATE_PUBLISHER `
+            -BaseUri "${{ steps.release.outputs.base_uri }}" `
+            -CertificatePath "$env:RUNNER_TEMP\polishly-signing.pfx" `
+            -CertificatePassword $env:CERTIFICATE_PASSWORD
+
+      - name: Verify signatures
+        shell: pwsh
+        run: |
+          $kitsRoot = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows Kits\Installed Roots").KitsRoot10
+          $signTool = Get-ChildItem "$kitsRoot\bin\*\x64\signtool.exe" |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          Get-ChildItem windows/artifacts -Include *.msix,*.msixbundle -Recurse |
+            ForEach-Object {
+              & $signTool.FullName verify /pa /all $_.FullName
+              if ($LASTEXITCODE -ne 0) { throw "Signature verification failed for $($_.Name)." }
+            }
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            windows/artifacts/*.msix
+            windows/artifacts/*.msixbundle
+            windows/artifacts/*.appinstaller
+            windows/artifacts/SHA256SUMS.txt
+          generate_release_notes: true

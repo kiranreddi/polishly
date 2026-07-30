@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AppInstaller
+    xmlns="http://schemas.microsoft.com/appx/appinstaller/2018"
+    Uri="{{BASE_URI}}/Polishly.appinstaller"
+    Version="{{VERSION}}">
+  <MainBundle
+      Name="Polishly.WindowsCompanion"
+      Publisher="{{PUBLISHER}}"
+      Version="{{VERSION}}"
+      Uri="{{BASE_URI}}/Polishly-{{VERSION}}-x64.msixbundle" />
+  <UpdateSettings>
+    <OnLaunch HoursBetweenUpdateChecks="4"
+              ShowPrompt="true"
+              UpdateBlocksActivation="false" />
+    <AutomaticBackgroundTask />
+    <ForceUpdateFromAnyVersion>false</ForceUpdateFromAnyVersion>
+  </UpdateSettings>
+</AppInstaller>

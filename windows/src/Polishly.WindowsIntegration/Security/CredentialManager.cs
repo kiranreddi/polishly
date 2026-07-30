@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Security.Cryptography;
 
 namespace Polishly.WindowsIntegration.Security;
 
@@ -15,12 +16,10 @@ public class CredentialManager : ICredentialStore
             throw new ArgumentException("Provider ID cannot be null or empty.", nameof(providerId));
         }
 
-        if (apiKey == null)
+        if (string.IsNullOrWhiteSpace(apiKey))
         {
-            throw new ArgumentNullException(nameof(apiKey));
+            throw new ArgumentException("API key cannot be empty.", nameof(apiKey));
         }
-
-        _inMemoryStore[providerId] = apiKey;
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
@@ -50,11 +49,12 @@ public class CredentialManager : ICredentialStore
             }
             finally
             {
+                CryptographicOperations.ZeroMemory(bytes);
                 Marshal.FreeHGlobal(blobPtr);
             }
         }
 
-
+        _inMemoryStore[providerId] = apiKey;
         return Task.CompletedTask;
     }
 
@@ -72,32 +72,34 @@ public class CredentialManager : ICredentialStore
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            try
+            var targetName = TargetPrefix + providerId;
+            if (Native.Win32Native.CredRead(targetName, 1, 0, out var credPtr))
             {
-                var targetName = TargetPrefix + providerId;
-                if (Native.Win32Native.CredRead(targetName, 1, 0, out var credPtr))
+                try
                 {
-                    try
+                    var credential = Marshal.PtrToStructure<Native.Win32Native.CREDENTIAL>(credPtr);
+                    if (credential.CredentialBlob != IntPtr.Zero && credential.CredentialBlobSize > 0)
                     {
-                        var credential = Marshal.PtrToStructure<Native.Win32Native.CREDENTIAL>(credPtr);
-                        if (credential.CredentialBlob != IntPtr.Zero && credential.CredentialBlobSize > 0)
-                        {
-                            var bytes = new byte[credential.CredentialBlobSize];
-                            Marshal.Copy(credential.CredentialBlob, bytes, 0, bytes.Length);
-                            string retrievedKey = Encoding.Unicode.GetString(bytes);
-                            _inMemoryStore[providerId] = retrievedKey;
-                            return Task.FromResult<string?>(retrievedKey);
-                        }
-                    }
-                    finally
-                    {
-                        Native.Win32Native.CredFree(credPtr);
+                        var bytes = new byte[credential.CredentialBlobSize];
+                        Marshal.Copy(credential.CredentialBlob, bytes, 0, bytes.Length);
+                        string retrievedKey = Encoding.Unicode.GetString(bytes);
+                        CryptographicOperations.ZeroMemory(bytes);
+                        _inMemoryStore[providerId] = retrievedKey;
+                        return Task.FromResult<string?>(retrievedKey);
                     }
                 }
+                finally
+                {
+                    Native.Win32Native.CredFree(credPtr);
+                }
             }
-            catch
+            else
             {
-                // Win32 lookup fallback
+                int error = Marshal.GetLastWin32Error();
+                const int ErrorNotFound = 1168;
+                if (error != ErrorNotFound)
+                    throw new System.ComponentModel.Win32Exception(
+                        error, "Windows Credential Manager read failed.");
             }
         }
 
@@ -111,22 +113,20 @@ public class CredentialManager : ICredentialStore
             throw new ArgumentException("Provider ID cannot be null or empty.", nameof(providerId));
         }
 
-        _inMemoryStore.Remove(providerId);
-
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            try
+            var targetName = TargetPrefix + providerId;
+            if (!Native.Win32Native.CredDelete(targetName, 1, 0))
             {
-                var targetName = TargetPrefix + providerId;
-                Native.Win32Native.CredDelete(targetName, 1, 0);
-            }
-            catch
-            {
-                // Win32 delete fallback
+                int error = Marshal.GetLastWin32Error();
+                const int ErrorNotFound = 1168;
+                if (error != ErrorNotFound)
+                    throw new System.ComponentModel.Win32Exception(
+                        error, "Windows Credential Manager delete failed.");
             }
         }
 
+        _inMemoryStore.Remove(providerId);
         return Task.CompletedTask;
     }
 }
-

@@ -7,10 +7,23 @@ namespace Polishly.WindowsIntegration.Security;
 
 public class SensitiveFieldDetector : ISensitiveFieldDetector
 {
-    private static readonly HashSet<string> SensitiveProcessBlocklist = new(StringComparer.OrdinalIgnoreCase)
+    private readonly HashSet<string> _sensitiveProcessBlocklist = new(StringComparer.OrdinalIgnoreCase)
     {
         "1password", "keepass", "keepassxc", "bitwarden", "dashlane", "lastpass", "cmd", "powershell"
     };
+
+    public SensitiveFieldDetector(IEnumerable<string>? additionalBlockedApplications = null)
+    {
+        if (additionalBlockedApplications == null) return;
+        foreach (string application in additionalBlockedApplications)
+        {
+            string normalized = NormalizeProcessName(application);
+            if (!string.IsNullOrWhiteSpace(normalized))
+            {
+                _sensitiveProcessBlocklist.Add(normalized);
+            }
+        }
+    }
 
     public SensitiveFieldStatus IsSensitiveField(TargetWindow window, object? automationElement = null)
     {
@@ -19,7 +32,7 @@ public class SensitiveFieldDetector : ISensitiveFieldDetector
             return new SensitiveFieldStatus(true, "Target application process is running elevated.");
         }
 
-        if (SensitiveProcessBlocklist.Contains(window.ProcessName))
+        if (_sensitiveProcessBlocklist.Contains(NormalizeProcessName(window.ProcessName)))
         {
             return new SensitiveFieldStatus(true, $"Process '{window.ProcessName}' is in the sensitive application blocklist.");
         }
@@ -73,5 +86,7 @@ public class SensitiveFieldDetector : ISensitiveFieldDetector
 
         return SensitiveFieldStatus.Safe;
     }
-}
 
+    private static string NormalizeProcessName(string processName) =>
+        Path.GetFileNameWithoutExtension(processName.Trim()).ToLowerInvariant();
+}

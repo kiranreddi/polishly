@@ -10,20 +10,22 @@
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
+        AutomationProperties.Name="Polishly rewrite review"
         SizeToContent="WidthAndHeight"
         MinWidth="320" MaxWidth="520">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
-    <Border Background="#1E1E1E" CornerRadius="8" BorderBrush="#333333" BorderThickness="1" Padding="12" Margin="4">
+    <Border x:Name="PopupBorder" Background="{DynamicResource Polishly.Surface}" CornerRadius="8" BorderBrush="{DynamicResource Polishly.Muted}" BorderThickness="1" Padding="12" Margin="4">
         <Border.Effect>
             <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3" Color="Black"/>
         </Border.Effect>
         <StackPanel>
             <!-- Header Bar with State and Dismiss -->
             <Grid Margin="0,0,0,8">
-                <TextBlock Text="{Binding StateDescription}" Foreground="#AAAAAA" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                <Button Content="✕" Command="{Binding DismissCommand}" HorizontalAlignment="Right" Background="Transparent" Foreground="#888888" BorderThickness="0" Cursor="Hand" Width="20" Height="20"/>
+                <TextBlock Text="{Binding StateDescription}" Foreground="{DynamicResource Polishly.Muted}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                <Button Content="✕" Command="{Binding DismissCommand}" AutomationProperties.Name="Dismiss rewrite"
+                        HorizontalAlignment="Right" Background="Transparent" Foreground="#888888" BorderThickness="0" Cursor="Hand" Width="20" Height="20"/>
             </Grid>
 
             <!-- Diff Display Area -->
@@ -39,15 +41,15 @@
                             <TextBlock Text="{Binding Text}" FontSize="13" Margin="1,0">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="#CCCCCC"/>
+                                        <Setter Property="Foreground" Value="{DynamicResource Polishly.Text}"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding Type}" Value="Addition">
-                                                <Setter Property="Foreground" Value="#4EC9B0"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Polishly.Accent}"/>
                                                 <Setter Property="Background" Value="#104EC9B0"/>
                                                 <Setter Property="FontWeight" Value="Medium"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding Type}" Value="Deletion">
-                                                <Setter Property="Foreground" Value="#F14C4C"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource Polishly.Danger}"/>
                                                 <Setter Property="TextDecorations" Value="Strikethrough"/>
                                                 <Setter Property="Opacity" Value="0.8"/>
                                             </DataTrigger>
@@ -61,25 +63,24 @@
             </ScrollViewer>
 
             <!-- Error Notification -->
-            <TextBlock Text="{Binding ErrorMessage}" Foreground="#F14C4C" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"
+            <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource Polishly.Danger}" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"
                        Visibility="{Binding HasError, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"/>
 
             <!-- Action Toolbar -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
                 <Border CornerRadius="4" Margin="4,0" Background="#0E639C">
-                    <Button Content="Accept" Command="{Binding AcceptCommand}" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                    <Button Content="Accept" Command="{Binding AcceptCommand}" AutomationProperties.Name="Accept and replace selected text" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
                 </Border>
                 <Border CornerRadius="4" Margin="4,0" Background="#3A3D41">
-                    <Button Content="Copy" Command="{Binding CopyCommand}" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                    <Button Content="Copy" Command="{Binding CopyCommand}" AutomationProperties.Name="Copy rewrite without replacing" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
                 </Border>
                 <Border CornerRadius="4" Margin="4,0" Background="#3A3D41">
-                    <Button Content="Retry" Command="{Binding RetryCommand}" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                    <Button Content="Retry" Command="{Binding RetryCommand}" AutomationProperties.Name="Regenerate rewrite" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
                 </Border>
                 <Border CornerRadius="4" Margin="4,0" Background="#3A3D41">
-                    <Button Content="Revise..." Command="{Binding OpenReviseCommand}" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                    <Button Content="Revise..." Command="{Binding OpenReviseCommand}" AutomationProperties.Name="Revise with custom instructions" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
                 </Border>
             </StackPanel>
         </StackPanel>
     </Border>
 </Window>
-

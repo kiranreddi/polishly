@@ -18,14 +18,18 @@ using Xunit;
 
 namespace Polishly.AppCompatibility.Tests;
 
-public class Tier4RealWorldWorkloadTests
+/// <summary>
+/// Headless compatibility contracts. These tests intentionally do not claim to
+/// replace the required interactive application matrix.
+/// </summary>
+public class CompatibilityContractTests
 {
     private readonly WindowTracker _tracker = new();
     private readonly Polishly.Core.Capabilities.AppCapabilityRules _capabilityRules = new();
     private readonly SensitiveFieldDetector _detector = new();
 
     [Fact]
-    public async Task Workload_Notepad_NativeTextEdit_DirectUiaCaptureAndReplacement()
+    public async Task Contract_Notepad_CaptureDiffAndReplacementPipeline()
     {
         var profile = _capabilityRules.GetProfile("notepad.exe");
         Assert.True(profile.SelectionBoundsSupported);
@@ -70,7 +74,7 @@ public class Tier4RealWorldWorkloadTests
     }
 
     [Fact]
-    public async Task Workload_MicrosoftTeams_ChatChannel_GuardedClipboardFallback()
+    public async Task Contract_MicrosoftTeams_UsesGuardedClipboardFallback()
     {
         var profile = _capabilityRules.GetProfile("ms-teams");
         Assert.True(profile.RequireClipboardFallback);
@@ -105,7 +109,7 @@ public class Tier4RealWorldWorkloadTests
     }
 
     [Fact]
-    public async Task Workload_OutlookClassic_EmailComposition_GuardedPaste()
+    public async Task Contract_OutlookClassic_UsesGuardedPaste()
     {
         var profile = _capabilityRules.GetProfile("outlook");
         Assert.True(profile.RequireClipboardFallback);
@@ -153,7 +157,7 @@ public class Tier4RealWorldWorkloadTests
     }
 
     [Fact]
-    public async Task Workload_Slack_ChannelMessage_ClipboardSequenceCheck()
+    public async Task Contract_Slack_ChecksClipboardSequence()
     {
         var profile = _capabilityRules.GetProfile("slack");
         Assert.True(profile.RequireClipboardFallback);
@@ -179,7 +183,7 @@ public class Tier4RealWorldWorkloadTests
     }
 
     [Fact]
-    public async Task Workload_VSCode_CodeCommentRewrite_PreservesFormatting()
+    public async Task Contract_VSCode_PreservesFormattingInPipeline()
     {
         var profile = _capabilityRules.GetProfile("code");
         Assert.True(profile.RequireClipboardFallback);
@@ -188,7 +192,7 @@ public class Tier4RealWorldWorkloadTests
             WindowHandle: IntPtr.Zero,
             ProcessId: 5678,
             ProcessName: "code",
-            AppTitle: "Tier4RealWorldWorkloadTests.cs - Polishly - Visual Studio Code",
+            AppTitle: "CompatibilityContractTests.cs - Polishly - Visual Studio Code",
             FieldId: "editor_pane",
             IsPassword: false,
             IsElevated: false
@@ -216,7 +220,7 @@ public class Tier4RealWorldWorkloadTests
     }
 
     [Fact]
-    public async Task Workload_ChromeGmail_EmailReply_WebBrowserFieldCompatibility()
+    public async Task Contract_ChromeGmail_UsesBrowserProfile()
     {
         var profile = _capabilityRules.GetProfile("chrome");
         Assert.True(profile.RequireClipboardFallback);
@@ -239,7 +243,7 @@ public class Tier4RealWorldWorkloadTests
     }
 
     [Fact]
-    public async Task Workload_ElevatedAdminPrompt_BlocksInPlaceReplacementAndOffersCopy()
+    public async Task Contract_ElevatedAdminPrompt_BlocksReplacementAndOffersCopy()
     {
         var elevatedTarget = new TargetContext(
             WindowHandle: IntPtr.Zero,
@@ -266,7 +270,7 @@ public class Tier4RealWorldWorkloadTests
     }
 
     [Fact]
-    public async Task Workload_PasswordManagerVault_BlocksCaptureAndPaste()
+    public async Task Contract_PasswordManagerVault_BlocksCaptureAndPaste()
     {
         var pwdTarget = new TargetContext(
             WindowHandle: IntPtr.Zero,

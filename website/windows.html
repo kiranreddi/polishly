@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Polishly for Windows — Private beta status</title>
+<meta name="description" content="Follow Polishly for Windows private-beta qualification, compatibility, and signed release availability.">
+<link rel="canonical" href="https://polishly.info/windows">
+<meta property="og:title" content="Polishly for Windows">
+<meta property="og:description" content="Native, private AI rewriting for Windows 11. The signed build is completing compatibility and release qualification.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://polishly.info/windows">
+<meta property="og:image" content="https://polishly.info/assets/og-cover.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png" sizes="180x180">
+<meta name="theme-color" content="#0b0e14">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<nav class="topbar" aria-label="Main navigation">
+  <div class="wrap nav-wrap">
+    <a class="brand" href="/" aria-label="Polishly home">
+      <img src="assets/icon-256.png" alt="" width="28" height="28">
+      Polishly
+    </a>
+    <div class="nav-links">
+      <a href="/#how-it-works">How it works</a>
+      <a href="/#privacy">Privacy</a>
+      <a href="/windows" aria-current="page">Windows</a>
+      <a href="/contact">Contact</a>
+    </div>
+    <div class="nav-actions">
+      <a class="btn btn-ghost btn-sm" href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">GitHub</a>
+      <a class="btn btn-primary btn-sm" href="/#download">macOS download</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <header class="hero windows-hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="status-dot"></span>Private beta qualification</span>
+        <h1>Polishly for<br><span>Windows 11.</span></h1>
+        <p class="hero-sub">A native tray companion that captures only the text you explicitly select, shows a local diff, and replaces it only after you accept.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" href="mailto:support@polishly.info?subject=Polishly%20Windows%20private%20beta">Join the private beta</a>
+          <a class="btn btn-ghost btn-lg" href="https://github.com/kiranreddi/polishly/releases" target="_blank" rel="noopener">Release history</a>
+        </div>
+        <div class="trust-line">
+          <span>Windows 11 x64</span>
+          <span>Bring your own API key</span>
+          <span>No background text scanning</span>
+        </div>
+      </div>
+
+      <aside class="release-status-card" aria-label="Windows release status">
+        <span class="version">Release status</span>
+        <h2>Signed download not published yet</h2>
+        <p>The app is in compatibility, multi-monitor, signing, and installer qualification. We will enable the download only after those safety gates pass.</p>
+        <ul class="check-list">
+          <li>Native WPF tray app and rewrite popup</li>
+          <li>OpenAI, Anthropic, Groq, Cerebras, and Demo</li>
+          <li>Windows Credential Manager key storage</li>
+          <li>Guarded clipboard and exact-target validation</li>
+        </ul>
+      </aside>
+    </div>
+  </header>
+
+  <section>
+    <div class="wrap">
+      <div class="section-head">
+        <p class="kicker">Safety before shipping</p>
+        <h2>What must pass before download</h2>
+        <p>A green build is only the beginning. The Windows release is qualified against real applications, display configurations, and installer lifecycle behavior.</p>
+      </div>
+      <div class="steps">
+        <article class="step-card">
+          <span class="num">01</span>
+          <h3>Application matrix</h3>
+          <p>Notepad, Teams, Outlook, Word, Slack, Chrome, Edge, Gmail, VS Code, and OneNote must meet their capture and replacement targets.</p>
+        </article>
+        <article class="step-card">
+          <span class="num">02</span>
+          <h3>Display reliability</h3>
+          <p>Popup placement must pass from 100% to 200% scaling on single and mixed-DPI multi-monitor setups.</p>
+        </article>
+        <article class="step-card">
+          <span class="num">03</span>
+          <h3>Signed lifecycle</h3>
+          <p>Install, automatic update, repair, rollback, Defender, SmartScreen, and uninstall must all be recorded cleanly.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-band">
+    <div class="wrap">
+      <img src="assets/icon-256.png" alt="" width="62" height="62">
+      <h2>Help test Polishly on your Windows workflow.</h2>
+      <p>Tell us which applications and monitor setup you use. Beta access is shared only when the build is ready for that configuration.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary btn-lg" href="mailto:support@polishly.info?subject=Polishly%20Windows%20private%20beta">Email support@polishly.info</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap footer-wrap">
+    <span>© 2026 Polishly</span>
+    <div class="foot-links">
+      <a href="/">macOS</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/contact">Contact</a>
+      <a href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">Source</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

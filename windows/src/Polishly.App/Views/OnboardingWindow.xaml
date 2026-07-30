@@ -5,9 +5,12 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
         Title="Welcome to Polishly"
-        Width="580" Height="420"
+        Width="640" Height="540"
         WindowStartupLocation="CenterScreen"
-        Background="#1E1E1E">
+        Background="{DynamicResource Polishly.Background}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+    </Window.Resources>
     <Border Padding="24">
         <Grid>
             <Grid.RowDefinitions>
@@ -18,17 +21,69 @@
 
             <!-- Header -->
             <StackPanel Grid.Row="0" Margin="0,0,0,16">
-                <TextBlock Text="{Binding StepTitle}" Foreground="White" FontSize="20" FontWeight="Bold" Margin="0,0,0,6"/>
-                <TextBlock Text="{Binding StepDescription}" Foreground="#AAAAAA" FontSize="13" TextWrapping="Wrap"/>
+                <TextBlock Text="{Binding StepTitle}" Foreground="{DynamicResource Polishly.Text}" FontSize="20" FontWeight="Bold" Margin="0,0,0,6"/>
+                <TextBlock Text="{Binding StepDescription}" Foreground="{DynamicResource Polishly.Muted}" FontSize="13" TextWrapping="Wrap"/>
             </StackPanel>
 
             <!-- Step Specific Visual Content -->
-            <Border Grid.Row="1" Background="#252526" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+            <Border Grid.Row="1" Background="{DynamicResource Polishly.Surface}" CornerRadius="8" Padding="16" Margin="0,0,0,16">
                 <Grid>
-                    <!-- Step 1 Content -->
-                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"
+                                Visibility="{Binding IsStep1, Converter={StaticResource BooleanToVisibilityConverter}}">
                         <TextBlock Text="✨ Polishly Companion for Windows" Foreground="#4EC9B0" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8"/>
                         <TextBlock Text="Enhance emails, documents, and messages anywhere with one hotkey." Foreground="#CCCCCC" TextAlignment="Center" TextWrapping="Wrap" MaxWidth="400"/>
+                    </StackPanel>
+
+                    <StackPanel VerticalAlignment="Center"
+                                Visibility="{Binding IsStep2, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Polishly reads only the text you explicitly select after pressing your hotkey."
+                                   Foreground="#CCCCCC" TextWrapping="Wrap" Margin="0,0,0,12"/>
+                        <TextBlock Text="Password fields, password managers, elevated apps, and apps on your blocklist are refused. Selected text is never written to diagnostics."
+                                   Foreground="#CCCCCC" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <StackPanel Visibility="{Binding IsStep3, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Provider" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                        <ComboBox ItemsSource="{Binding Settings.AvailableProviders}"
+                                  SelectedItem="{Binding Settings.ActiveProviderId}" Height="30" Margin="0,0,0,10"/>
+                        <TextBlock Text="Model" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                        <ComboBox ItemsSource="{Binding Settings.AvailableModels}"
+                                  SelectedItem="{Binding Settings.ActiveModel}" Height="30" Margin="0,0,0,10"/>
+                        <TextBlock Text="API key (not required for Demo)" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                        <PasswordBox x:Name="OnboardingApiKeyBox" PasswordChanged="ApiKeyBox_PasswordChanged"
+                                     Height="30" Padding="4" Margin="0,0,0,10"/>
+                        <Button Content="Test connection" Command="{Binding Settings.TestConnectionCommand}"
+                                HorizontalAlignment="Left" Padding="14,5"/>
+                        <TextBlock Text="{Binding Settings.ConnectionStatus}" Foreground="#4EC9B0"
+                                   TextWrapping="Wrap" Margin="0,8,0,0" AutomationProperties.LiveSetting="Polite"/>
+                    </StackPanel>
+
+                    <StackPanel VerticalAlignment="Center"
+                                Visibility="{Binding IsStep4, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Global hotkey" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding Settings.HotkeyShortcut, UpdateSourceTrigger=PropertyChanged}"
+                                 Height="32" Padding="6"/>
+                        <TextBlock Text="Use Ctrl, Shift, Alt, or Win with a letter, number, Space, or F1–F24."
+                                   Foreground="#AAAAAA" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                    </StackPanel>
+
+                    <StackPanel Visibility="{Binding IsStep5, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <TextBlock Text="Practice text" Foreground="#CCCCCC" Margin="0,0,0,4"/>
+                        <TextBox Text="{Binding PracticeInput, UpdateSourceTrigger=PropertyChanged}"
+                                 AcceptsReturn="True" Height="70" Padding="6" TextWrapping="Wrap"/>
+                        <Button Content="Rewrite practice text" Command="{Binding RewritePracticeCommand}"
+                                HorizontalAlignment="Left" Padding="14,5" Margin="0,10,0,8"/>
+                        <TextBlock Text="{Binding PracticeOutput}" Foreground="#4EC9B0" TextWrapping="Wrap"/>
+                        <TextBlock Text="{Binding PracticeStatus}" Foreground="#AAAAAA" TextWrapping="Wrap"
+                                   Margin="0,6,0,0" AutomationProperties.LiveSetting="Polite"/>
+                    </StackPanel>
+
+                    <StackPanel VerticalAlignment="Center"
+                                Visibility="{Binding IsStep6, Converter={StaticResource BooleanToVisibilityConverter}}">
+                        <CheckBox Content="Launch Polishly when I sign in to Windows"
+                                  IsChecked="{Binding Settings.LaunchAtStartup}" Foreground="White" Margin="0,0,0,12"/>
+                        <TextBlock Text="Finish saves non-secret preferences locally and provider keys in Windows Credential Manager."
+                                   Foreground="#CCCCCC" TextWrapping="Wrap"/>
                     </StackPanel>
                 </Grid>
             </Border>

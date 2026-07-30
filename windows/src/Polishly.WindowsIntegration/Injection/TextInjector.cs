@@ -7,12 +7,11 @@ namespace Polishly.WindowsIntegration.Injection;
 public class TextInjector : IInjectorEngine
 {
     private readonly IClipboardTransaction _clipboardTransaction;
-    private readonly AppCapabilityRules _capabilityRules;
 
     public TextInjector(IClipboardTransaction clipboardTransaction, AppCapabilityRules capabilityRules)
     {
         _clipboardTransaction = clipboardTransaction;
-        _capabilityRules = capabilityRules;
+        _ = capabilityRules;
     }
 
     public async Task<InjectionResult> InjectTextAsync(TargetContext context, string newText, CancellationToken ct = default)
@@ -26,16 +25,10 @@ public class TextInjector : IInjectorEngine
             );
         }
 
-        var profile = _capabilityRules.GetProfile(context.ProcessName);
-
-        if (profile.PreferredInjection == InjectionMethod.UIAutomationSetText)
-        {
-            return new InjectionResult(
-                Success: true,
-                MethodUsed: InjectionMethod.UIAutomationSetText
-            );
-        }
-
+        // TextPattern exposes the selected range but does not provide a safe
+        // replacement API. ValuePattern.SetValue replaces the entire field, so it
+        // must not be used for a partial selection. The guarded transaction is the
+        // only generally safe path until a field-specific adapter proves otherwise.
         var clipboardResult = await _clipboardTransaction.ExecuteSafePasteAsync(newText, context, ct);
         if (clipboardResult.Success)
         {

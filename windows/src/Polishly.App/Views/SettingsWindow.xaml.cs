@@ -22,6 +22,14 @@ public partial class SettingsWindow : Window
                 ApiKeyBox.Password = viewModel.ApiKey;
             }
         };
+        viewModel.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsViewModel.ApiKey) &&
+                ApiKeyBox.Password != viewModel.ApiKey)
+            {
+                ApiKeyBox.Password = viewModel.ApiKey;
+            }
+        };
 #endif
     }
 
@@ -41,4 +49,3 @@ public partial class SettingsWindow : Window
     }
 #endif
 }
-

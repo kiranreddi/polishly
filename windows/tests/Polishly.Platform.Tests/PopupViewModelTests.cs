@@ -83,7 +83,6 @@ public class PopupViewModelTests
 
         Assert.Equal(RewriteState.Replacing, stateMachine.CurrentState);
         Assert.Equal("banana", pastedText);
-        Assert.False(vm.IsVisible);
     }
 
     [Fact]
