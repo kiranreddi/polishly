@@ -237,8 +237,8 @@ public class UIAutomationCapture : ICaptureEngine
 
     private static ScreenBounds? GetBounds(TextPatternRange range)
     {
-        double[] rectangles = range.GetBoundingRectangles();
-        if (rectangles.Length < 4)
+        System.Windows.Rect[] rectangles = range.GetBoundingRectangles();
+        if (rectangles.Length == 0)
         {
             return null;
         }
@@ -247,15 +247,15 @@ public class UIAutomationCapture : ICaptureEngine
         double top = double.PositiveInfinity;
         double right = double.NegativeInfinity;
         double bottom = double.NegativeInfinity;
-        for (int i = 0; i + 3 < rectangles.Length; i += 4)
+        foreach (System.Windows.Rect rectangle in rectangles)
         {
-            double width = rectangles[i + 2];
-            double height = rectangles[i + 3];
+            double width = rectangle.Width;
+            double height = rectangle.Height;
             if (width <= 0 || height <= 0) continue;
-            left = Math.Min(left, rectangles[i]);
-            top = Math.Min(top, rectangles[i + 1]);
-            right = Math.Max(right, rectangles[i] + width);
-            bottom = Math.Max(bottom, rectangles[i + 1] + height);
+            left = Math.Min(left, rectangle.Left);
+            top = Math.Min(top, rectangle.Top);
+            right = Math.Max(right, rectangle.Right);
+            bottom = Math.Max(bottom, rectangle.Bottom);
         }
 
         var result = new ScreenBounds(left, top, right - left, bottom - top);

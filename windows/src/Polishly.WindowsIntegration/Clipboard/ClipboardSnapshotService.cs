@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.IO;
 #if HAS_WPF
 using System.Windows;
 #endif
@@ -49,7 +50,7 @@ internal sealed class ClipboardSnapshotService
             var restored = new DataObject();
             foreach (var item in snapshot.Items)
             {
-                restored.SetData(item.Format, autoConvert: false, CloneIfNeeded(item.Data));
+                restored.SetData(item.Format, CloneIfNeeded(item.Data), false);
             }
 
             System.Windows.Clipboard.SetDataObject(restored, copy: true);
