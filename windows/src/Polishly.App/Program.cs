@@ -435,9 +435,17 @@ public static class Program
             {
                 if (OperatingSystem.IsWindows())
                 {
-                    try { System.Windows.Clipboard.SetText(text); } catch { }
+                    try
+                    {
+                        System.Windows.Clipboard.SetText(text);
+                        popupVm.CompleteCopy();
+                    }
+                    catch (Exception ex)
+                    {
+                        popupVm.FailCopy(
+                            $"Windows could not copy the rewrite: {ex.Message}");
+                    }
                 }
-                popupWin?.Close();
             };
 
             popupVm.RequestRevise += (s, e) =>

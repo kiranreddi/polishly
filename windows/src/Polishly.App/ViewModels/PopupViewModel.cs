@@ -234,10 +234,23 @@ public class PopupViewModel : INotifyPropertyChanged, IDisposable
     {
         if (string.IsNullOrEmpty(RewrittenText)) return;
 
-        _stateMachine.Transition(RewriteEvent.Copy);
         RequestCopy?.Invoke(this, RewrittenText);
+    }
+
+    public void CompleteCopy()
+    {
+        _stateMachine.Transition(RewriteEvent.Copy);
         IsVisible = false;
         RequestClose?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void FailCopy(string message)
+    {
+        _stateMachine.Transition(
+            RewriteEvent.Error,
+            string.IsNullOrWhiteSpace(message)
+                ? "The rewrite could not be copied."
+                : message);
     }
 
     public void Retry()

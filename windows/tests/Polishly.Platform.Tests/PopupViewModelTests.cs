@@ -137,7 +137,11 @@ public class PopupViewModelTests
         var vm = new PopupViewModel(stateMachine, diffEngine);
 
         string? copiedText = null;
-        vm.RequestCopy += (s, text) => copiedText = text;
+        vm.RequestCopy += (s, text) =>
+        {
+            copiedText = text;
+            vm.CompleteCopy();
+        };
 
         vm.Reset("cat");
         stateMachine.Transition(RewriteEvent.TriggerHotkey);

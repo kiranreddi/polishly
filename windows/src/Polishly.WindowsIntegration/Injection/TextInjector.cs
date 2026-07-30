@@ -41,7 +41,8 @@ public class TextInjector : IInjectorEngine
         return new InjectionResult(
             Success: false,
             MethodUsed: InjectionMethod.CopyToClipboardOnly,
-            ErrorMessage: clipboardResult.ErrorMessage ?? "Guarded paste failed, fallback to copy."
+            ErrorMessage: clipboardResult.ErrorMessage ??
+                          "Guarded paste failed. Use Copy to keep the rewrite without replacing text."
         );
     }
 }
