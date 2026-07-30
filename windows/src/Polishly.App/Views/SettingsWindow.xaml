@@ -65,7 +65,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBox Grid.Column="0" Text="{Binding NewBlockedAppName, UpdateSourceTrigger=PropertyChanged}" Height="28" Padding="4" Margin="0,0,8,0"/>
-                                <Button Grid.Column="1" Content="Add" Command="{Binding AddBlocklistCommand}" Padding="16,4" Background="#0E639C" Foreground="White" BorderThickness="0"/>
+                                <Button Grid.Column="1" Content="Add" Command="{Binding AddBlocklistCommand}" Padding="16,4" Background="{DynamicResource Polishly.ActionSurface}" Foreground="{DynamicResource Polishly.ActionText}" BorderThickness="0"/>
                             </Grid>
 
                             <ListBox ItemsSource="{Binding BlockedApplications}" Height="100" Background="{DynamicResource Polishly.Surface}" Foreground="{DynamicResource Polishly.Text}">
@@ -90,8 +90,8 @@
             </ScrollViewer>
 
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
-                <Border CornerRadius="4" Background="#0E639C">
-                    <Button Content="Save &amp; Close" Command="{Binding SaveCommand}" Padding="20,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                <Border CornerRadius="4" Background="{DynamicResource Polishly.ActionSurface}">
+                    <Button Content="Save &amp; Close" Command="{Binding SaveCommand}" Padding="20,6" Background="Transparent" Foreground="{DynamicResource Polishly.ActionText}" BorderThickness="0"/>
                 </Border>
             </StackPanel>
         </Grid>

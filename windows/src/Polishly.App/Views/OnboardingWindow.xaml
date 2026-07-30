@@ -96,12 +96,12 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <Border Grid.Column="0" CornerRadius="4" Background="#3E3E42">
-                    <Button Content="Back" Command="{Binding PreviousStepCommand}" Padding="16,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                <Border Grid.Column="0" CornerRadius="4" Background="{DynamicResource Polishly.SecondarySurface}">
+                    <Button Content="Back" Command="{Binding PreviousStepCommand}" Padding="16,6" Background="Transparent" Foreground="{DynamicResource Polishly.SecondaryText}" BorderThickness="0"/>
                 </Border>
                 <TextBlock Grid.Column="1" Text="{Binding CurrentStep, StringFormat='Step {0} of 6'}" Foreground="{DynamicResource Polishly.Muted}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
-                <Border Grid.Column="2" CornerRadius="4" Background="#0E639C">
-                    <Button Content="{Binding NextButtonText}" Command="{Binding NextStepCommand}" Padding="20,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                <Border Grid.Column="2" CornerRadius="4" Background="{DynamicResource Polishly.ActionSurface}">
+                    <Button Content="{Binding NextButtonText}" Command="{Binding NextStepCommand}" Padding="20,6" Background="Transparent" Foreground="{DynamicResource Polishly.ActionText}" BorderThickness="0"/>
                 </Border>
             </Grid>
         </Grid>

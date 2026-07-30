@@ -23,11 +23,11 @@
                      AcceptsReturn="True" TextWrapping="Wrap" Foreground="{DynamicResource Polishly.Text}" Padding="6" Margin="0,0,0,12"/>
 
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                <Border CornerRadius="4" Margin="0,0,8,0" Background="#3E3E42">
-                    <Button Content="Cancel" Command="{Binding CancelCommand}" Padding="16,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                <Border CornerRadius="4" Margin="0,0,8,0" Background="{DynamicResource Polishly.SecondarySurface}">
+                    <Button Content="Cancel" Command="{Binding CancelCommand}" Padding="16,6" Background="Transparent" Foreground="{DynamicResource Polishly.SecondaryText}" BorderThickness="0"/>
                 </Border>
-                <Border CornerRadius="4" Background="#0E639C">
-                    <Button Content="Submit" Command="{Binding SubmitCommand}" IsDefault="True" Padding="16,6" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                <Border CornerRadius="4" Background="{DynamicResource Polishly.ActionSurface}">
+                    <Button Content="Submit" Command="{Binding SubmitCommand}" IsDefault="True" Padding="16,6" Background="Transparent" Foreground="{DynamicResource Polishly.ActionText}" BorderThickness="0"/>
                 </Border>
             </StackPanel>
         </Grid>

@@ -25,7 +25,7 @@
             <Grid Margin="0,0,0,8">
                 <TextBlock Text="{Binding StateDescription}" Foreground="{DynamicResource Polishly.Muted}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 <Button Content="✕" Command="{Binding DismissCommand}" AutomationProperties.Name="Dismiss rewrite"
-                        HorizontalAlignment="Right" Background="Transparent" Foreground="#888888" BorderThickness="0" Cursor="Hand" Width="20" Height="20"/>
+                        HorizontalAlignment="Right" Background="Transparent" Foreground="{DynamicResource Polishly.Muted}" BorderThickness="0" Cursor="Hand" Width="20" Height="20"/>
             </Grid>
 
             <!-- Diff Display Area -->
@@ -45,7 +45,6 @@
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding Type}" Value="Addition">
                                                 <Setter Property="Foreground" Value="{DynamicResource Polishly.Accent}"/>
-                                                <Setter Property="Background" Value="#104EC9B0"/>
                                                 <Setter Property="FontWeight" Value="Medium"/>
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding Type}" Value="Deletion">
@@ -80,17 +79,17 @@
 
             <!-- Action Toolbar -->
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                <Border CornerRadius="4" Margin="4,0" Background="#0E639C">
-                    <Button Content="Accept" Command="{Binding AcceptCommand}" AutomationProperties.Name="Accept and replace selected text" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                <Border CornerRadius="4" Margin="4,0" Background="{DynamicResource Polishly.ActionSurface}">
+                    <Button Content="Accept" Command="{Binding AcceptCommand}" AutomationProperties.Name="Accept and replace selected text" Padding="12,4" Background="Transparent" Foreground="{DynamicResource Polishly.ActionText}" BorderThickness="0"/>
                 </Border>
-                <Border CornerRadius="4" Margin="4,0" Background="#3A3D41">
-                    <Button Content="Copy" Command="{Binding CopyCommand}" AutomationProperties.Name="Copy rewrite without replacing" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                <Border CornerRadius="4" Margin="4,0" Background="{DynamicResource Polishly.SecondarySurface}">
+                    <Button Content="Copy" Command="{Binding CopyCommand}" AutomationProperties.Name="Copy rewrite without replacing" Padding="12,4" Background="Transparent" Foreground="{DynamicResource Polishly.SecondaryText}" BorderThickness="0"/>
                 </Border>
-                <Border CornerRadius="4" Margin="4,0" Background="#3A3D41">
-                    <Button Content="Retry" Command="{Binding RetryCommand}" AutomationProperties.Name="Regenerate rewrite" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                <Border CornerRadius="4" Margin="4,0" Background="{DynamicResource Polishly.SecondarySurface}">
+                    <Button Content="Retry" Command="{Binding RetryCommand}" AutomationProperties.Name="Regenerate rewrite" Padding="12,4" Background="Transparent" Foreground="{DynamicResource Polishly.SecondaryText}" BorderThickness="0"/>
                 </Border>
-                <Border CornerRadius="4" Margin="4,0" Background="#3A3D41">
-                    <Button Content="Revise..." Command="{Binding OpenReviseCommand}" AutomationProperties.Name="Revise with custom instructions" Padding="12,4" Background="Transparent" Foreground="White" BorderThickness="0"/>
+                <Border CornerRadius="4" Margin="4,0" Background="{DynamicResource Polishly.SecondarySurface}">
+                    <Button Content="Revise..." Command="{Binding OpenReviseCommand}" AutomationProperties.Name="Revise with custom instructions" Padding="12,4" Background="Transparent" Foreground="{DynamicResource Polishly.SecondaryText}" BorderThickness="0"/>
                 </Border>
             </StackPanel>
         </StackPanel>
