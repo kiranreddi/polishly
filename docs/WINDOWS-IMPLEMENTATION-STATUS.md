@@ -12,15 +12,22 @@ application compatibility results.
 
 | Phase | Implemented | Qualification still required |
 |---|---|---|
-| W0 — Contract and solution | .NET/WPF solution, CI, provider/diff/error contracts | Clean Windows CI run for the candidate commit |
+| W0 — Contract and solution | .NET/WPF solution, CI, provider/diff/error contracts; clean Windows CI build | Re-run CI for every candidate commit |
 | W1 — Capture and replacement | UIA selection and bounds, all-or-nothing clipboard materialization, exact process/window/field revalidation, Copy fallback | 20-attempt Notepad and Teams matrices |
-| W2 — Functional MVP | Modes, revise, streaming, local diff, all five providers, Credential Manager, persistent settings, model validation, connection tests, hotkey, theme, pause and blocklist | One live credential-and-rewrite smoke run per cloud provider |
+| W2 — Functional MVP | Popup mode controls, revise, cancellable streaming/regeneration, local diff, all five providers, Credential Manager, persistent settings, model validation, connection tests, hotkey, theme, pause and blocklist | One live credential-and-rewrite smoke run per cloud provider |
 | W3 — Popup/DPI/accessibility | Per-Monitor V2 manifest, physical-pixel positioning, actual selection/window anchor, mixed-DPI work areas, negative coordinates, dynamic height, Escape/click-outside hooks, high-contrast base and accessible names | Physical 100/125/150/175/200% one- and two-monitor matrix |
 | W4 — Application expansion | Explicit conservative capability profiles for every planned application | Interactive compatibility matrix and documented limitations |
-| W5 — Security/onboarding | Six-step onboarding, guided real rewrite, password/elevation/blocklist refusal, local non-secret settings, Credential Manager keys, startup preference | Fresh Windows-account onboarding run |
-| W6 — Packaging/beta | Reproducible x64 MSIX bundle script, signing support, AppInstaller feed, checksums, release workflow and lifecycle test script | Production certificate, signed artifacts, lifecycle/Defender/SmartScreen runs, hosted download, and 10–20-person beta |
+| W5 — Security/onboarding | Six-step onboarding, guided real rewrite, password/elevation/blocklist refusal, local non-secret settings, Credential Manager keys, packaged and unpackaged startup handling | Fresh Windows-account onboarding run |
+| W6 — Packaging/beta | Reproducible x64 MSIX bundle script, signing support, AppInstaller feed, checksums, release workflow and lifecycle test script; unsigned artifact build verified in CI | Production certificate, signed artifacts, lifecycle/Defender/SmartScreen runs, hosted download, and 10–20-person beta |
 
 ## Automated evidence
+
+[Windows CI run 30588751196](https://github.com/kiranreddi/polishly/actions/runs/30588751196)
+recorded a zero-warning, zero-error native WPF build, 93 core tests, 159
+platform tests, 35 compatibility-contract tests, a passing headless rewrite,
+and successful unsigned MSIX, MSIX bundle, AppInstaller, and checksum creation.
+That is 287 passing automated tests. The compatibility-contract suite verifies
+profiles and orchestration; it does not claim interactive application success.
 
 Run from the repository root:
 

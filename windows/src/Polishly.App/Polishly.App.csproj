@@ -13,6 +13,7 @@
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <DefineConstants Condition="'$(UseWPF)' == 'true'">$(DefineConstants);HAS_WPF</DefineConstants>
     <ApplicationManifest Condition="'$(OS)' == 'Windows_NT'">app.manifest</ApplicationManifest>
+    <ApplicationIcon Condition="'$(OS)' == 'Windows_NT'">Assets\Polishly.ico</ApplicationIcon>
     <RuntimeIdentifier Condition="'$(OS)' == 'Windows_NT'">win-x64</RuntimeIdentifier>
     <PlatformTarget Condition="'$(OS)' == 'Windows_NT'">x64</PlatformTarget>
     <PublishReadyToRun Condition="'$(OS)' == 'Windows_NT'">true</PublishReadyToRun>
@@ -24,7 +25,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Package.appxmanifest" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Package.appxmanifest"
+          CopyToOutputDirectory="Never"
+          CopyToPublishDirectory="Never" />
     <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

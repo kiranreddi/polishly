@@ -36,7 +36,9 @@ dotnet publish "$root\src\Polishly.App\Polishly.App.csproj" `
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed." }
 
 Copy-Item "$publish\*" $stage -Recurse -Force
-Copy-Item "$root\src\Polishly.App\Assets" "$stage\Assets" -Recurse -Force
+$assetsDestination = Join-Path $stage "Assets"
+New-Item $assetsDestination -ItemType Directory -Force | Out-Null
+Copy-Item "$root\src\Polishly.App\Assets\*" $assetsDestination -Recurse -Force
 
 [xml]$manifest = Get-Content "$root\src\Polishly.App\Package.appxmanifest"
 $manifest.Package.Identity.Version = $Version

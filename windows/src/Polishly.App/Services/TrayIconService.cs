@@ -166,7 +166,9 @@ public class TrayIconService : IDisposable
         nid.uID = 1;
         nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
         nid.uCallbackMessage = WM_TRAYICON;
-        nid.hIcon = OperatingSystem.IsWindows() ? LoadIcon(IntPtr.Zero, (IntPtr)IDI_APPLICATION) : IntPtr.Zero;
+        nid.hIcon = OperatingSystem.IsWindows()
+            ? LoadPolishlyIcon()
+            : IntPtr.Zero;
         nid.szTip = tip;
         return nid;
     }
@@ -195,15 +197,17 @@ public class TrayIconService : IDisposable
     [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
 
+    [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
+    private static extern IntPtr GetModuleHandle(string? moduleName);
+
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern bool Shell_NotifyIcon(uint dwMessage, ref NOTIFYICONDATA lpData);
-}
 
-
-
-public class NavigationService
-{
-    public void OpenSettings() { }
-    public void OpenOnboarding() { }
-    public void ShowPopup() { }
+    private static IntPtr LoadPolishlyIcon()
+    {
+        IntPtr icon = LoadIcon(GetModuleHandle(null), (IntPtr)IDI_APPLICATION);
+        return icon != IntPtr.Zero
+            ? icon
+            : LoadIcon(IntPtr.Zero, (IntPtr)IDI_APPLICATION);
+    }
 }
