@@ -197,7 +197,7 @@ public class GuardedClipboardTransaction : IClipboardTransaction
         IntPtr foreground = Win32Native.GetForegroundWindow();
         if (foreground == IntPtr.Zero || foreground != target.WindowHandle)
         {
-            return "The original window is no longer active. The rewrite was copied instead.";
+            return "The original window lost focus. The rewrite was copied instead.";
         }
 
         Win32Native.GetWindowThreadProcessId(foreground, out uint processId);
