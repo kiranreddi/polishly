@@ -281,7 +281,7 @@ Security requirements:
 
 ## 8. Features deferred until after the MVP
 
-- Automatic Grammarly-style trigger on text selection.
+- Automatic trigger on text selection.
 - Reading surrounding email or conversation context.
 - Persistent rewrite history.
 - Personal writing style learning.

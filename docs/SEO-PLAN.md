@@ -20,11 +20,11 @@ Free, open-source macOS menu-bar app for explicitly-invoked, in-place AI rewriti
 ### Goals (priority order)
 1. Rank for high-intent queries about free / BYO-key Mac rewriting tools.
 2. Convert visitors → DMG download → Accessibility grant → first rewrite.
-3. Earn GitHub stars / referrals from “Grammarly alternative” and “free AI rewrite Mac” searches without overclaiming.
+3. Earn GitHub stars / referrals from “AI writing alternative” and “free AI rewrite Mac” searches without overclaiming.
 
 ### Non-goals / hard rules
 - Do **not** claim App Store availability.
-- Do **not** claim always-on grammar checking (anti-positioning vs Grammarly).
+- Do **not** claim always-on grammar checking (anti-positioning vs always-on checkers).
 - Do **not** promise universal Teams/Slack thread context (Promise B is off).
 - Do **not** invent pricing/retention claims for AI providers; link out and say tiers change.
 - Keep copy honest: Polishly is free; model usage may be free via Groq/Cerebras tiers with rate limits.
@@ -43,13 +43,13 @@ Free, open-source macOS menu-bar app for explicitly-invoked, in-place AI rewriti
 | Intent | Target phrases |
 |---|---|
 | Core product | `macOS AI rewrite`, `Mac text rewrite app`, `in-place AI writing Mac` |
-| Free / BYOK | `free AI rewrite Mac`, `bring your own API key writing app`, `open source Grammarly alternative` |
+| Free / BYOK | `free AI rewrite Mac`, `bring your own API key writing app`, `open source AI writing alternative` |
 | Workflow | `select text hotkey rewrite Mac`, `menu bar AI writing assistant` |
 
 ### Secondary (sections / FAQ / future pages)
 | Intent | Target phrases |
 |---|---|
-| Competitor | `Grammarly alternative Mac free`, `Apple Intelligence Writing Tools alternative` |
+| Competitor | `AI writing assistant alternative Mac free`, `Apple Intelligence Writing Tools alternative` |
 | Provider | `Groq API writing app`, `Cerebras API Mac app`, `use Groq for rewriting` |
 | Privacy | `no background scanning AI Mac`, `Accessibility AI rewrite privacy` |
 | Apps | `rewrite text in Notes Mail Slack Teams Mac` |
@@ -115,7 +115,7 @@ Keep single-page architecture for v1; strengthen sections rather than exploding 
 
 ### Features / Compare / FAQ
 - Expand FAQ answers with keyword-rich but natural Qs:
-  - “Is Polishly a free Grammarly alternative?”
+  - “Is Polishly a free alternative to subscription writing assistants?”
   - “Can I use Groq for free with Polishly?”
   - “Does Polishly work in Slack and Teams?”
   - “Is my text sent in the background?”
@@ -137,13 +137,13 @@ Only add pages that can rank and convert. Suggested IA:
 |---|---|---|
 | `/` | Brand + download | Current site |
 | `/download` (or keep `#download`) | Navigational | Optional dedicated page if analytics show scroll drop-off |
-| `/grammarly-alternative` | Competitor | Honest comparison; CTA to Download |
+| `/ai-writing-alternative` | Competitor | Honest comparison; CTA to Download |
 | `/groq-setup` | Free tier how-to | Step-by-step from README; screenshots |
 | `/privacy` | Trust | Explicit hotkey-only sending; Keychain; no backend |
 | `/changelog` | Product updates | Link Releases |
 
 **Blog (optional, later):** 4–6 cornerstone posts max to start — not a spam blog.
-1. “How to rewrite text system-wide on Mac without Grammarly”
+1. “How to rewrite text system-wide on Mac without a subscription”
 2. “Use Groq free API with a Mac menu-bar rewrite app”
 3. “Why Accessibility permissions matter for Mac writing tools”
 4. “Apple Intelligence Writing Tools vs BYO-key rewrite apps”
@@ -204,7 +204,7 @@ Not classic on-page SEO, but agents should not ignore:
 
 ### Sprint C — expansion
 1. Ship `/groq-setup` and `/privacy` (or equivalent)
-2. One competitor page (`grammarly-alternative`)
+2. One competitor page (`ai-writing-alternative`)
 3. Search Console setup + sitemap submit
 
 ### Definition of done for any SEO PR

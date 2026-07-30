@@ -12,15 +12,15 @@
 
 Select text anywhere on your Mac — Mail, Teams, Slack, Outlook, browser — hit one shortcut, and a small floating card appears with a rewrite. Accept it and the text is replaced in place. No copy-paste, no switching apps, no browser extension.
 
-The wedge vs Grammarly: Grammarly is a grammar checker with AI bolted on. Polishly is **explicitly-invoked, context-aware rewriting** — where the surrounding conversation is readable, it rewrites *for that situation*, not just for grammar. Where it isn't, it still nails the reliable core: turn a rough draft into a clean one, in place, on request.
+The wedge vs incumbent writing assistants: they are grammar checkers with AI bolted on. Polishly is **explicitly-invoked, context-aware rewriting** — where the surrounding conversation is readable, it rewrites *for that situation*, not just for grammar. Where it isn't, it still nails the reliable core: turn a rough draft into a clean one, in place, on request.
 
-Your own Grammarly screenshot is the exact use case: you typed a quick status update ("i have sent the mail let see what he will...") and wanted it cleaned into professional English before sending to Brad/Justin. That moment — "make this sound right before I hit send" — is the entire MVP.
+The screenshot you shared is the exact use case: you typed a quick status update ("i have sent the mail let see what he will...") and wanted it cleaned into professional English before sending to Brad/Justin. That moment — "make this sound right before I hit send" — is the entire MVP.
 
 ## 2. Market snapshot (July 2026)
 
 | Product | Approach | Weakness we exploit |
 |---|---|---|
-| Grammarly Desktop | System-wide underlines via Accessibility API, popup cards | Heavy, subscription fatigue ($30/mo Pro), always-on scanning feels invasive, weak conversation context |
+| Subscription desktop grammar checkers | System-wide underlines via Accessibility API, popup cards | Heavy, subscription fatigue ($30/mo Pro), always-on scanning feels invasive, weak conversation context |
 | Apple Intelligence Writing Tools | Built into macOS, free | Generic rewrites, no thread context, limited tones, only in apps that adopt the API |
 | WordWand / RewriteBar / Elephas | Select + shortcut → AI action menu | Utility feel, no context capture, no in-place diff, dated UI |
 | LanguageTool / Grambo / Stanza | Grammar-focused, some local models | Not rewrite/context focused |
@@ -54,7 +54,7 @@ Explicitly **out** of MVP: always-on underlining/scanning, browser extension, Wi
 
 ### 4.1 Core mechanism: macOS Accessibility API (AX)
 
-Same foundation as Grammarly Desktop. With the user's one-time grant in *System Settings → Privacy & Security → Accessibility*, the app can:
+Same foundation as the mainstream desktop grammar checkers. With the user's one-time grant in *System Settings → Privacy & Security → Accessibility*, the app can:
 
 - Find the focused UI element: `AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute)`
 - Read selected text: `kAXSelectedTextAttribute`; its screen position: `kAXBoundsForRangeParameterizedAttribute` (to anchor the popup)
@@ -121,7 +121,7 @@ Hotkey → card visible: <150 ms (show skeleton immediately). First streamed tok
 
 This app can read anything on screen — trust is the product's foundation.
 
-- Text sent to the API **only** when the user explicitly invokes the hotkey. No background scanning, ever. Say this loudly in marketing — it's the anti-Grammarly stance.
+- Text sent to the API **only** when the user explicitly invokes the hotkey. No background scanning, ever. Say this loudly in marketing — it's the anti-always-on-scanning stance.
 - Zero-retention API configuration; no training on user data. (Validate the current provider terms before stating this publicly — see §8.)
 - Sensitive-app blocklist (password managers, banking apps) — never capture from them.
 - Context capture respects the redaction pass in §4.5.
@@ -183,7 +183,7 @@ Phase 0 does not exit until both apps clear this table. Teams is the harder case
 The numbers below are useful for thinking about order of magnitude, not for a launch or investor document. Before using them externally: confirm current Anthropic API pricing (it changes), confirm the actual zero-retention/no-training terms available at the account tier you'll use, and re-check the competitor pricing cited in §2 (subscription prices move).
 
 - **API cost (unvalidated estimate)**: a rewrite is roughly 1K input / 300 output tokens → likely well under $0.01 on Haiku at current list pricing, but *verify this against the live pricing page before committing to a subscription price*. A back-of-envelope heavy-user estimate (50 rewrites/day) suggested ~$3–5/mo — again, treat as a planning input, not a committed unit economics figure.
-- **Risk — AX flakiness in Electron/web apps**: mitigated by the clipboard-transaction tier in §4.2 (Grammarly and WordWand both ship an equivalent fallback), and now gated by the Phase 0 test matrix instead of an informal "it seems to work" check.
+- **Risk — AX flakiness in Electron/web apps**: mitigated by the clipboard-transaction tier in §4.2 (the mainstream grammar checkers and WordWand both ship an equivalent fallback), and now gated by the Phase 0 test matrix instead of an informal "it seems to work" check.
 - **Risk — Apple Intelligence sherlocking**: Apple's Writing Tools are generic and context-blind; the moat is thread context (where validated per-app) + one-off/persistent custom instructions + cross-app consistency. Move fast on that moat, but only claim it where §3's Promise B has actually been validated for a given app.
 - **Risk — trust**: an app with Accessibility access reading on-screen text needs a spotless privacy story from day one (§5), including honest disclosure of exactly what context was read (§3, §6) rather than implying more than was actually captured.
 - **Risk — clipboard corruption**: without the transaction discipline in §4.2, a naive save/restore can destroy rich content or clobber a user's unrelated copy. This was unspecified in v1.0 and is now the single most detailed section of the plan for a reason.
@@ -214,4 +214,4 @@ The numbers below are useful for thinking about order of magnitude, not for a la
 
 ---
 
-*Sources: [Grammarly Mac support docs](https://support.grammarly.com/hc/en-us/articles/10139846131213), [Grammarly desktop guide](https://support.grammarly.com/hc/en-us/articles/4412816078349-Grammarly-for-Windows-and-Grammarly-for-Mac-user-guide), [AX selected-text technique](https://macdevelopers.wordpress.com/2014/02/05/how-to-get-selected-text-and-its-coordinates-from-any-system-wide-application-using-accessibility-api/), [Electron AX selection bug](https://github.com/electron/electron/issues/36337), [Wordwand](https://wordwand.co/blog/best-ai-writing-mac), [RewriteBar](https://rewritebar.com/articles/writing-apps-for-mac), [Setapp: Grammarly alternatives](https://setapp.com/app-reviews/grammarly-alternatives), [Apple Intelligence vs Grammarly](https://medium.com/macoclock/apple-intelligence-writing-tools-vs-grammarly-a-comprehensive-comparison-between-the-best-ai-b515b96f7d68)*
+*Sources: [AX selected-text technique](https://macdevelopers.wordpress.com/2014/02/05/how-to-get-selected-text-and-its-coordinates-from-any-system-wide-application-using-accessibility-api/), [Electron AX selection bug](https://github.com/electron/electron/issues/36337), [Wordwand](https://wordwand.co/blog/best-ai-writing-mac), [RewriteBar](https://rewritebar.com/articles/writing-apps-for-mac)*
