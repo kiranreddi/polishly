@@ -1,5 +1,8 @@
 using Xunit;
+using Polishly.App.Services;
 using Polishly.App.ViewModels;
+using Polishly.Core.Models;
+using Polishly.WindowsIntegration.Security;
 
 namespace Polishly.Platform.Tests;
 
@@ -73,5 +76,76 @@ public class SettingsViewModelTests
 
         vm.RemoveBlockedApplication("notepad.exe");
         Assert.DoesNotContain("notepad.exe", vm.BlockedApplications);
+    }
+
+    [Fact]
+    public async Task SettingsViewModel_Save_PersistsProviderAndCredential()
+    {
+        var credentialStore = new TestCredentialStore();
+        var settingsStore = new TestSettingsStore();
+        var vm = new SettingsViewModel(credentialStore, settingsStore);
+        vm.ActiveProviderId = "openai";
+        vm.ApiKey = "sk-test-key-123456";
+
+        var saved = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        vm.SettingsSaved += (_, _) => saved.TrySetResult(true);
+
+        vm.Save();
+
+        await saved.Task.WaitAsync(TimeSpan.FromSeconds(2));
+        Assert.Equal("sk-test-key-123456", credentialStore.SavedKey);
+        Assert.Equal("openai", settingsStore.SavedSettings?.ActiveProviderId);
+    }
+
+    [Fact]
+    public void AppSettingsStore_RoundTripsNonSecretSettings()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"polishly-settings-{Guid.NewGuid():N}.json");
+        try
+        {
+            var store = new AppSettingsStore(path);
+            store.Save(new AppSettings
+            {
+                ActiveProviderId = "openai",
+                Theme = "Dark",
+                HotkeyShortcut = "Ctrl+Alt+K",
+                LaunchAtStartup = true
+            });
+
+            var loaded = store.Load();
+            Assert.Equal("openai", loaded.ActiveProviderId);
+            Assert.Equal("Dark", loaded.Theme);
+            Assert.Equal("Ctrl+Alt+K", loaded.HotkeyShortcut);
+            Assert.True(loaded.LaunchAtStartup);
+        }
+        finally
+        {
+            if (File.Exists(path)) File.Delete(path);
+        }
+    }
+
+    private sealed class TestSettingsStore : IAppSettingsStore
+    {
+        public AppSettings? SavedSettings { get; private set; }
+
+        public AppSettings Load() => new();
+
+        public void Save(AppSettings settings) => SavedSettings = settings;
+    }
+
+    private sealed class TestCredentialStore : ICredentialStore
+    {
+        public string? SavedKey { get; private set; }
+
+        public Task SaveApiKeyAsync(string providerId, string apiKey, CancellationToken ct = default)
+        {
+            SavedKey = apiKey;
+            return Task.CompletedTask;
+        }
+
+        public Task<string?> GetApiKeyAsync(string providerId, CancellationToken ct = default) =>
+            Task.FromResult<string?>(null);
+
+        public Task DeleteApiKeyAsync(string providerId, CancellationToken ct = default) => Task.CompletedTask;
     }
 }

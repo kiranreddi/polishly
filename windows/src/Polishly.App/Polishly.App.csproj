@@ -12,6 +12,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <DefineConstants Condition="'$(UseWPF)' == 'true'">$(DefineConstants);HAS_WPF</DefineConstants>
+    <ApplicationIcon Condition="'$(OS)' == 'Windows_NT'">Assets\Polishly.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(UseWPF)' != 'true'">
@@ -21,7 +22,12 @@
 
   <ItemGroup>
     <None Include="Package.appxmanifest" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="Assets\**" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\**" Exclude="Assets\BrandMark.png;Assets\Polishly.ico" CopyToOutputDirectory="PreserveNewest" />
+    <None Update="Assets\Polishly.ico"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest"
+          ExcludeFromSingleFile="true" />
+    <Resource Include="Assets\BrandMark.png" />
   </ItemGroup>
 
 

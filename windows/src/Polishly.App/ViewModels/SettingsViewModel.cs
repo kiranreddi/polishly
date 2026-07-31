@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using Polishly.App.Services;
+using Polishly.Core.Models;
 using Polishly.WindowsIntegration.Security;
 
 namespace Polishly.App.ViewModels;
@@ -11,6 +13,7 @@ namespace Polishly.App.ViewModels;
 public class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly ICredentialStore? _credentialStore;
+    private readonly IAppSettingsStore? _settingsStore;
 
     private string _activeProviderId = "demo";
     private string _apiKey = string.Empty;
@@ -140,13 +143,23 @@ public class SettingsViewModel : INotifyPropertyChanged
     public ICommand AddBlocklistCommand { get; }
     public ICommand RemoveBlocklistCommand { get; }
 
-    public SettingsViewModel() : this(null)
+    public SettingsViewModel() : this(null, null)
     {
     }
 
-    public SettingsViewModel(ICredentialStore? credentialStore)
+    public SettingsViewModel(ICredentialStore? credentialStore, IAppSettingsStore? settingsStore = null)
     {
         _credentialStore = credentialStore;
+        _settingsStore = settingsStore;
+
+        if (_settingsStore != null)
+        {
+            var settings = _settingsStore.Load();
+            _activeProviderId = settings.ActiveProviderId;
+            _theme = settings.Theme;
+            _hotkeyShortcut = settings.HotkeyShortcut;
+            _launchAtStartup = settings.LaunchAtStartup;
+        }
 
         SaveCommand = new RelayCommand(Save);
         ValidateApiKeyCommand = new RelayCommand(() => ValidateApiKey(ActiveProviderId, ApiKey));
@@ -225,24 +238,32 @@ public class SettingsViewModel : INotifyPropertyChanged
 
     public async void Save()
     {
-        if (!ValidateApiKey(ActiveProviderId, ApiKey))
+        try
         {
-            return;
-        }
+            if (!ValidateApiKey(ActiveProviderId, ApiKey))
+            {
+                return;
+            }
 
-        if (_credentialStore != null && !string.IsNullOrEmpty(ActiveProviderId))
-        {
-            try
+            if (_credentialStore != null && !string.IsNullOrEmpty(ActiveProviderId))
             {
                 await _credentialStore.SaveApiKeyAsync(ActiveProviderId, ApiKey);
             }
-            catch (Exception ex)
+
+            _settingsStore?.Save(new AppSettings
             {
-                ValidationStatus = $"Credential save error: {ex.Message}";
-                return;
-            }
+                ActiveProviderId = ActiveProviderId,
+                Theme = Theme,
+                HotkeyShortcut = HotkeyShortcut,
+                LaunchAtStartup = LaunchAtStartup
+            });
+
+            SettingsSaved?.Invoke(this, EventArgs.Empty);
         }
-        SettingsSaved?.Invoke(this, EventArgs.Empty);
+        catch (Exception ex)
+        {
+            ValidationStatus = $"Save error: {ex.Message}";
+        }
     }
 
 

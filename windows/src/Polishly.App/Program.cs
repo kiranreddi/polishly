@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Polishly.App.Services;
@@ -23,6 +24,12 @@ namespace Polishly.App;
 
 public static class Program
 {
+    private static readonly string DiagnosticLogPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "Polishly",
+        "polishly-runtime.log");
+    private static bool _uiTestMode;
+
     private static TrayIconService? _trayIconService;
     private static GlobalHotkeyListener? _hotkeyListener;
     private static Polishly.Core.StateMachine.RewriteStateMachine? _stateMachine;
@@ -41,6 +48,9 @@ public static class Program
         Console.WriteLine("=== Polishly Windows Companion App Starting ===");
 
         bool demoRewrite = args.Any(a => string.Equals(a, "--demo-rewrite", StringComparison.OrdinalIgnoreCase));
+        bool openSettings = args.Any(a => string.Equals(a, "--settings", StringComparison.OrdinalIgnoreCase));
+        _uiTestMode = args.Any(a => string.Equals(a, "--ui-test", StringComparison.OrdinalIgnoreCase));
+        bool demoUiTest = args.Any(a => string.Equals(a, "--demo-ui-test", StringComparison.OrdinalIgnoreCase));
         string? demoText = null;
         for (int i = 0; i < args.Length - 1; i++)
         {
@@ -60,6 +70,25 @@ public static class Program
         _injectorEngine = new TextInjector(_clipboardTransaction, _capabilityRules);
         _credentialManager = new CredentialManager();
         _stateMachine = new Polishly.Core.StateMachine.RewriteStateMachine();
+        _settingsViewModel = new SettingsViewModel(_credentialManager, new AppSettingsStore());
+        if (demoUiTest)
+        {
+            _settingsViewModel.ActiveProviderId = "demo";
+        }
+
+#if HAS_WPF
+        // HwndSource requires WPF to be initialized before the hidden message
+        // window is created. Keeping the Application alive also prevents
+        // closing Settings from shutting down the tray companion.
+        System.Windows.Application? wpfApp = null;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            wpfApp = new System.Windows.Application
+            {
+                ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown
+            };
+        }
+#endif
 
         if (demoRewrite)
         {
@@ -73,6 +102,7 @@ public static class Program
         // 2. Native Message Window Initialization
         _messageWindow = new NativeMessageWindow();
         var messageHwnd = _messageWindow.Handle;
+        WriteDiagnostic($"Message window initialized: 0x{messageHwnd.ToInt64():X}");
 
         // 3. Tray Service Initialization
         _trayIconService = new TrayIconService();
@@ -84,13 +114,22 @@ public static class Program
 
         // 4. Global Hotkey Registration (Ctrl+Shift+P)
         _hotkeyListener = new GlobalHotkeyListener();
-        _hotkeyListener.HotkeyPressed += (s, e) => ExecuteRewriteWorkflow();
+        _hotkeyListener.HotkeyPressed += (s, e) =>
+        {
+            WriteDiagnostic("Global hotkey event received");
+            ExecuteRewriteWorkflow();
+        };
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
             // Register hotkey: MOD_CONTROL (0x0002) | MOD_SHIFT (0x0004), VK 'P' (0x50)
-            _hotkeyListener.Register(messageHwnd, Win32Native.MOD_CONTROL | Win32Native.MOD_SHIFT, 0x50);
-            Console.WriteLine("[Polishly] Registered global hotkey Ctrl+Shift+P");
+            var registered = _hotkeyListener.Register(messageHwnd, Win32Native.MOD_CONTROL | Win32Native.MOD_SHIFT, 0x50);
+            Console.WriteLine(registered
+                ? "[Polishly] Registered global hotkey Ctrl+Shift+P"
+                : $"[Polishly] Failed to register global hotkey Ctrl+Shift+P (Win32 error {_hotkeyListener.LastErrorCode})");
+            WriteDiagnostic(registered
+                ? "Global hotkey registered: Ctrl+Shift+P"
+                : $"Global hotkey registration failed: Win32 error {_hotkeyListener.LastErrorCode}");
         }
 
         _messageWindow.MessageReceived += (msg, wParam, lParam) =>
@@ -105,11 +144,23 @@ public static class Program
 #if HAS_WPF
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            var app = new System.Windows.Application();
+            var app = wpfApp ?? new System.Windows.Application
+            {
+                ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown
+            };
+            if (openSettings)
+            {
+                OpenSettingsWindow();
+            }
             app.Run();
             return;
         }
 #endif
+
+        if (openSettings)
+        {
+            Console.WriteLine("[Polishly] Settings UI requires the Windows WPF build.");
+        }
 
         // Background service execution loop for CLI/testing environments
         var keepAliveEvent = new ManualResetEvent(false);
@@ -243,8 +294,11 @@ public static class Program
         Console.WriteLine("[Polishly] Global Hotkey Triggered — Executing Rewrite Workflow...");
         try
         {
+            WriteDiagnostic("Rewrite workflow started");
             _stateMachine.Transition(RewriteEvent.TriggerHotkey);
-            var selection = await _captureEngine.CaptureSelectionAsync();
+            WriteDiagnostic("Starting UI Automation selection capture");
+            var selection = await Task.Run(() => _captureEngine.CaptureSelectionAsync());
+            WriteDiagnostic($"Selection capture completed: {selection.SelectedText.Length} characters");
             Console.WriteLine($"[Polishly] Captured selection from '{selection.TargetContext.ProcessName}': \"{selection.SelectedText}\"");
 
             _stateMachine.Transition(RewriteEvent.CaptureSuccess);
@@ -259,6 +313,9 @@ public static class Program
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 popupWin = new PopupWindow(popupVm);
+                popupWin.IsComputerUseTestMode = _uiTestMode;
+                popupWin.ShowInTaskbar = _uiTestMode;
+                WriteDiagnostic("Popup window constructed");
 
                 // Position popup window near target window using PopupPositioner
                 var positioner = new PopupPositioner();
@@ -269,6 +326,7 @@ public static class Program
                 popupWin.Top = pos.Y;
 
                 popupWin.Show();
+                WriteDiagnostic("Popup window shown");
             }
 
             popupVm.RequestClose += (s, e) =>
@@ -314,6 +372,7 @@ public static class Program
 #endif
 
             var provider = await ResolveProviderAsync();
+            WriteDiagnostic($"Provider resolved: {_settingsViewModel?.ActiveProviderId ?? "demo"}");
             var mode = string.IsNullOrEmpty(customInstruction) ? Polishly.Core.Models.RewriteMode.Improve : Polishly.Core.Models.RewriteMode.Custom;
             var req = new Polishly.Core.Models.RewriteRequest(
                 InputText: selection.SelectedText,
@@ -335,6 +394,7 @@ public static class Program
         catch (Exception ex)
         {
             Console.WriteLine($"[Polishly] Rewrite workflow error: {ex.Message}");
+            WriteDiagnostic($"Rewrite workflow error: {ex.Message}");
             _stateMachine?.Transition(RewriteEvent.Error, ex.Message);
         }
     }
@@ -345,7 +405,7 @@ public static class Program
 #if HAS_WPF
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            _settingsViewModel ??= new SettingsViewModel(_credentialManager);
+            _settingsViewModel ??= new SettingsViewModel(_credentialManager, new AppSettingsStore());
             var settingsWin = new SettingsWindow(_settingsViewModel);
             settingsWin.Show();
         }
@@ -360,6 +420,20 @@ public static class Program
         _trayIconService?.Dispose();
         _messageWindow?.Dispose();
         Environment.Exit(0);
+    }
+
+    private static void WriteDiagnostic(string message)
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(DiagnosticLogPath);
+            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
+            File.AppendAllText(DiagnosticLogPath, $"{DateTimeOffset.Now:O} {message}{Environment.NewLine}");
+        }
+        catch
+        {
+            // Diagnostics must never prevent the companion from starting.
+        }
     }
 }
 

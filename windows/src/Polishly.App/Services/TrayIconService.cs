@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.InteropServices;
 using Polishly.WindowsIntegration.Native;
 
@@ -15,6 +16,9 @@ public class TrayIconService : IDisposable
     public const uint NIF_ICON = 0x00000002;
     public const uint NIF_TIP = 0x00000004;
     public const uint NIF_INFO = 0x00000010;
+    public const uint IMAGE_ICON = 1;
+    public const uint LR_DEFAULTSIZE = 0x00000040;
+    public const uint LR_LOADFROMFILE = 0x00000010;
 
     public const uint WM_TRAYICON = 0x0401;
     public const int IDI_APPLICATION = 32512;
@@ -22,6 +26,8 @@ public class TrayIconService : IDisposable
     private bool _isVisible;
     private bool _isPaused;
     private IntPtr _windowHandle = IntPtr.Zero;
+    private IntPtr _iconHandle = IntPtr.Zero;
+    private bool _ownsIconHandle;
 
     public bool IsVisible => _isVisible;
     public bool IsPaused => _isPaused;
@@ -39,6 +45,7 @@ public class TrayIconService : IDisposable
 
         if (OperatingSystem.IsWindows())
         {
+            EnsureIconLoaded();
             NOTIFYICONDATA nid = CreateNotifyData(_windowHandle, "Polishly Companion", "Polishly AI Assistant is active.");
             _isVisible = Shell_NotifyIcon(NIM_ADD, ref nid);
         }
@@ -155,18 +162,43 @@ public class TrayIconService : IDisposable
             }
         }
 
+        if (_ownsIconHandle && _iconHandle != IntPtr.Zero)
+        {
+            DestroyIcon(_iconHandle);
+            _iconHandle = IntPtr.Zero;
+            _ownsIconHandle = false;
+        }
+
         GC.SuppressFinalize(this);
     }
 
-    private static NOTIFYICONDATA CreateNotifyData(IntPtr hWnd, string title, string tip)
+    private void EnsureIconLoaded()
     {
+        if (_iconHandle != IntPtr.Zero || !OperatingSystem.IsWindows()) return;
+
+        string iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "Polishly.ico");
+        if (File.Exists(iconPath))
+        {
+            _iconHandle = LoadImage(IntPtr.Zero, iconPath, IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);
+            _ownsIconHandle = _iconHandle != IntPtr.Zero;
+        }
+
+        if (_iconHandle == IntPtr.Zero)
+        {
+            _iconHandle = LoadIcon(IntPtr.Zero, (IntPtr)IDI_APPLICATION);
+        }
+    }
+
+    private NOTIFYICONDATA CreateNotifyData(IntPtr hWnd, string title, string tip)
+    {
+        EnsureIconLoaded();
         var nid = new NOTIFYICONDATA();
         nid.cbSize = (uint)Marshal.SizeOf(nid);
         nid.hWnd = hWnd;
         nid.uID = 1;
         nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
         nid.uCallbackMessage = WM_TRAYICON;
-        nid.hIcon = OperatingSystem.IsWindows() ? LoadIcon(IntPtr.Zero, (IntPtr)IDI_APPLICATION) : IntPtr.Zero;
+        nid.hIcon = _iconHandle;
         nid.szTip = tip;
         return nid;
     }
@@ -194,6 +226,13 @@ public class TrayIconService : IDisposable
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern IntPtr LoadIcon(IntPtr hInstance, IntPtr lpIconName);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern IntPtr LoadImage(IntPtr hInst, string name, uint type, int cx, int cy, uint fuLoad);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool DestroyIcon(IntPtr hIcon);
 
     [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
     private static extern bool Shell_NotifyIcon(uint dwMessage, ref NOTIFYICONDATA lpData);
