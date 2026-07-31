@@ -32,8 +32,15 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <StackPanel>
-                    <Border Width="58" Height="58" CornerRadius="15" ClipToBounds="True" HorizontalAlignment="Left">
-                        <Image Source="/Polishly.App;component/Assets/BrandMark.png" Stretch="UniformToFill"/>
+                    <Border Width="58" Height="58" CornerRadius="15" Background="{StaticResource AccentSoftBrush}"
+                            BorderBrush="{StaticResource BorderStrongBrush}" BorderThickness="1" HorizontalAlignment="Left">
+                        <Grid>
+                            <TextBlock Text="P" Foreground="{StaticResource AccentBrush}" FontFamily="{StaticResource DisplayFont}"
+                                       FontSize="37" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       Margin="0,2,0,0"/>
+                            <TextBlock Text="✦" Foreground="{StaticResource AccentHoverBrush}" FontSize="13"
+                                       HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,5,0"/>
+                        </Grid>
                     </Border>
                     <TextBlock Text="Polishly" FontFamily="{StaticResource DisplayFont}" FontSize="22" FontWeight="SemiBold" Margin="0,16,0,4"/>
                     <TextBlock Text="A quieter, faster way to write well everywhere."

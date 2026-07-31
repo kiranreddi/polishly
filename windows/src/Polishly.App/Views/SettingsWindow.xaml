@@ -49,8 +49,15 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <Border Width="38" Height="38" CornerRadius="10" ClipToBounds="True" Margin="0,0,12,0">
-                            <Image Source="/Polishly.App;component/Assets/BrandMark.png" Stretch="UniformToFill"/>
+                        <Border Width="38" Height="38" CornerRadius="10" Background="{StaticResource AccentSoftBrush}"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="0,0,12,0">
+                            <Grid>
+                                <TextBlock Text="P" Foreground="{StaticResource AccentBrush}" FontFamily="{StaticResource DisplayFont}"
+                                           FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                           Margin="0,1,0,0"/>
+                                <TextBlock Text="✦" Foreground="{StaticResource AccentHoverBrush}" FontSize="9"
+                                           HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,3,0"/>
+                            </Grid>
                         </Border>
                         <StackPanel VerticalAlignment="Center">
                             <TextBlock Text="Polishly" Foreground="{StaticResource TextPrimaryBrush}"
