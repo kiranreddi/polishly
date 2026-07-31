@@ -111,7 +111,8 @@
         <h1>Rewrite selected text.<br><span>Right where you type.</span></h1>
         <p class="hero-sub">Polishly is a private AI rewriting tool for Mac and Windows. Select your words, press one shortcut, and review the change before anything is replaced.</p>
         <div class="hero-actions">
-          <a class="btn btn-primary btn-lg" href="assets/releases/Polishly-1.0.0.dmg" download="Polishly-1.0.0.dmg">Download for macOS</a>
+          <a class="btn btn-primary btn-lg" href="assets/releases/Polishly-1.0.0.dmg" download="Polishly-1.0.0.dmg">Download for Mac</a>
+          <a class="btn btn-ghost btn-lg" href="#download-windows">Windows preview</a>
           <a class="btn btn-ghost btn-lg" href="#how-it-works">See how it works</a>
         </div>
         <div class="trust-line" aria-label="Product highlights">
@@ -233,8 +234,8 @@
         <h2>Ready on Mac or Windows.</h2>
         <p>No Polishly account and no subscription required. Bring the platform you already work in.</p>
       </div>
-      <div class="download-panel">
-        <div class="download-main">
+      <div class="download-grid">
+        <div class="platform-download-card platform-download-card-mac">
           <div class="download-title-row">
             <img src="assets/icon-256.png" alt="Polishly icon" width="58" height="58">
             <div><span class="version">Version 1.0.0</span><h3>Polishly for macOS</h3></div>
@@ -245,7 +246,6 @@
             <a class="btn btn-ghost" href="https://github.com/kiranreddi/polishly/releases/latest" target="_blank" rel="noopener">Release notes</a>
           </div>
           <span class="file-note">macOS 14+ · free · MIT licensed</span>
-        </div>
         <div class="install-card">
           <h3>Install and start</h3>
           <ol>
@@ -256,18 +256,20 @@
           </ol>
           <p>Need a free provider key? <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Create a Groq key</a> or read the <a href="https://github.com/kiranreddi/polishly/blob/main/README.md" target="_blank" rel="noopener">setup guide</a>.</p>
         </div>
-      </div>
-      <div class="windows-download-card">
+        </div>
+      <div id="download-windows" class="platform-download-card platform-download-card-windows">
         <div class="download-title-row">
           <img src="assets/icon-256.png" alt="Polishly icon" width="58" height="58">
-          <div><span class="version">Windows companion</span><h3>Polishly for Windows</h3></div>
+          <div><span class="version">Windows preview</span><h3>Polishly for Windows</h3></div>
         </div>
-        <p>A native tray companion with a redesigned settings surface, Windows Credential Manager storage, and <code>Ctrl + Shift + P</code> rewrite review.</p>
+        <p>A native tray companion with Windows Credential Manager storage, a redesigned settings surface, and <code>Ctrl + Shift + P</code> rewrite review.</p>
         <div class="download-actions">
-          <a class="btn btn-primary" href="https://github.com/kiranreddi/polishly/tree/main/windows" target="_blank" rel="noopener">View Windows build</a>
-          <a class="btn btn-ghost" href="https://github.com/kiranreddi/polishly/releases/latest" target="_blank" rel="noopener">Release notes</a>
+          <a class="btn btn-primary btn-lg" href="https://github.com/kiranreddi/polishly/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download source ZIP</a>
+          <a class="btn btn-ghost" href="https://github.com/kiranreddi/polishly/tree/main/windows" target="_blank" rel="noopener">Build instructions</a>
         </div>
-        <span class="file-note">Windows 10+ · free · MIT licensed</span>
+        <span class="file-note">Windows 10+ · source preview · free · MIT licensed</span>
+        <p class="download-note">A signed Windows installer will be linked here when the Windows release package is published.</p>
+      </div>
       </div>
     </div>
   </section>

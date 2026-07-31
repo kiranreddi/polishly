@@ -2,203 +2,210 @@
   <img src="docs/images/icon.png" width="96" alt="Polishly icon" />
 </p>
 
-# Polishly
+<h1 align="center">Polishly</h1>
+
+<p align="center">
+  <strong>One shortcut. One diff. Zero cloud middlemen.</strong><br>
+  Rewrite selected text wherever you type — privately, in place, on Mac or Windows.
+</p>
+
+<p align="center">
+  <a href="https://polishly.info">Website</a> ·
+  <a href="https://github.com/kiranreddi/polishly/releases/latest">Latest release</a> ·
+  <a href="https://github.com/kiranreddi/polishly/issues">Issues</a>
+</p>
 
 <p align="center">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-13b8a4.svg" alt="MIT License" /></a>
-  <img src="https://img.shields.io/badge/platform-macOS%2014%2B-13b8a4.svg" alt="macOS 14+" />
-  <img src="https://img.shields.io/badge/Swift-SwiftUI%20%2B%20AppKit-13b8a4.svg" alt="Swift, SwiftUI + AppKit" />
+  <a href="https://github.com/kiranreddi/polishly"><img src="https://img.shields.io/github/stars/kiranreddi/polishly?style=flat&color=13b8a4" alt="GitHub stars" /></a>
+  <img src="https://img.shields.io/badge/macOS-14%2B-13b8a4.svg" alt="macOS 14+" />
+  <img src="https://img.shields.io/badge/Windows-10%2B%20preview-718cff.svg" alt="Windows 10+ preview" />
 </p>
 
-**Select text anywhere on your Mac. Press one hotkey. Get a real, in-place rewrite.**
+<p align="center">
+  <img src="docs/video/polishly-demo.gif" width="720" alt="Polishly selecting text, generating a rewrite, and showing an inline diff" />
+</p>
 
-Polishly is a free, open-source macOS menu-bar app. No subscription. No background scanning. No middleman — you bring a free (or paid) API key, and your text goes straight from your Mac to the provider you chose.
+## The idea
 
+Most writing assistants make you leave the app, paste text into a cloud editor, and trust an invisible replacement. Polishly keeps the useful part and removes the ceremony:
+
+```text
+Select text  →  press one hotkey  →  review the diff  →  Accept or Copy
 ```
-Select text  →  ⌃⌥Space  →  review rewrite + inline diff  →  Accept
-```
 
-**[polishly.info](https://polishly.info)** — website, download, and full feature tour.
+Polishly is a free, open-source companion that sits in the menu bar on Mac or the system tray on Windows. It only reads the selection after you invoke it, sends the text directly to the AI provider you choose, and shows exactly what will change before anything is replaced.
 
-<p align="center">
-  <img src="docs/video/polishly-demo.gif" width="640" alt="Polishly demo: selecting text, pressing the hotkey, and reviewing the inline diff" />
-</p>
+## Why it feels different
 
-<p align="center">
-  <a href="https://raw.githubusercontent.com/kiranreddi/polishly/main/docs/video/polishly-promo.mp4">Download the full 52s demo (mp4, with narration)</a>
-</p>
+- **In-place rewrites.** Work in Notes, Mail, Slack, Teams, browsers, and other accessible text fields.
+- **Review before replace.** Polishly computes a word-level diff locally so you can see the edit before accepting it.
+- **Bring your own key.** Use OpenAI, Anthropic, Groq, Cerebras, or the offline demo flow.
+- **No Polishly cloud.** There is no Polishly rewrite backend, account, subscription, or text warehouse in the middle.
+- **Explicit by design.** Nothing is read or sent until you press the shortcut.
+- **Native companions.** SwiftUI + AppKit on Mac; a Windows tray companion with UI Automation, guarded clipboard fallback, and Credential Manager storage.
 
-<p align="center">
-  <img src="docs/images/website-hero.png" width="820" alt="Polishly website hero" />
-</p>
+## Before / after
 
-## Truly free setup (recommended)
+**Instruction: make it clearer**
 
-The app itself is **always free**. To use real AI rewrites at **$0**, pick a provider with a free tier and paste the key into Polishly.
+> **Before:** i have sent the mail let see what he will tell
+>
+> **After:** I've sent the email — let's see how he responds.
 
-| Provider | Card required? | Best for | Default model in Polishly |
+**Instruction: translate to Spanish**
+
+> **Before:** I think we should move the meeting to next week.
+>
+> **After:** Creo que deberíamos posponer la reunión para la próxima semana.
+
+The important part is not a particular tone. It is the small loop: invoke, inspect, decide.
+
+## Choose your platform
+
+| Platform | Status | Shortcut | Download / build |
 |---|---|---|---|
-| **[Groq](https://console.groq.com/keys)** | **No** | Everyday free rewrites | `llama-3.3-70b-versatile` |
-| **[Cerebras](https://cloud.cerebras.ai/)** | Often yes (for free trial credits) | Very fast inference | `gpt-oss-120b` |
-| On-device demo | No | Trying the UI offline | Local rules (no AI) |
+| **macOS 14+** | Release build | `⌃⌥Space` | [Download the latest DMG](https://github.com/kiranreddi/polishly/releases/latest) |
+| **Windows 10+** | Preview companion | `Ctrl + Shift + P` | [Download source ZIP](https://github.com/kiranreddi/polishly/archive/refs/heads/main.zip) · [Build instructions](windows/) |
 
-**Recommendation:** start with **Groq** — signup is free, no credit card, and keys work in Polishly in under two minutes.
+The Mac release is signed and notarized. The Windows companion is available as a source preview while the signed Windows installer package is being prepared.
 
-> Free tiers have rate limits (requests/tokens per day). Limits can change; check each provider’s console. Polishly never bills you — only the provider would, and only if *you* upgrade.
+## Quick start
 
----
+### macOS
 
-### 1) Get a free Groq API key (no credit card)
+1. Download the latest `.dmg` from [Releases](https://github.com/kiranreddi/polishly/releases/latest).
+2. Drag `Polishly.app` into `/Applications` and open it.
+3. Grant Accessibility access in **System Settings → Privacy & Security → Accessibility**.
+4. Open Settings, choose a provider, and paste your API key — or stay in Demo mode.
+5. Select text anywhere and press `⌃⌥Space`.
 
-1. Open **[console.groq.com](https://console.groq.com)** and sign up (Google / GitHub / email).
-2. Go to **[API Keys](https://console.groq.com/keys)** → **Create API Key**.
-3. Name it something like `polishly`, create it, and **copy the key immediately** (it starts with `gsk_` and is shown once).
-4. In Polishly:
-   - Menu bar → **Settings** (or finish onboarding)
-   - **Rewrite Provider** → **Groq**
-   - Paste the key → leave model as `llama-3.3-70b-versatile` (or pick another Groq model id)
-   - **Save & Remember Key**
-5. Optional: click **Test Connection**, then try a rewrite in Notes with **⌃⌥Space**.
+### Windows preview
 
-That’s it — Polishly + Groq free tier = real AI rewrites with no Polishly fee and no Groq card on file.
+The Windows companion is a native tray app. It stores keys in Windows Credential Manager and uses UI Automation with a guarded clipboard fallback where needed.
 
----
+```powershell
+git clone https://github.com/kiranreddi/polishly.git
+cd polishly
+dotnet build windows/Polishly.Windows.sln
+dotnet run --project windows/src/Polishly.App/Polishly.App.csproj
+```
 
-### 2) Get a Cerebras API key (free trial credits)
+On Windows, open **Settings**, choose your provider, paste the key, and press **Save settings**. Select text in a supported field and press `Ctrl + Shift + P` to review a rewrite.
 
-1. Open **[cloud.cerebras.ai](https://cloud.cerebras.ai/)** (Cerebras Inference Cloud Console) and create an account.
-2. Create an API key under **API Keys** (keys often look like `csk-…`). Copy it.
-3. Cerebras’s free trial typically grants starter credits after account setup; **some accounts require adding a verified payment method before API access activates**, even if you are not charged until you buy more credits. Check **Billing / Limits** in their console for your account.
-4. In Polishly:
-   - **Rewrite Provider** → **Cerebras**
-   - Paste the key → model `gpt-oss-120b` (default)
-   - **Save & Remember Key** → **Test Connection**
+## Connect an AI provider
 
-Use Cerebras when you want faster inference; use Groq when you want the simplest no-card free path.
+The app is free. You bring the provider key and pay only the provider if you choose a paid plan.
 
----
+| Provider | Good starting point | Key |
+|---|---|---|
+| **[Groq](https://console.groq.com/keys)** | Fast free-tier experiments; no card is required for signup | Starts with `gsk_` |
+| **[Cerebras](https://cloud.cerebras.ai/)** | Very fast inference and generous trial access | Provider console |
+| **[OpenAI](https://platform.openai.com/api-keys)** | OpenAI models | Provider console |
+| **[Anthropic](https://console.anthropic.com/)** | Claude models | Provider console |
+| **Demo mode** | Try capture → diff → accept without a network request | No key |
 
-### Paste the key into Polishly
+### Groq in under two minutes
 
-1. Open Polishly from the menu bar.
-2. **Settings → Rewrite Provider**.
-3. Choose **Groq** or **Cerebras**.
-4. Paste the API key into the key field.
-5. Click **Save & Remember Key** (stored in the macOS Keychain — never in plaintext prefs).
-6. Select text in Notes → press **⌃⌥Space** → Accept.
+1. Open [console.groq.com/keys](https://console.groq.com/keys) and create an account.
+2. Select **Create API Key**, name it `polishly`, and copy it immediately.
+3. In Polishly, open **Settings → AI Provider**, choose **Groq**, and paste the key.
+4. Save the settings, select text, and invoke the shortcut.
 
-Paid providers still work the same way if you prefer them later: [OpenAI](https://platform.openai.com/api-keys) · [Anthropic](https://console.anthropic.com/).
+Provider free tiers have their own rate limits and policies. Check the provider console for current limits; Polishly never bills you.
 
----
+## Build from source
 
-## Why Polishly
+### Mac
 
-- **$0 for the app, forever.** MIT-licensed; no subscription, no markup.
-- **Bring your own key.** OpenAI, Anthropic, Groq, or Cerebras — or stay on local demo mode with zero network.
-- **Explicitly invoked.** Nothing is read or sent until you press the hotkey.
-- **Real word-level diff.** See exactly what changed before you Accept.
-- **System-wide.** Notes, Mail, Slack, Teams, browsers — anywhere Accessibility can read a selection.
-
-## Install
-
-### Release build (recommended)
+Requires macOS 14+, Xcode, and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```sh
-brew install xcodegen   # once
-git clone git@github.com:kiranreddi/polishly.git
+brew install xcodegen
+git clone https://github.com/kiranreddi/polishly.git
 cd polishly
+xcodegen generate
+xcodebuild -project Polishly.xcodeproj -scheme Polishly -configuration Debug build
+```
+
+For a distributable Mac build:
+
+```sh
 ./scripts/package-release.sh
 ```
 
-That produces:
+This creates `dist/Polishly.app` and `dist/Polishly-1.0.0.dmg`.
 
-- `dist/Polishly.app` — signed Release build (hardened runtime)
-- `dist/Polishly-1.0.0.dmg` — distributable disk image
+### Windows
 
-Install:
+Requires the .NET 10 SDK. The solution and companion projects are under [`windows/`](windows/).
 
-```sh
-osascript -e 'tell application "Polishly" to quit' 2>/dev/null || true
-rm -rf /Applications/Polishly.app
-cp -R dist/Polishly.app /Applications/
-xattr -cr /Applications/Polishly.app
-open /Applications/Polishly.app
+```powershell
+dotnet build windows/Polishly.Windows.sln
+dotnet run --project windows/src/Polishly.App/Polishly.App.csproj -- --demo-rewrite --text "a rough sentence to improve"
 ```
 
-Keeping the same **Team ID** (`W26KHF87HS`) and bundle id (`com.polishly.Polishly`) across rebuilds preserves Accessibility approval — you usually should not need to re-grant it after updating.
+The demo command exercises the headless rewrite path without an API key. The full tray, hotkey, and UI Automation experience needs a real Windows host.
 
-### Debug build (development)
+## Test it
 
-```sh
-xcodegen generate
-xcodebuild -project Polishly.xcodeproj -scheme Polishly -configuration Debug build
-open "$(ls -d ~/Library/Developer/Xcode/DerivedData/Polishly-*/Build/Products/Debug/Polishly.app | head -1)"
-```
-
-### First-run setup
-
-1. Open Polishly from `/Applications` (menu-bar app — no Dock icon).
-2. Grant **Accessibility** when prompted (*System Settings → Privacy & Security → Accessibility*).
-3. Finish onboarding: stay on demo, or connect **Groq / Cerebras / OpenAI / Anthropic**.
-4. Optional: Settings → **Open at Login**.
-
-### Uninstall
-
-1. Settings → turn off **Open at Login** (or remove Polishly under *System Settings → General → Login Items*).
-2. Quit Polishly from the menu bar.
-3. Delete `/Applications/Polishly.app`.
-4. API keys stay in Keychain until you remove `com.polishly.apiKey.*` in Keychain Access.
-
-## Using it
-
-1. Select text in any app.
-2. Press **⌃⌥Space** (configurable in Settings).
-3. Pick a tone — **Improve · Concise · Friendly · Expand** — or **Revise with AI** with a free-form instruction.
-4. Review the inline diff → **Accept** (replace in place) or **Copy**.
-
-### Real examples
-
-These are genuine outputs from Polishly’s “Revise with AI” path during testing — not cherry-picked marketing copy.
-
-**Instruction: "translate this to Spanish"**  
-> Input: *I think we should push the meeting to next week.*  
-> Output: *Creo que deberíamos posponer la reunión para la próxima semana.*
-
-**Instruction: "make this concise — cut it to two sentences"**  
-> Input: *Our Q3 numbers came in below target, mostly because of the delayed product launch…*  
-> Output: *Our Q3 results missed targets due to a delayed product launch caused by last-minute engineering bugs, with marketing budget partially sunk. We're revising the Q4 forecast accordingly and will meet this week to discuss next steps.*
-
-**Instruction: "rewrite this as a bulleted list"**  
-> Input: *The new onboarding flow requires users to verify their email, set up two-factor authentication…*  
-> Output:
-> - Users must verify their email  
-> - Users must set up two-factor authentication  
-> - Users must complete a short profile  
-> - Access to the dashboard is granted after these steps  
-> - Approximately 40% of users drop off during the 2FA step  
-
-## How it's built
-
-- Swift + SwiftUI, AppKit `NSPanel` for the floating card (non-activating, so focus stays in the app you’re rewriting).
-- macOS Accessibility API for selection + in-place replace, with a clipboard-transaction fallback for Electron apps (Teams, Slack).
-- Local word-level diff — the model returns clean text; Polishly computes the diff.
-- Streaming completions from your configured provider.
-
-## Testing
+Mac tests:
 
 ```sh
 xcodegen generate
 xcodebuild -project Polishly.xcodeproj -scheme Polishly -configuration Debug test
 ```
 
+Windows tests use the repository's lightweight runners:
+
+```powershell
+dotnet run --project windows/tests/Polishly.Core.Tests/Polishly.Core.Tests.csproj
+dotnet run --project windows/tests/Polishly.Platform.Tests/Polishly.Platform.Tests.csproj
+dotnet run --project windows/tests/Polishly.AppCompatibility.Tests/Polishly.AppCompatibility.Tests.csproj
+```
+
+The Windows CI workflow runs the Release build, all three test assemblies, and the demo rewrite path on `windows-latest`.
+
+## How it works
+
+1. **Capture** — Accessibility on Mac or UI Automation on Windows reads the selected text only after the hotkey.
+2. **Rewrite** — The configured provider streams a response directly to the app.
+3. **Diff** — Polishly computes a local word-level diff.
+4. **Replace** — Accept writes the approved result back into the active field; Copy leaves the original untouched.
+
+Sensitive apps and password fields are guarded. API keys stay in macOS Keychain or Windows Credential Manager rather than plaintext preferences.
+
+## Project map
+
+```text
+Sources/                 macOS app, providers, diff engine, state machine
+windows/src/             Windows companion, core, providers, platform adapters
+windows/tests/            Windows unit and compatibility runners
+website/                 Product site and platform download page
+docs/                    Screenshots, demo media, and planning notes
+```
+
 ## Privacy
 
-Polishly only sends text when you explicitly invoke the hotkey. Your selection goes from your Mac to the provider you configured, using your key. Polishly has no rewrite backend and never sees your text. Sensitive apps (password managers, etc.) are blocked.
+Polishly has no rewrite server. When you invoke a rewrite, the selected text goes from your device directly to the provider configured in Settings using your key. Nothing is sent before invocation, and the source is MIT licensed so you can inspect the workflow yourself.
 
 ## Contributing
 
-[Issues](https://github.com/kiranreddi/polishly/issues) and PRs welcome. Small personal open-source project — be reasonable.
+Issues, product feedback, screenshots, and pull requests are welcome. If you find a platform-specific problem, include:
+
+- operating system and version;
+- Polishly version or commit;
+- the host app where it happened;
+- whether the issue occurred during capture, streaming, diff review, or replacement.
+
+Please do not paste API keys or private text into issues.
 
 ## License
 
 [MIT](LICENSE)
+
+<p align="center">
+  <a href="https://polishly.info">polishly.info</a> ·
+  <a href="https://github.com/kiranreddi/polishly">GitHub</a> ·
+  <a href="https://github.com/kiranreddi/polishly/issues">Report a problem</a>
+</p>
