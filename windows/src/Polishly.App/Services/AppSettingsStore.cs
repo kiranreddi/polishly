@@ -1,20 +1,16 @@
-using System.IO;
 using System.Text.Json;
+using System.IO;
 using Polishly.Core.Models;
 
 namespace Polishly.App.Services;
 
 public interface IAppSettingsStore
 {
-    AppSettings Load();
-    void Save(AppSettings settings);
+    Task<AppSettings> LoadAsync(CancellationToken ct = default);
+    Task SaveAsync(AppSettings settings, CancellationToken ct = default);
 }
 
-/// <summary>
-/// Persists non-secret companion settings locally. API keys remain in Windows
-/// Credential Manager and are intentionally never written to this file.
-/// </summary>
-public sealed class AppSettingsStore : IAppSettingsStore
+public sealed class JsonAppSettingsStore : IAppSettingsStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -22,52 +18,60 @@ public sealed class AppSettingsStore : IAppSettingsStore
         PropertyNameCaseInsensitive = true
     };
 
-    private readonly string _settingsPath;
+    public string SettingsPath { get; }
 
-    public AppSettingsStore()
-        : this(Path.Combine(
+    public JsonAppSettingsStore(string? settingsPath = null)
+    {
+        SettingsPath = settingsPath ?? Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Polishly",
-            "settings.json"))
-    {
+            "settings.json");
     }
 
-    public AppSettingsStore(string settingsPath)
+    public async Task<AppSettings> LoadAsync(CancellationToken ct = default)
     {
-        _settingsPath = settingsPath;
-    }
+        if (!File.Exists(SettingsPath))
+        {
+            return new AppSettings();
+        }
 
-    public AppSettings Load()
-    {
         try
         {
-            if (!File.Exists(_settingsPath))
-            {
-                return new AppSettings();
-            }
-
-            var json = File.ReadAllText(_settingsPath);
-            return JsonSerializer.Deserialize<AppSettings>(json, JsonOptions) ?? new AppSettings();
+            await using var stream = new FileStream(
+                SettingsPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            var settings = await JsonSerializer.DeserializeAsync<AppSettings>(
+                stream, JsonOptions, ct);
+            return settings is { } && settings.IsValid() ? settings : new AppSettings();
         }
-        catch
+        catch (JsonException)
         {
-            // A damaged or inaccessible settings file should not prevent the
-            // tray companion from starting with safe defaults.
+            return new AppSettings();
+        }
+        catch (IOException)
+        {
             return new AppSettings();
         }
     }
 
-    public void Save(AppSettings settings)
+    public async Task SaveAsync(AppSettings settings, CancellationToken ct = default)
     {
-        ArgumentNullException.ThrowIfNull(settings);
-
-        var directory = Path.GetDirectoryName(_settingsPath);
-        if (!string.IsNullOrEmpty(directory))
+        if (!settings.IsValid())
         {
-            Directory.CreateDirectory(directory);
+            throw new InvalidOperationException("Refusing to persist invalid Polishly settings.");
         }
 
-        var json = JsonSerializer.Serialize(settings, JsonOptions);
-        File.WriteAllText(_settingsPath, json);
+        string directory = Path.GetDirectoryName(SettingsPath)
+                           ?? throw new InvalidOperationException("Settings path has no parent directory.");
+        Directory.CreateDirectory(directory);
+        string temporaryPath = SettingsPath + ".tmp";
+
+        await using (var stream = new FileStream(
+                         temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None))
+        {
+            await JsonSerializer.SerializeAsync(stream, settings, JsonOptions, ct);
+            await stream.FlushAsync(ct);
+        }
+
+        File.Move(temporaryPath, SettingsPath, overwrite: true);
     }
 }

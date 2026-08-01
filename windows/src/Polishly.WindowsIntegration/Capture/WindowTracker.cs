@@ -22,7 +22,8 @@ public class WindowTracker
             var hWnd = Win32Native.GetForegroundWindow();
             if (hWnd == IntPtr.Zero)
             {
-                return new TargetWindow(IntPtr.Zero, 0, "unknown", "Unknown", false);
+                return new TargetWindow(
+                    IntPtr.Zero, 0, "unknown", "Unknown", IsElevated: true);
             }
 
             Win32Native.GetWindowThreadProcessId(hWnd, out var processId);
@@ -47,7 +48,10 @@ public class WindowTracker
         }
         catch
         {
-            return new TargetWindow(IntPtr.Zero, 0, "unknown", "Unknown", false);
+            // Failure to identify the source is a security boundary. Mark it
+            // conservatively so capture refuses to transmit selected text.
+            return new TargetWindow(
+                IntPtr.Zero, 0, "unknown", "Unknown", IsElevated: true);
         }
     }
 }

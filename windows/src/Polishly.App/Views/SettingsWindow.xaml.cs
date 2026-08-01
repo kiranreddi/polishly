@@ -1,7 +1,9 @@
 using System.Windows;
-using System.Windows.Threading;
 using System.ComponentModel;
 using Polishly.App.ViewModels;
+#if HAS_WPF
+using System.Windows.Threading;
+#endif
 
 namespace Polishly.App.Views;
 
@@ -26,6 +28,14 @@ public partial class SettingsWindow : Window
             Dispatcher.BeginInvoke(
                 () => SettingsScrollViewer.ScrollToTop(),
                 DispatcherPriority.ContextIdle);
+        };
+        viewModel.PropertyChanged += (s, e) =>
+        {
+            if (e.PropertyName == nameof(SettingsViewModel.ApiKey) &&
+                ApiKeyBox.Password != viewModel.ApiKey)
+            {
+                ApiKeyBox.Password = viewModel.ApiKey;
+            }
         };
 #endif
     }
@@ -83,4 +93,3 @@ public partial class SettingsWindow : Window
     }
 #endif
 }
-

@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Polishly.App.Services;
@@ -8,8 +7,10 @@ using Polishly.App.Views;
 using Polishly.Core;
 using Polishly.Core.Capabilities;
 using Polishly.Core.Diff;
+using Polishly.Core.Models;
 using Polishly.Core.StateMachine;
 using Polishly.Providers.Demo;
+using Polishly.Providers;
 
 using Polishly.Providers.Abstractions;
 using Polishly.WindowsIntegration.Capture;
@@ -24,12 +25,6 @@ namespace Polishly.App;
 
 public static class Program
 {
-    private static readonly string DiagnosticLogPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-        "Polishly",
-        "polishly-runtime.log");
-    private static bool _uiTestMode;
-
     private static TrayIconService? _trayIconService;
     private static GlobalHotkeyListener? _hotkeyListener;
     private static Polishly.Core.StateMachine.RewriteStateMachine? _stateMachine;
@@ -41,16 +36,37 @@ public static class Program
     private static TextInjector? _injectorEngine;
     private static CredentialManager? _credentialManager;
     private static NativeMessageWindow? _messageWindow;
+    private static IAppSettingsStore? _settingsStore;
+    private static AppSettings _appSettings = new();
+    private static Mutex? _singleInstanceMutex;
+#if HAS_WPF
+    private static SettingsWindow? _settingsWindow;
+#endif
+    private static readonly StartupRegistrationService StartupRegistration = new();
+    private static int _rewriteWorkflowActive;
+    private static bool _uiTestMode;
 
     [STAThread]
     public static void Main(string[] args)
     {
         Console.WriteLine("=== Polishly Windows Companion App Starting ===");
+        if (OperatingSystem.IsWindows())
+        {
+            try
+            {
+                Win32Native.SetProcessDpiAwarenessContext(
+                    Win32Native.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+            }
+            catch
+            {
+                // A manifest also declares Per-Monitor V2. Windows can reject this
+                // call if another component already established the same context.
+            }
+        }
 
         bool demoRewrite = args.Any(a => string.Equals(a, "--demo-rewrite", StringComparison.OrdinalIgnoreCase));
-        bool openSettings = args.Any(a => string.Equals(a, "--settings", StringComparison.OrdinalIgnoreCase));
         _uiTestMode = args.Any(a => string.Equals(a, "--ui-test", StringComparison.OrdinalIgnoreCase));
-        bool demoUiTest = args.Any(a => string.Equals(a, "--demo-ui-test", StringComparison.OrdinalIgnoreCase));
+        string? providerSmoke = null;
         string? demoText = null;
         for (int i = 0; i < args.Length - 1; i++)
         {
@@ -59,39 +75,39 @@ public static class Program
                 demoText = args[i + 1];
                 break;
             }
+            if (string.Equals(args[i], "--provider-smoke", StringComparison.OrdinalIgnoreCase))
+            {
+                providerSmoke = args[i + 1];
+            }
         }
 
         // 1. Dependency Composition & Service Registration
         _capabilityRules = new Polishly.Core.Capabilities.AppCapabilityRules();
+        _settingsStore = new JsonAppSettingsStore();
+        _appSettings = _settingsStore.LoadAsync().GetAwaiter().GetResult();
 
         _windowTracker = new WindowTracker();
-        _captureEngine = new UIAutomationCapture(_windowTracker, _capabilityRules);
+        _captureEngine = new UIAutomationCapture(
+            _windowTracker, _capabilityRules, _appSettings.BlockedApplications);
         _clipboardTransaction = new GuardedClipboardTransaction();
         _injectorEngine = new TextInjector(_clipboardTransaction, _capabilityRules);
         _credentialManager = new CredentialManager();
         _stateMachine = new Polishly.Core.StateMachine.RewriteStateMachine();
-        _settingsViewModel = new SettingsViewModel(_credentialManager, new AppSettingsStore());
-        if (demoUiTest)
-        {
-            _settingsViewModel.ActiveProviderId = "demo";
-        }
+        _settingsViewModel = CreateSettingsViewModel();
 
-#if HAS_WPF
-        // HwndSource requires WPF to be initialized before the hidden message
-        // window is created. Keeping the Application alive also prevents
-        // closing Settings from shutting down the tray companion.
-        System.Windows.Application? wpfApp = null;
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (!string.IsNullOrWhiteSpace(providerSmoke))
         {
-            wpfApp = new System.Windows.Application
-            {
-                ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown
-            };
+            RunProviderSmokeAndExit(providerSmoke).GetAwaiter().GetResult();
+            return;
         }
-#endif
 
         if (demoRewrite)
         {
+            // The CLI demo verifies orchestration without reading or replacing
+            // any interactive desktop content, including on Windows CI.
+            _clipboardTransaction = new GuardedClipboardTransaction(() => 1u);
+            _injectorEngine = new TextInjector(
+                _clipboardTransaction, _capabilityRules);
             _captureEngine.TestFallbackText = string.IsNullOrWhiteSpace(demoText)
                 ? "I think we should push the meeting to next week because several people are out."
                 : demoText;
@@ -99,10 +115,24 @@ public static class Program
             return;
         }
 
+        if (OperatingSystem.IsWindows())
+        {
+            _singleInstanceMutex = new Mutex(
+                initiallyOwned: true,
+                name: @"Local\Polishly.WindowsCompanion",
+                createdNew: out bool isFirstInstance);
+            if (!isFirstInstance)
+            {
+                Console.WriteLine("[Polishly] Another instance is already running.");
+                _singleInstanceMutex.Dispose();
+                _singleInstanceMutex = null;
+                return;
+            }
+        }
+
         // 2. Native Message Window Initialization
         _messageWindow = new NativeMessageWindow();
         var messageHwnd = _messageWindow.Handle;
-        WriteDiagnostic($"Message window initialized: 0x{messageHwnd.ToInt64():X}");
 
         // 3. Tray Service Initialization
         _trayIconService = new TrayIconService();
@@ -114,22 +144,11 @@ public static class Program
 
         // 4. Global Hotkey Registration (Ctrl+Shift+P)
         _hotkeyListener = new GlobalHotkeyListener();
-        _hotkeyListener.HotkeyPressed += (s, e) =>
-        {
-            WriteDiagnostic("Global hotkey event received");
-            ExecuteRewriteWorkflow();
-        };
+        _hotkeyListener.HotkeyPressed += (s, e) => ExecuteRewriteWorkflow();
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            // Register hotkey: MOD_CONTROL (0x0002) | MOD_SHIFT (0x0004), VK 'P' (0x50)
-            var registered = _hotkeyListener.Register(messageHwnd, Win32Native.MOD_CONTROL | Win32Native.MOD_SHIFT, 0x50);
-            Console.WriteLine(registered
-                ? "[Polishly] Registered global hotkey Ctrl+Shift+P"
-                : $"[Polishly] Failed to register global hotkey Ctrl+Shift+P (Win32 error {_hotkeyListener.LastErrorCode})");
-            WriteDiagnostic(registered
-                ? "Global hotkey registered: Ctrl+Shift+P"
-                : $"Global hotkey registration failed: Win32 error {_hotkeyListener.LastErrorCode}");
+            RegisterConfiguredHotkey(messageHwnd);
         }
 
         _messageWindow.MessageReceived += (msg, wParam, lParam) =>
@@ -144,23 +163,17 @@ public static class Program
 #if HAS_WPF
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            var app = wpfApp ?? new System.Windows.Application
+            var app = new System.Windows.Application();
+            app.ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
+            ThemeService.Apply(_appSettings.Theme);
+            if (!_appSettings.OnboardingCompleted)
             {
-                ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown
-            };
-            if (openSettings)
-            {
-                OpenSettingsWindow();
+                ShowOnboarding();
             }
             app.Run();
             return;
         }
 #endif
-
-        if (openSettings)
-        {
-            Console.WriteLine("[Polishly] Settings UI requires the Windows WPF build.");
-        }
 
         // Background service execution loop for CLI/testing environments
         var keepAliveEvent = new ManualResetEvent(false);
@@ -191,14 +204,17 @@ public static class Program
         {
             _stateMachine.Transition(RewriteEvent.TriggerHotkey);
             var selection = await _captureEngine.CaptureSelectionAsync();
-            Console.WriteLine($"[Polishly] Captured from '{selection.TargetContext.ProcessName}': \"{selection.SelectedText}\"");
+            Console.WriteLine(
+                $"[Polishly] Captured {selection.SelectedText.Length} characters from '{selection.TargetContext.ProcessName}'.");
 
             _stateMachine.Transition(RewriteEvent.CaptureSuccess);
 
             var diffEngine = new Polishly.Core.Diff.WordDiffEngine();
             var popupVm = new PopupViewModel(_stateMachine, diffEngine);
+            using var popupVmLifetime = popupVm;
             popupVm.Reset(selection.SelectedText);
             popupVm.TargetWindowHandle = selection.TargetContext.WindowHandle;
+            popupVm.IsVisible = true;
 
             var provider = await ResolveProviderAsync();
             var req = new Polishly.Core.Models.RewriteRequest(
@@ -213,20 +229,13 @@ public static class Program
             {
                 Console.Write(token.Text);
                 popupVm.AppendStreamingToken(token.Text);
-                _stateMachine.Transition(RewriteEvent.ReceiveToken);
             }
             Console.WriteLine();
 
             popupVm.CompleteStream();
-            _stateMachine.Transition(RewriteEvent.StreamFinished);
 
-            Console.WriteLine($"[Polishly] Original : {popupVm.OriginalText}");
-            Console.WriteLine($"[Polishly] Rewritten: {popupVm.RewrittenText}");
-            Console.WriteLine("[Polishly] Diff segments:");
-            foreach (var seg in popupVm.DiffSegments)
-            {
-                Console.WriteLine($"  [{seg.Type}] {seg.Text}");
-            }
+            Console.WriteLine(
+                $"[Polishly] Local diff contains {popupVm.DiffSegments.Count} segments.");
 
             var pasteDone = new TaskCompletionSource<Polishly.WindowsIntegration.Injection.InjectionResult>();
             popupVm.RequestPaste += async (s, rewrittenText) =>
@@ -250,7 +259,9 @@ public static class Program
 
             Console.WriteLine($"[Polishly] Inject result: Success={injectResult.Success}, Method={injectResult.MethodUsed}");
             Console.WriteLine($"[Polishly] Final state: {_stateMachine.CurrentState}");
-            Console.WriteLine("[Polishly] Demo rewrite completed successfully.");
+            Console.WriteLine(injectResult.Success
+                ? "[Polishly] Demo rewrite completed successfully."
+                : "[Polishly] Demo rewrite failed safely.");
             Environment.ExitCode = injectResult.Success ? 0 : 1;
         }
         catch (Exception ex)
@@ -265,24 +276,75 @@ public static class Program
 
     private static async Task<IAiProvider> ResolveProviderAsync()
     {
-        string providerId = _settingsViewModel?.ActiveProviderId ?? "demo";
+        string providerId = _appSettings.ActiveProviderId;
         string? apiKey = null;
         if (_credentialManager != null && providerId != "demo")
         {
             apiKey = await _credentialManager.GetApiKeyAsync(providerId);
         }
 
-        return providerId.ToLowerInvariant() switch
-        {
-            "openai" => new Polishly.Providers.OpenAI.OpenAiProvider(apiKey ?? string.Empty),
-            "anthropic" => new Polishly.Providers.Anthropic.AnthropicProvider(apiKey ?? string.Empty),
-            "groq" => new Polishly.Providers.Groq.GroqProvider(apiKey ?? string.Empty),
-            "cerebras" => new Polishly.Providers.Cerebras.CerebrasProvider(apiKey ?? string.Empty),
-            _ => new Polishly.Providers.Demo.DemoProvider()
-        };
+        string? model = _appSettings.ProviderPreferences.GetValueOrDefault(providerId);
+        return ProviderFactory.Create(providerId, apiKey, model);
     }
 
-    private static async void ExecuteRewriteWorkflow(string? customInstruction = null)
+    private static async Task RunProviderSmokeAndExit(string providerId)
+    {
+        string apiKey = Environment.GetEnvironmentVariable("POLISHLY_PROVIDER_API_KEY")
+                        ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            Console.Error.WriteLine("[Polishly] Provider smoke key is missing.");
+            Environment.ExitCode = 2;
+            return;
+        }
+
+        try
+        {
+            string model = ProviderFactory.GetModels(providerId).FirstOrDefault()
+                           ?? throw new InvalidOperationException("Unknown provider.");
+            IAiProvider provider = ProviderFactory.Create(providerId, apiKey, model);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+            ValidationResult validation = await provider.ValidateCredentialsAsync(
+                apiKey, timeout.Token);
+            if (!validation.IsValid)
+            {
+                throw new InvalidOperationException(
+                    validation.ErrorMessage ?? "Credential validation failed.");
+            }
+
+            var request = new Polishly.Core.Models.RewriteRequest(
+                "This sentence need polish.",
+                Polishly.Core.Models.RewriteMode.Improve,
+                null);
+            int outputCharacters = 0;
+            await foreach (RewriteToken token in provider.StreamRewriteAsync(
+                               request, timeout.Token))
+            {
+                outputCharacters += token.Text.Length;
+            }
+
+            if (outputCharacters == 0)
+            {
+                throw new InvalidOperationException("Provider returned no rewrite text.");
+            }
+
+            Console.WriteLine(
+                $"[Polishly] {providerId} credential and rewrite smoke test passed.");
+            Environment.ExitCode = 0;
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(
+                $"[Polishly] {providerId} smoke test failed: {ex.Message}");
+            Environment.ExitCode = 1;
+        }
+    }
+
+    private static async void ExecuteRewriteWorkflow(
+        string? customInstruction = null,
+        SelectionContext? preservedSelection = null,
+        Polishly.Core.Models.RewriteMode requestedMode =
+            Polishly.Core.Models.RewriteMode.Improve)
     {
         if (_stateMachine == null || _captureEngine == null || _injectorEngine == null) return;
         if (_trayIconService != null && _trayIconService.IsPaused)
@@ -290,16 +352,23 @@ public static class Program
             Console.WriteLine("[Polishly] Rewrite requested while paused; ignoring.");
             return;
         }
+        if (Interlocked.Exchange(ref _rewriteWorkflowActive, 1) == 1)
+        {
+            Console.WriteLine("[Polishly] A rewrite is already active.");
+            return;
+        }
 
         Console.WriteLine("[Polishly] Global Hotkey Triggered — Executing Rewrite Workflow...");
+        bool popupPresented = false;
+        using var workflowCancellation = new CancellationTokenSource();
         try
         {
-            WriteDiagnostic("Rewrite workflow started");
             _stateMachine.Transition(RewriteEvent.TriggerHotkey);
-            WriteDiagnostic("Starting UI Automation selection capture");
-            var selection = await Task.Run(() => _captureEngine.CaptureSelectionAsync());
-            WriteDiagnostic($"Selection capture completed: {selection.SelectedText.Length} characters");
-            Console.WriteLine($"[Polishly] Captured selection from '{selection.TargetContext.ProcessName}': \"{selection.SelectedText}\"");
+            var selection = preservedSelection ??
+                            await _captureEngine.CaptureSelectionAsync(
+                                workflowCancellation.Token);
+            Console.WriteLine(
+                $"[Polishly] Captured {selection.SelectedText.Length} characters from '{selection.TargetContext.ProcessName}'.");
 
             _stateMachine.Transition(RewriteEvent.CaptureSuccess);
 
@@ -307,6 +376,7 @@ public static class Program
             var popupVm = new PopupViewModel(_stateMachine, diffEngine);
             popupVm.Reset(selection.SelectedText);
             popupVm.TargetWindowHandle = selection.TargetContext.WindowHandle;
+            popupVm.SelectedMode = requestedMode;
 
 #if HAS_WPF
             PopupWindow? popupWin = null;
@@ -315,65 +385,125 @@ public static class Program
                 popupWin = new PopupWindow(popupVm);
                 popupWin.IsComputerUseTestMode = _uiTestMode;
                 popupWin.ShowInTaskbar = _uiTestMode;
-                WriteDiagnostic("Popup window constructed");
-
-                // Position popup window near target window using PopupPositioner
-                var positioner = new PopupPositioner();
-                var targetRect = new ScreenRect(100, 100, 400, 200);
-                var workArea = new ScreenRect(0, 0, 1920, 1080);
-                var pos = positioner.CalculatePosition(targetRect, workArea, popupWin.Width > 0 ? popupWin.Width : 400, popupWin.Height > 0 ? popupWin.Height : 250);
-                popupWin.Left = pos.X;
-                popupWin.Top = pos.Y;
+                popupWin.Closed += (_, _) => popupVm.Dispose();
 
                 popupWin.Show();
-                WriteDiagnostic("Popup window shown");
+                popupPresented = true;
+                var placement = new NativePopupPlacementService(
+                    popupWin, selection.TargetContext, selection.SelectionBounds);
+                placement.Position();
+                popupWin.SizeChanged += (s, e) => placement.RepositionForCurrentSize();
             }
 
             popupVm.RequestClose += (s, e) =>
             {
                 popupWin?.Close();
+                if (_stateMachine?.CurrentState !=
+                    Polishly.Core.StateMachine.RewriteState.Replacing)
+                {
+                    workflowCancellation.Cancel();
+                    CompleteRewriteWorkflow();
+                }
             };
 
             popupVm.RequestPaste += async (s, rewrittenText) =>
             {
                 if (_injectorEngine != null)
                 {
-                    var injectResult = await _injectorEngine.InjectTextAsync(selection.TargetContext, rewrittenText);
-                    Console.WriteLine($"[Polishly] Safe replacement result: Success={injectResult.Success}, Method={injectResult.MethodUsed}");
-                    _stateMachine?.Transition(injectResult.Success ? RewriteEvent.ReplaceSuccess : RewriteEvent.ReplaceFailed,
-                        injectResult.ErrorMessage);
+                    bool replacementSucceeded = false;
+                    try
+                    {
+                        var injectResult = await _injectorEngine.InjectTextAsync(
+                            selection.TargetContext,
+                            rewrittenText,
+                            workflowCancellation.Token);
+                        Console.WriteLine($"[Polishly] Safe replacement result: Success={injectResult.Success}, Method={injectResult.MethodUsed}");
+                        _stateMachine?.Transition(injectResult.Success ? RewriteEvent.ReplaceSuccess : RewriteEvent.ReplaceFailed,
+                            injectResult.ErrorMessage);
+                        replacementSucceeded = injectResult.Success;
+                    }
+                    catch (Exception ex)
+                    {
+                        _stateMachine?.Transition(RewriteEvent.ReplaceFailed, ex.Message);
+                    }
+
+                    if (replacementSucceeded)
+                    {
+                        popupWin?.Close();
+                        CompleteRewriteWorkflow();
+                    }
                 }
-                popupWin?.Close();
             };
 
             popupVm.RequestCopy += (s, text) =>
             {
                 if (OperatingSystem.IsWindows())
                 {
-                    try { System.Windows.Clipboard.SetText(text); } catch { }
+                    try
+                    {
+                        System.Windows.Clipboard.SetText(text);
+                        popupVm.CompleteCopy();
+                    }
+                    catch (Exception ex)
+                    {
+                        popupVm.FailCopy(
+                            $"Windows could not copy the rewrite: {ex.Message}");
+                    }
                 }
-                popupWin?.Close();
             };
 
             popupVm.RequestRevise += (s, e) =>
             {
+                workflowCancellation.Cancel();
                 popupWin?.Close();
                 var reviseVm = new ReviseInstructionViewModel
                 {
                     TargetWindowHandle = selection.TargetContext.WindowHandle
                 };
                 var reviseWin = new ReviseInstructionView(reviseVm);
+                bool submitted = false;
                 reviseVm.InstructionSubmitted += (sender, prompt) =>
                 {
-                    ExecuteRewriteWorkflow(prompt);
+                    submitted = true;
+                    CompleteRewriteWorkflow();
+                    ExecuteRewriteWorkflow(
+                        prompt,
+                        selection,
+                        Polishly.Core.Models.RewriteMode.Custom);
+                };
+                reviseWin.Closed += (_, _) =>
+                {
+                    if (!submitted)
+                    {
+                        CompleteRewriteWorkflow();
+                    }
                 };
                 reviseWin.ShowDialog();
+            };
+
+            popupVm.RequestRetry += (s, e) =>
+            {
+                workflowCancellation.Cancel();
+                CompleteRewriteWorkflow();
+                ExecuteRewriteWorkflow(
+                    customInstruction,
+                    selection,
+                    requestedMode);
+            };
+
+            popupVm.RequestModeChange += (s, mode) =>
+            {
+                workflowCancellation.Cancel();
+                popupWin?.Close();
+                CompleteRewriteWorkflow();
+                ExecuteRewriteWorkflow(null, selection, mode);
             };
 #endif
 
             var provider = await ResolveProviderAsync();
-            WriteDiagnostic($"Provider resolved: {_settingsViewModel?.ActiveProviderId ?? "demo"}");
-            var mode = string.IsNullOrEmpty(customInstruction) ? Polishly.Core.Models.RewriteMode.Improve : Polishly.Core.Models.RewriteMode.Custom;
+            var mode = string.IsNullOrEmpty(customInstruction)
+                ? requestedMode
+                : Polishly.Core.Models.RewriteMode.Custom;
             var req = new Polishly.Core.Models.RewriteRequest(
                 InputText: selection.SelectedText,
                 Mode: mode,
@@ -382,20 +512,34 @@ public static class Program
 
             _stateMachine.Transition(RewriteEvent.StartStreaming);
 
-            await foreach (var token in provider.StreamRewriteAsync(req))
+            await foreach (var token in provider.StreamRewriteAsync(
+                               req,
+                               workflowCancellation.Token))
             {
                 popupVm.AppendStreamingToken(token.Text);
-                _stateMachine.Transition(RewriteEvent.ReceiveToken);
             }
 
             popupVm.CompleteStream();
-            _stateMachine.Transition(RewriteEvent.StreamFinished);
+#if !HAS_WPF
+            CompleteRewriteWorkflow();
+#endif
+        }
+        catch (OperationCanceledException) when (workflowCancellation.IsCancellationRequested)
+        {
+            // A deliberate Retry, Revise, mode change, or dismissal owns the
+            // next UI state. Do not surface cancellation as a provider failure.
         }
         catch (Exception ex)
         {
             Console.WriteLine($"[Polishly] Rewrite workflow error: {ex.Message}");
-            WriteDiagnostic($"Rewrite workflow error: {ex.Message}");
             _stateMachine?.Transition(RewriteEvent.Error, ex.Message);
+            if (!popupPresented)
+            {
+                _trayIconService?.ShowTrayNotification(
+                    "Rewrite unavailable",
+                    ex.Message);
+                CompleteRewriteWorkflow();
+            }
         }
     }
 
@@ -405,12 +549,99 @@ public static class Program
 #if HAS_WPF
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            _settingsViewModel ??= new SettingsViewModel(_credentialManager, new AppSettingsStore());
-            var settingsWin = new SettingsWindow(_settingsViewModel);
-            settingsWin.Show();
+            _settingsViewModel ??= CreateSettingsViewModel();
+            if (_settingsWindow == null)
+            {
+                _settingsWindow = new SettingsWindow(_settingsViewModel);
+                _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+                _settingsWindow.Show();
+            }
+            else
+            {
+                if (_settingsWindow.WindowState == System.Windows.WindowState.Minimized)
+                {
+                    _settingsWindow.WindowState = System.Windows.WindowState.Normal;
+                }
+                _settingsWindow.Activate();
+            }
         }
 #endif
     }
+
+    private static SettingsViewModel CreateSettingsViewModel()
+    {
+        var viewModel = new SettingsViewModel(
+            _credentialManager, _settingsStore, _appSettings);
+        viewModel.SettingsSaved += async (_, settings) =>
+        {
+            settings.OnboardingCompleted = _appSettings.OnboardingCompleted;
+            _appSettings = settings;
+            ThemeService.Apply(settings.Theme);
+            try
+            {
+                await StartupRegistration.ApplyAsync(settings.LaunchAtStartup);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[Polishly] Startup registration failed: {ex.Message}");
+                _trayIconService?.ShowTrayNotification(
+                    "Startup preference not applied",
+                    "Windows did not allow Polishly to change its startup preference.");
+            }
+
+            if (_windowTracker != null && _capabilityRules != null)
+            {
+                _captureEngine = new UIAutomationCapture(
+                    _windowTracker, _capabilityRules, settings.BlockedApplications);
+            }
+
+            if (_messageWindow != null)
+            {
+                RegisterConfiguredHotkey(_messageWindow.Handle);
+            }
+        };
+        return viewModel;
+    }
+
+    private static void RegisterConfiguredHotkey(IntPtr messageHwnd)
+    {
+        if (_hotkeyListener == null) return;
+        _hotkeyListener.Unregister();
+        if (!HotkeyShortcutParser.TryParse(
+                _appSettings.HotkeyShortcut, out ParsedHotkey parsed, out string? error))
+        {
+            string message = error ?? "The configured hotkey is invalid.";
+            Console.Error.WriteLine($"[Polishly] {message}");
+            _trayIconService?.ShowTrayNotification("Polishly hotkey unavailable", message);
+            return;
+        }
+
+        if (!_hotkeyListener.Register(messageHwnd, parsed.Modifiers, parsed.VirtualKey))
+        {
+            string message =
+                $"The global shortcut {_appSettings.HotkeyShortcut} is already in use. Choose another shortcut in Settings.";
+            Console.Error.WriteLine($"[Polishly] {message}");
+            _trayIconService?.ShowTrayNotification("Polishly hotkey unavailable", message);
+            return;
+        }
+
+        Console.WriteLine($"[Polishly] Registered global hotkey {_appSettings.HotkeyShortcut}.");
+    }
+
+#if HAS_WPF
+    private static void ShowOnboarding()
+    {
+        var viewModel = new OnboardingViewModel(
+            _settingsViewModel ?? CreateSettingsViewModel());
+        var window = new OnboardingWindow(viewModel);
+        viewModel.OnboardingCompleted += (_, _) =>
+        {
+            _appSettings.OnboardingCompleted = true;
+            window.Close();
+        };
+        window.Show();
+    }
+#endif
 
 
     private static void ShutdownApp()
@@ -419,21 +650,12 @@ public static class Program
         _hotkeyListener?.Dispose();
         _trayIconService?.Dispose();
         _messageWindow?.Dispose();
+        _singleInstanceMutex?.ReleaseMutex();
+        _singleInstanceMutex?.Dispose();
+        _singleInstanceMutex = null;
         Environment.Exit(0);
     }
 
-    private static void WriteDiagnostic(string message)
-    {
-        try
-        {
-            var directory = Path.GetDirectoryName(DiagnosticLogPath);
-            if (!string.IsNullOrEmpty(directory)) Directory.CreateDirectory(directory);
-            File.AppendAllText(DiagnosticLogPath, $"{DateTimeOffset.Now:O} {message}{Environment.NewLine}");
-        }
-        catch
-        {
-            // Diagnostics must never prevent the companion from starting.
-        }
-    }
+    private static void CompleteRewriteWorkflow() =>
+        Interlocked.Exchange(ref _rewriteWorkflowActive, 0);
 }
-

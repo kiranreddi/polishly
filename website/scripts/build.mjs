@@ -20,7 +20,8 @@ for (const file of [
   "groq-setup.html", 
   "privacy.html",
   "ai-writing-alternative.html",
-  "contact.html"
+  "contact.html",
+  "windows.html"
 ]) {
   await cp(resolve(root, file), resolve(client, file), { recursive: true });
 }

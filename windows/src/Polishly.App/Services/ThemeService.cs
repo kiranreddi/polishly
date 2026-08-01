@@ -1,0 +1,97 @@
+#if HAS_WPF
+using System.Windows;
+using System.Windows.Media;
+using Microsoft.Win32;
+#endif
+
+namespace Polishly.App.Services;
+
+public sealed class ThemeService
+{
+    public string CurrentTheme { get; private set; } = "System";
+
+    public void ApplyTheme(string themeName)
+    {
+        CurrentTheme = themeName;
+        Apply(themeName);
+    }
+
+#if HAS_WPF
+    public static void Apply(string theme)
+    {
+        Application? app = Application.Current;
+        if (app == null) return;
+
+        if (SystemParameters.HighContrast)
+        {
+            Set(app, SystemColors.WindowBrush, SystemColors.ControlBrush,
+                SystemColors.WindowTextBrush, SystemColors.GrayTextBrush,
+                SystemColors.WindowTextBrush, SystemColors.WindowTextBrush,
+                SystemColors.HighlightBrush, SystemColors.HighlightTextBrush,
+                SystemColors.ControlBrush, SystemColors.ControlTextBrush);
+            return;
+        }
+
+        bool light = theme.Equals("Light", StringComparison.OrdinalIgnoreCase) ||
+                     (theme.Equals("System", StringComparison.OrdinalIgnoreCase) &&
+                      SystemPrefersLight());
+        if (light)
+        {
+            Set(app,
+                Brush("#F7F8FA"), Brush("#FFFFFF"), Brush("#171A21"),
+                Brush("#606979"), Brush("#007F73"), Brush("#B42318"),
+                Brush("#007F73"), Brushes.White,
+                Brush("#E7EAF0"), Brush("#171A21"));
+        }
+        else
+        {
+            Set(app,
+                Brush("#17191F"), Brush("#22252D"), Brush("#F3F4F6"),
+                Brush("#A8AFBD"), Brush("#14B8A6"), Brush("#FF7B72"),
+                Brush("#0E8F84"), Brushes.White,
+                Brush("#3A3D41"), Brush("#F3F4F6"));
+        }
+    }
+
+    private static void Set(
+        Application app, Brush background, Brush surface, Brush text,
+        Brush muted, Brush accent, Brush danger, Brush actionSurface,
+        Brush actionText, Brush secondarySurface, Brush secondaryText)
+    {
+        app.Resources["Polishly.Background"] = background;
+        app.Resources["Polishly.Surface"] = surface;
+        app.Resources["Polishly.Text"] = text;
+        app.Resources["Polishly.Muted"] = muted;
+        app.Resources["Polishly.Accent"] = accent;
+        app.Resources["Polishly.Danger"] = danger;
+        app.Resources["Polishly.ActionSurface"] = actionSurface;
+        app.Resources["Polishly.ActionText"] = actionText;
+        app.Resources["Polishly.SecondarySurface"] = secondarySurface;
+        app.Resources["Polishly.SecondaryText"] = secondaryText;
+    }
+
+    private static SolidColorBrush Brush(string hex)
+    {
+        var brush = (SolidColorBrush)new BrushConverter().ConvertFromString(hex)!;
+        brush.Freeze();
+        return brush;
+    }
+
+    private static bool SystemPrefersLight()
+    {
+        try
+        {
+            object? value = Registry.GetValue(
+                @"HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+                "AppsUseLightTheme", 1);
+            return Convert.ToInt32(value) != 0;
+        }
+        catch
+        {
+            return true;
+        }
+    }
+#else
+    public static void Apply(string theme) { }
+#endif
+}

@@ -7,7 +7,10 @@ public record TargetContext(
     string AppTitle,
     string FieldId,
     bool IsPassword,
-    bool IsElevated
+    bool IsElevated,
+    string? AutomationRuntimeId = null,
+    string? ControlType = null,
+    string? OriginalSelectedText = null
 )
 {
     public static TargetContext Unknown => new(
@@ -17,6 +20,9 @@ public record TargetContext(
         AppTitle: "Unknown Window",
         FieldId: "unknown_field",
         IsPassword: false,
-        IsElevated: false
+        IsElevated: false,
+        AutomationRuntimeId: null,
+        ControlType: null,
+        OriginalSelectedText: null
     );
 }

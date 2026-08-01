@@ -1,8 +1,13 @@
 # Polishly for Windows — Implementation Plan
 
-**Status:** Planned  
+**Status:** Implementation candidate; release qualification pending
 **Last updated:** July 2026  
 **Target:** A trustworthy Windows 11 MVP with parity for Polishly's core rewrite workflow
+
+> Current implementation and verification evidence is tracked in
+> [WINDOWS-IMPLEMENTATION-STATUS.md](WINDOWS-IMPLEMENTATION-STATUS.md). The
+> Definition of Done below remains binding; headless tests do not substitute for
+> interactive Windows application, display, signing, or beta evidence.
 
 ## 1. Goal
 

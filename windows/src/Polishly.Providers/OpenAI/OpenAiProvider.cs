@@ -79,8 +79,9 @@ public class OpenAiProvider : IAiProvider
 
         if (!response.IsSuccessStatusCode)
         {
-            string err = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-            throw new HttpRequestException($"OpenAI request failed with status code {(int)response.StatusCode}: {err}", null, response.StatusCode);
+            throw new HttpRequestException(
+                $"OpenAI request failed with status code {(int)response.StatusCode}.",
+                null, response.StatusCode);
         }
 
         using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
@@ -88,10 +89,11 @@ public class OpenAiProvider : IAiProvider
 
         RewriteToken? pendingToken = null;
 
-        while (!reader.EndOfStream)
+        while (true)
         {
             ct.ThrowIfCancellationRequested();
-            string? line = await reader.ReadLineAsync().ConfigureAwait(false);
+            string? line = await reader.ReadLineAsync(ct).ConfigureAwait(false);
+            if (line == null) break;
             if (string.IsNullOrWhiteSpace(line))
             {
                 continue;

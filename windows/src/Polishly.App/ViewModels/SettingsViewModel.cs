@@ -1,11 +1,12 @@
-using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
 using System.Windows.Input;
+using System.IO;
 using Polishly.App.Services;
 using Polishly.Core.Models;
+using Polishly.Providers;
+using Polishly.WindowsIntegration.Hotkey;
 using Polishly.WindowsIntegration.Security;
 
 namespace Polishly.App.ViewModels;
@@ -14,44 +15,50 @@ public class SettingsViewModel : INotifyPropertyChanged
 {
     private readonly ICredentialStore? _credentialStore;
     private readonly IAppSettingsStore? _settingsStore;
-
+    private readonly AppSettings _baseSettings;
     private string _activeProviderId = "demo";
+    private string _activeModel = "local-demo";
     private string _apiKey = string.Empty;
     private string _hotkeyShortcut = "Ctrl+Shift+P";
     private string _theme = "System";
     private bool _launchAtStartup = true;
-    private string _validationStatus = string.Empty;
+    private string _validationStatus = "Valid";
+    private string _connectionStatus = string.Empty;
     private string _newBlockedAppName = string.Empty;
 
     public event PropertyChangedEventHandler? PropertyChanged;
-    public event EventHandler? SettingsSaved;
+    public event EventHandler<AppSettings>? SettingsSaved;
 
-    public ObservableCollection<string> AvailableProviders { get; } = new()
-    {
-        "demo", "openai", "anthropic", "groq", "cerebras"
-    };
-
-    public ObservableCollection<string> AvailableThemes { get; } = new()
-    {
-        "System", "Light", "Dark"
-    };
-
-    public ObservableCollection<string> BlockedApplications { get; } = new()
-    {
-        "kdbx.exe", "1password.exe"
-    };
+    public ObservableCollection<string> AvailableProviders { get; } =
+        new(new[] { "demo", "openai", "anthropic", "groq", "cerebras" });
+    public ObservableCollection<string> AvailableModels { get; } = new();
+    public ObservableCollection<string> AvailableThemes { get; } =
+        new(new[] { "System", "Light", "Dark" });
+    public ObservableCollection<string> BlockedApplications { get; } = new();
 
     public string ActiveProviderId
     {
         get => _activeProviderId;
         set
         {
-            if (_activeProviderId != value)
-            {
-                _activeProviderId = value ?? "demo";
-                OnPropertyChanged();
-                _ = LoadApiKeyForProviderAsync(_activeProviderId);
-            }
+            string normalized = string.IsNullOrWhiteSpace(value) ? "demo" : value.ToLowerInvariant();
+            if (_activeProviderId == normalized) return;
+            _activeProviderId = normalized;
+            RefreshModels();
+            OnPropertyChanged();
+            _ = LoadApiKeyForProviderAsync(_activeProviderId);
+        }
+    }
+
+    public string ActiveModel
+    {
+        get => _activeModel;
+        set
+        {
+            if (_activeModel == value) return;
+            _activeModel = value ?? string.Empty;
+            OnPropertyChanged();
+            ValidateLocalConfiguration();
         }
     }
 
@@ -60,12 +67,10 @@ public class SettingsViewModel : INotifyPropertyChanged
         get => _apiKey;
         set
         {
-            if (_apiKey != value)
-            {
-                _apiKey = value ?? string.Empty;
-                OnPropertyChanged();
-                ValidateApiKey(ActiveProviderId, _apiKey);
-            }
+            if (_apiKey == value) return;
+            _apiKey = value ?? string.Empty;
+            OnPropertyChanged();
+            ValidateLocalConfiguration();
         }
     }
 
@@ -74,11 +79,9 @@ public class SettingsViewModel : INotifyPropertyChanged
         get => _hotkeyShortcut;
         set
         {
-            if (_hotkeyShortcut != value)
-            {
-                _hotkeyShortcut = value ?? "Ctrl+Shift+P";
-                OnPropertyChanged();
-            }
+            if (_hotkeyShortcut == value) return;
+            _hotkeyShortcut = value ?? string.Empty;
+            OnPropertyChanged();
         }
     }
 
@@ -87,11 +90,9 @@ public class SettingsViewModel : INotifyPropertyChanged
         get => _theme;
         set
         {
-            if (_theme != value)
-            {
-                _theme = value ?? "System";
-                OnPropertyChanged();
-            }
+            if (_theme == value) return;
+            _theme = value ?? "System";
+            OnPropertyChanged();
         }
     }
 
@@ -100,11 +101,9 @@ public class SettingsViewModel : INotifyPropertyChanged
         get => _launchAtStartup;
         set
         {
-            if (_launchAtStartup != value)
-            {
-                _launchAtStartup = value;
-                OnPropertyChanged();
-            }
+            if (_launchAtStartup == value) return;
+            _launchAtStartup = value;
+            OnPropertyChanged();
         }
     }
 
@@ -113,83 +112,91 @@ public class SettingsViewModel : INotifyPropertyChanged
         get => _validationStatus;
         private set
         {
-            if (_validationStatus != value)
-            {
-                _validationStatus = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(IsApiKeyValid));
-            }
+            if (_validationStatus == value) return;
+            _validationStatus = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsApiKeyValid));
         }
     }
 
-    public bool IsApiKeyValid => ValidationStatus == "Valid" || ActiveProviderId == "demo";
+    public string ConnectionStatus
+    {
+        get => _connectionStatus;
+        private set
+        {
+            if (_connectionStatus == value) return;
+            _connectionStatus = value;
+            OnPropertyChanged();
+        }
+    }
+
+    public bool IsApiKeyValid => ValidationStatus == "Valid";
 
     public string NewBlockedAppName
     {
         get => _newBlockedAppName;
         set
         {
-            if (_newBlockedAppName != value)
-            {
-                _newBlockedAppName = value ?? string.Empty;
-                OnPropertyChanged();
-                ((RelayCommand)AddBlocklistCommand).RaiseCanExecuteChanged();
-            }
+            if (_newBlockedAppName == value) return;
+            _newBlockedAppName = value ?? string.Empty;
+            OnPropertyChanged();
+            ((RelayCommand)AddBlocklistCommand).RaiseCanExecuteChanged();
         }
     }
 
     public ICommand SaveCommand { get; }
     public ICommand ValidateApiKeyCommand { get; }
+    public ICommand TestConnectionCommand { get; }
+    public ICommand RemoveApiKeyCommand { get; }
     public ICommand AddBlocklistCommand { get; }
     public ICommand RemoveBlocklistCommand { get; }
 
-    public SettingsViewModel() : this(null, null)
-    {
-    }
+    public SettingsViewModel() : this(null, null, null) { }
+    public SettingsViewModel(ICredentialStore? credentialStore)
+        : this(credentialStore, null, null) { }
 
-    public SettingsViewModel(ICredentialStore? credentialStore, IAppSettingsStore? settingsStore = null)
+    public SettingsViewModel(
+        ICredentialStore? credentialStore,
+        IAppSettingsStore? settingsStore,
+        AppSettings? initialSettings)
     {
         _credentialStore = credentialStore;
         _settingsStore = settingsStore;
-
-        if (_settingsStore != null)
-        {
-            var settings = _settingsStore.Load();
-            _activeProviderId = settings.ActiveProviderId;
-            _theme = settings.Theme;
-            _hotkeyShortcut = settings.HotkeyShortcut;
-            _launchAtStartup = settings.LaunchAtStartup;
-        }
+        _baseSettings = initialSettings ?? new AppSettings();
 
         SaveCommand = new RelayCommand(Save);
-        ValidateApiKeyCommand = new RelayCommand(() => ValidateApiKey(ActiveProviderId, ApiKey));
+        ValidateApiKeyCommand = new RelayCommand(() => ValidateLocalConfiguration());
+        TestConnectionCommand = new RelayCommand(TestConnection);
+        RemoveApiKeyCommand = new RelayCommand(RemoveApiKey);
         AddBlocklistCommand = new RelayCommand(AddBlockedApplication, CanAddBlockedApplication);
         RemoveBlocklistCommand = new RelayCommand<string>(RemoveBlockedApplication);
 
+        Apply(initialSettings);
+        RefreshModels(initialSettings);
         _ = LoadApiKeyForProviderAsync(ActiveProviderId);
     }
 
     public async Task LoadApiKeyForProviderAsync(string providerId)
     {
-        if (_credentialStore != null && !string.IsNullOrEmpty(providerId))
+        _apiKey = string.Empty;
+        if (_credentialStore != null && providerId != "demo")
         {
             try
             {
-                var storedKey = await _credentialStore.GetApiKeyAsync(providerId);
-                _apiKey = storedKey ?? string.Empty;
-                OnPropertyChanged(nameof(ApiKey));
+                _apiKey = await _credentialStore.GetApiKeyAsync(providerId) ?? string.Empty;
             }
-            catch
+            catch (Exception ex)
             {
-                // Fallback for store failure
+                ConnectionStatus = $"Credential Manager error: {ex.Message}";
             }
         }
-        ValidateApiKey(providerId, ApiKey);
+        OnPropertyChanged(nameof(ApiKey));
+        ValidateLocalConfiguration();
     }
 
     public bool ValidateApiKey(string providerId, string apiKey)
     {
-        if (providerId == "demo")
+        if (providerId.Equals("demo", StringComparison.OrdinalIgnoreCase))
         {
             ValidationStatus = "Valid";
             return true;
@@ -211,64 +218,174 @@ public class SettingsViewModel : INotifyPropertyChanged
         return true;
     }
 
-    public bool CanAddBlockedApplication()
-    {
-        return !string.IsNullOrWhiteSpace(NewBlockedAppName) && !BlockedApplications.Contains(NewBlockedAppName.Trim(), StringComparer.OrdinalIgnoreCase);
-    }
+    public bool CanAddBlockedApplication() =>
+        !string.IsNullOrWhiteSpace(NewBlockedAppName) &&
+        !BlockedApplications.Contains(
+            NormalizeApplication(NewBlockedAppName), StringComparer.OrdinalIgnoreCase);
 
     public void AddBlockedApplication()
     {
         if (!CanAddBlockedApplication()) return;
-
-        string app = NewBlockedAppName.Trim();
-        if (!app.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-        {
-            app += ".exe";
-        }
-
-        BlockedApplications.Add(app.ToLowerInvariant());
+        BlockedApplications.Add(NormalizeApplication(NewBlockedAppName));
         NewBlockedAppName = string.Empty;
     }
 
     public void RemoveBlockedApplication(string? appName)
     {
-        if (string.IsNullOrEmpty(appName)) return;
-        BlockedApplications.Remove(appName);
+        if (!string.IsNullOrWhiteSpace(appName))
+        {
+            BlockedApplications.Remove(appName);
+        }
+    }
+
+    public AppSettings BuildSettings()
+    {
+        var settings = new AppSettings
+        {
+            ActiveProviderId = ActiveProviderId,
+            Theme = Theme,
+            HotkeyShortcut = HotkeyShortcut,
+            LaunchAtStartup = LaunchAtStartup,
+            AutoTriggerEnabled = _baseSettings.AutoTriggerEnabled,
+            OnboardingCompleted = _baseSettings.OnboardingCompleted,
+            BlockedApplications = BlockedApplications
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .ToList()
+        };
+        foreach (var preference in _baseSettings.ProviderPreferences)
+        {
+            settings.ProviderPreferences[preference.Key] = preference.Value;
+        }
+        settings.ProviderPreferences[ActiveProviderId] = ActiveModel;
+        return settings;
     }
 
     public async void Save()
     {
+        if (!ValidateLocalConfiguration()) return;
+        if (!HotkeyShortcutParser.TryParse(HotkeyShortcut, out _, out string? hotkeyError))
+        {
+            ValidationStatus = hotkeyError ?? "Invalid hotkey";
+            return;
+        }
+
         try
         {
-            if (!ValidateApiKey(ActiveProviderId, ApiKey))
-            {
-                return;
-            }
-
-            if (_credentialStore != null && !string.IsNullOrEmpty(ActiveProviderId))
+            if (_credentialStore != null && ActiveProviderId != "demo" &&
+                !string.IsNullOrWhiteSpace(ApiKey))
             {
                 await _credentialStore.SaveApiKeyAsync(ActiveProviderId, ApiKey);
             }
 
-            _settingsStore?.Save(new AppSettings
+            AppSettings settings = BuildSettings();
+            if (_settingsStore != null)
             {
-                ActiveProviderId = ActiveProviderId,
-                Theme = Theme,
-                HotkeyShortcut = HotkeyShortcut,
-                LaunchAtStartup = LaunchAtStartup
-            });
+                await _settingsStore.SaveAsync(settings);
+            }
 
-            SettingsSaved?.Invoke(this, EventArgs.Empty);
+            SettingsSaved?.Invoke(this, settings);
         }
         catch (Exception ex)
         {
-            ValidationStatus = $"Save error: {ex.Message}";
+            ValidationStatus = $"Save failed: {ex.Message}";
         }
     }
 
-
-    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    private bool ValidateLocalConfiguration()
     {
-        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        if (!ValidateApiKey(ActiveProviderId, ApiKey)) return false;
+        if (!ProviderFactory.IsKnownModel(ActiveProviderId, ActiveModel))
+        {
+            ValidationStatus = "Choose a supported model";
+            return false;
+        }
+        return true;
     }
+
+    private async void TestConnection()
+    {
+        if (!ValidateLocalConfiguration()) return;
+        if (ActiveProviderId == "demo")
+        {
+            ConnectionStatus = "Demo mode is ready and stays on this PC.";
+            return;
+        }
+
+        ConnectionStatus = "Testing connection…";
+        try
+        {
+            var provider = ProviderFactory.Create(ActiveProviderId, ApiKey, ActiveModel);
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var result = await provider.ValidateCredentialsAsync(ApiKey, timeout.Token);
+            ConnectionStatus = result.IsValid
+                ? "Connected successfully"
+                : result.ErrorMessage ?? "Connection failed";
+        }
+        catch (OperationCanceledException)
+        {
+            ConnectionStatus = "Connection test timed out";
+        }
+        catch (Exception ex)
+        {
+            ConnectionStatus = $"Connection failed: {ex.Message}";
+        }
+    }
+
+    private async void RemoveApiKey()
+    {
+        if (_credentialStore == null || ActiveProviderId == "demo") return;
+        try
+        {
+            await _credentialStore.DeleteApiKeyAsync(ActiveProviderId);
+            ApiKey = string.Empty;
+            ConnectionStatus = "Saved key removed";
+        }
+        catch (Exception ex)
+        {
+            ConnectionStatus = $"Key removal failed: {ex.Message}";
+        }
+    }
+
+    private void Apply(AppSettings? settings)
+    {
+        if (settings == null)
+        {
+            foreach (string app in new AppSettings().BlockedApplications)
+                BlockedApplications.Add(app);
+            return;
+        }
+
+        _activeProviderId = settings.ActiveProviderId;
+        _hotkeyShortcut = settings.HotkeyShortcut;
+        _theme = settings.Theme;
+        _launchAtStartup = settings.LaunchAtStartup;
+        foreach (string app in settings.BlockedApplications)
+            BlockedApplications.Add(NormalizeApplication(app));
+    }
+
+    private void RefreshModels(AppSettings? settings = null)
+    {
+        settings ??= _baseSettings;
+        AvailableModels.Clear();
+        foreach (string model in ProviderFactory.GetModels(ActiveProviderId))
+            AvailableModels.Add(model);
+
+        string? preferred = settings?.ProviderPreferences.GetValueOrDefault(ActiveProviderId);
+        _activeModel = ProviderFactory.IsKnownModel(ActiveProviderId, preferred)
+            ? preferred!
+            : AvailableModels.FirstOrDefault() ?? string.Empty;
+        OnPropertyChanged(nameof(ActiveModel));
+    }
+
+    private static string NormalizeApplication(string application)
+    {
+        string normalized = Path.GetFileName(application.Trim()).ToLowerInvariant();
+        return normalized.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+            ? normalized
+            : normalized + ".exe";
+    }
+
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

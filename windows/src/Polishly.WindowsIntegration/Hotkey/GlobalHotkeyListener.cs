@@ -9,8 +9,6 @@ public class GlobalHotkeyListener : IDisposable
     private int _hotkeyId = 9001;
     private bool _isRegistered;
 
-    public int LastErrorCode { get; private set; }
-
     public event EventHandler? HotkeyPressed;
 
     public bool Register(IntPtr hWnd, uint modifiers, uint vk)
@@ -21,16 +19,8 @@ public class GlobalHotkeyListener : IDisposable
             _isRegistered = true;
             return true;
         }
-        try
-        {
-            _isRegistered = Win32Native.RegisterHotKey(hWnd, _hotkeyId, modifiers, vk);
-            LastErrorCode = _isRegistered ? 0 : Marshal.GetLastWin32Error();
-        }
-        catch
-        {
-            _isRegistered = false;
-            LastErrorCode = Marshal.GetLastWin32Error();
-        }
+        _isRegistered = hWnd != IntPtr.Zero &&
+                        Win32Native.RegisterHotKey(hWnd, _hotkeyId, modifiers, vk);
         return _isRegistered;
     }
 
@@ -71,4 +61,3 @@ public class GlobalHotkeyListener : IDisposable
         Unregister();
     }
 }
-

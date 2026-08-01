@@ -25,7 +25,7 @@ public class NativeMessageWindow : IDisposable
     {
         if (!OperatingSystem.IsWindows())
         {
-            Handle = (IntPtr)12345;
+            Handle = IntPtr.Zero;
             return;
         }
 
@@ -46,12 +46,13 @@ public class NativeMessageWindow : IDisposable
             _hwndSource.AddHook(HwndSourceHook);
             Handle = _hwndSource.Handle;
         }
-        catch
+        catch (Exception ex)
         {
-            Handle = (IntPtr)12345;
+            throw new InvalidOperationException(
+                "Polishly could not create its native Windows message window.", ex);
         }
 #else
-        Handle = (IntPtr)12345;
+        throw new PlatformNotSupportedException("The Windows message window requires the WPF build.");
 #endif
     }
 

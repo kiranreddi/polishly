@@ -1,16 +1,16 @@
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Polishly.Core.Models;
 using Polishly.WindowsIntegration.Native;
+#if HAS_WPF
+using System.Windows.Automation;
+#endif
 
 namespace Polishly.WindowsIntegration.Clipboard;
 
 public class GuardedClipboardTransaction : IClipboardTransaction
 {
     private readonly Func<uint>? _getClipboardSequenceFunc;
-    private uint _lastSequenceNumber;
-
-    private record ClipboardFormatEntry(uint Format, byte[] Data);
+    private readonly ClipboardSnapshotService _clipboard = new();
 
     public GuardedClipboardTransaction(Func<uint>? getClipboardSequenceFunc = null)
     {
@@ -19,238 +19,219 @@ public class GuardedClipboardTransaction : IClipboardTransaction
 
     public Task<uint> GetSequenceNumberAsync(CancellationToken ct = default)
     {
-        uint seq = 0;
-        if (_getClipboardSequenceFunc != null)
-        {
-            seq = _getClipboardSequenceFunc();
-        }
-        else if (OperatingSystem.IsWindows())
-        {
-            try { seq = Win32Native.GetClipboardSequenceNumber(); } catch { seq = 0; }
-        }
-        _lastSequenceNumber = seq;
-        return Task.FromResult(seq);
+        uint sequence = _getClipboardSequenceFunc?.Invoke() ??
+                        (OperatingSystem.IsWindows()
+                            ? Win32Native.GetClipboardSequenceNumber()
+                            : 0);
+        return Task.FromResult(sequence);
     }
 
     public async Task<ClipboardTransactionResult> ExecuteSafePasteAsync(
-        string textToPaste, 
-        TargetContext targetContext, 
+        string textToPaste,
+        TargetContext targetContext,
         CancellationToken ct = default)
     {
-        IntPtr currentWindow = IntPtr.Zero;
-        if (OperatingSystem.IsWindows())
-        {
-            try { currentWindow = Win32Native.GetForegroundWindow(); } catch { currentWindow = IntPtr.Zero; }
-        }
-
-        // Safety Guard 1: Verify foreground process/window handle matches target context
-        if (currentWindow != targetContext.WindowHandle && targetContext.WindowHandle != IntPtr.Zero)
-        {
-            return new ClipboardTransactionResult(
-                Success: false,
-                RestoredOriginalClipboard: true,
-                FallbackToCopy: true,
-                ErrorMessage: "Target window lost focus before paste transaction could execute."
-            );
-        }
-
-        // Safety Guard 2: Verify target context is not sensitive / password field
         if (targetContext.IsPassword)
         {
-            return new ClipboardTransactionResult(
-                Success: false,
-                RestoredOriginalClipboard: true,
-                FallbackToCopy: true,
-                ErrorMessage: "Automatic paste blocked in sensitive password field."
-            );
+            return Failure("Automatic paste is blocked in password fields.", restored: true);
         }
 
-        // Safety Guard 3: Verify target window is not elevated (UAC admin window)
         if (targetContext.IsElevated)
         {
-            return new ClipboardTransactionResult(
-                Success: false,
-                RestoredOriginalClipboard: true,
-                FallbackToCopy: true,
-                ErrorMessage: "Automatic paste blocked in elevated window due to security restrictions."
-            );
+            return Failure(
+                "Automatic paste is blocked in an elevated window due to Windows security restrictions.",
+                restored: true);
         }
 
-        uint initialSeq = await GetSequenceNumberAsync(ct);
-        uint seqAfterSet = initialSeq;
-
-        // When a sequence provider is injected, run in simulation mode (unit tests / CI)
-        // instead of touching the real interactive Windows clipboard session.
-        bool useNativeClipboard = OperatingSystem.IsWindows() && _getClipboardSequenceFunc == null;
-
-        var snapshotFormats = new List<ClipboardFormatEntry>();
-        if (useNativeClipboard)
-        {
-            if (!Win32Native.OpenClipboard(targetContext.WindowHandle))
-            {
-                int errCode = Marshal.GetLastWin32Error();
-                return new ClipboardTransactionResult(
-                    Success: false,
-                    RestoredOriginalClipboard: false,
-                    FallbackToCopy: true,
-                    ErrorMessage: $"Failed to open Windows Clipboard (Win32 Error: {errCode})."
-                );
-            }
-
-            try
-            {
-                // Multi-Format Clipboard Preservation: Enumerate and snapshot all available formats
-                uint fmt = 0;
-                while ((fmt = Win32Native.EnumClipboardFormats(fmt)) != 0)
-                {
-                    IntPtr hData = Win32Native.GetClipboardData(fmt);
-                    if (hData != IntPtr.Zero)
-                    {
-                        UIntPtr size = Win32Native.GlobalSize(hData);
-                        if (size != UIntPtr.Zero)
-                        {
-                            IntPtr pData = Win32Native.GlobalLock(hData);
-                            if (pData != IntPtr.Zero)
-                            {
-                                try
-                                {
-                                    byte[] bytes = new byte[(int)size];
-                                    Marshal.Copy(pData, bytes, 0, bytes.Length);
-                                    snapshotFormats.Add(new ClipboardFormatEntry(fmt, bytes));
-                                }
-                                finally
-                                {
-                                    Win32Native.GlobalUnlock(hData);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (!Win32Native.EmptyClipboard())
-                {
-                    int errCode = Marshal.GetLastWin32Error();
-                    return new ClipboardTransactionResult(
-                        Success: false,
-                        RestoredOriginalClipboard: false,
-                        FallbackToCopy: true,
-                        ErrorMessage: $"Failed to empty Windows Clipboard (Win32 Error: {errCode})."
-                    );
-                }
-
-                byte[] textBytes = System.Text.Encoding.Unicode.GetBytes(textToPaste + "\0");
-                IntPtr hGlobal = Win32Native.GlobalAlloc(Win32Native.GMEM_MOVEABLE, (UIntPtr)textBytes.Length);
-                if (hGlobal != IntPtr.Zero)
-                {
-                    IntPtr pGlobal = Win32Native.GlobalLock(hGlobal);
-                    if (pGlobal != IntPtr.Zero)
-                    {
-                        Marshal.Copy(textBytes, 0, pGlobal, textBytes.Length);
-                        Win32Native.GlobalUnlock(hGlobal);
-                        Win32Native.SetClipboardData(Win32Native.CF_UNICODETEXT, hGlobal);
-                    }
-                }
-
-                seqAfterSet = Win32Native.GetClipboardSequenceNumber();
-            }
-            finally
-            {
-                Win32Native.CloseClipboard();
-            }
-
-            // Send Ctrl+V using SendInput
-            var inputs = new Win32Native.INPUT[4];
-            inputs[0] = new Win32Native.INPUT { type = Win32Native.INPUT_KEYBOARD, ki = new Win32Native.KEYBDINPUT { wVk = Win32Native.VK_CONTROL } };
-            inputs[1] = new Win32Native.INPUT { type = Win32Native.INPUT_KEYBOARD, ki = new Win32Native.KEYBDINPUT { wVk = Win32Native.VK_V } };
-            inputs[2] = new Win32Native.INPUT { type = Win32Native.INPUT_KEYBOARD, ki = new Win32Native.KEYBDINPUT { wVk = Win32Native.VK_V, dwFlags = Win32Native.KEYEVENTF_KEYUP } };
-            inputs[3] = new Win32Native.INPUT { type = Win32Native.INPUT_KEYBOARD, ki = new Win32Native.KEYBDINPUT { wVk = Win32Native.VK_CONTROL, dwFlags = Win32Native.KEYEVENTF_KEYUP } };
-            Win32Native.SendInput(4, inputs, Marshal.SizeOf<Win32Native.INPUT>());
-
-            await Task.Delay(50, ct);
-        }
-        else
-        {
-            await Task.Delay(10, ct);
-        }
-
-        uint finalSeq = 0;
         if (_getClipboardSequenceFunc != null)
         {
-            finalSeq = _getClipboardSequenceFunc();
-        }
-        else if (OperatingSystem.IsWindows())
-        {
-            try { finalSeq = Win32Native.GetClipboardSequenceNumber(); } catch { finalSeq = 0; }
+            return await ExecuteSimulationAsync(ct);
         }
 
-        // Safety Guard 4: Verify sequence number matches expected sequence after set
-        bool seqMatched = false;
-        if (_getClipboardSequenceFunc != null)
+        if (!OperatingSystem.IsWindows())
         {
-            seqMatched = finalSeq == initialSeq || initialSeq == 0;
-        }
-        else if (OperatingSystem.IsWindows())
-        {
-            seqMatched = finalSeq == seqAfterSet || seqAfterSet == 0;
-        }
-        else
-        {
-            seqMatched = true;
+            if (targetContext.WindowHandle != IntPtr.Zero)
+            {
+                return Failure(
+                    "Target window lost focus before paste transaction could execute.",
+                    restored: true);
+            }
+            return new ClipboardTransactionResult(true, true, false);
         }
 
-        if (!seqMatched)
+        string? targetError = ValidateExactTarget(targetContext);
+        if (targetError != null)
         {
-            // Do NOT restore original clipboard formats if another process modified clipboard during paste
-            return new ClipboardTransactionResult(
-                Success: false,
-                RestoredOriginalClipboard: false,
-                FallbackToCopy: true,
-                ErrorMessage: "Clipboard sequence number mismatch detected mid-paste; concurrent modification aborted transaction."
-            );
+            return Failure(targetError, restored: true);
         }
 
-        // Only restore original snapshot formats after verifying sequence ownership
-        if (useNativeClipboard && snapshotFormats.Count > 0)
+        ClipboardSnapshotService.Snapshot snapshot;
+        try
         {
-            IntPtr windowBeforeRestore = IntPtr.Zero;
-            try { windowBeforeRestore = Win32Native.GetForegroundWindow(); } catch { windowBeforeRestore = IntPtr.Zero; }
+            snapshot = _clipboard.Capture();
+        }
+        catch (Exception ex)
+        {
+            return Failure($"Clipboard could not be safely materialized: {ex.Message}", restored: false);
+        }
 
-            if ((windowBeforeRestore == targetContext.WindowHandle || targetContext.WindowHandle == IntPtr.Zero) &&
-                Win32Native.OpenClipboard(targetContext.WindowHandle))
+        uint sequenceBeforeWrite = Win32Native.GetClipboardSequenceNumber();
+        uint sequenceAfterWrite;
+        try
+        {
+            _clipboard.SetUnicodeText(textToPaste);
+            sequenceAfterWrite = Win32Native.GetClipboardSequenceNumber();
+            if (sequenceAfterWrite == sequenceBeforeWrite)
             {
                 try
                 {
-                    Win32Native.EmptyClipboard();
-                    foreach (var entry in snapshotFormats)
-                    {
-                        IntPtr hOrigGlobal = Win32Native.GlobalAlloc(Win32Native.GMEM_MOVEABLE, (UIntPtr)entry.Data.Length);
-                        if (hOrigGlobal != IntPtr.Zero)
-                        {
-                            IntPtr pOrigGlobal = Win32Native.GlobalLock(hOrigGlobal);
-                            if (pOrigGlobal != IntPtr.Zero)
-                            {
-                                Marshal.Copy(entry.Data, 0, pOrigGlobal, entry.Data.Length);
-                                Win32Native.GlobalUnlock(hOrigGlobal);
-                                Win32Native.SetClipboardData(entry.Format, hOrigGlobal);
-                            }
-                        }
-                    }
+                    _clipboard.Restore(snapshot);
+                    return Failure(
+                        "Windows did not confirm Polishly clipboard ownership.",
+                        restored: true);
                 }
-                finally
+                catch (Exception restoreError)
                 {
-                    Win32Native.CloseClipboard();
+                    return Failure(
+                        $"Windows did not confirm Polishly clipboard ownership and restore failed: {restoreError.Message}",
+                        restored: false);
                 }
             }
+        }
+        catch (Exception ex)
+        {
+            return Failure($"Polishly could not write the temporary clipboard text: {ex.Message}", restored: false);
+        }
+
+        targetError = ValidateExactTarget(targetContext);
+        if (targetError != null)
+        {
+            return RestoreThenFail(snapshot, sequenceAfterWrite, targetError);
+        }
+
+        uint sent = Win32Native.SendCtrlShortcut(Win32Native.VK_V);
+        if (sent != 4)
+        {
+            return RestoreThenFail(
+                snapshot,
+                sequenceAfterWrite,
+                $"Windows rejected the paste shortcut ({Marshal.GetLastWin32Error()}).");
+        }
+
+        await Task.Delay(80, ct);
+
+        uint sequenceAfterPaste = Win32Native.GetClipboardSequenceNumber();
+        if (sequenceAfterPaste != sequenceAfterWrite)
+        {
+            return new ClipboardTransactionResult(
+                Success: false,
+                RestoredOriginalClipboard: false,
+                FallbackToCopy: false,
+                ErrorMessage:
+                    "The clipboard changed during replacement. Polishly left the newer clipboard untouched.");
+        }
+
+        try
+        {
+            _clipboard.Restore(snapshot);
+        }
+        catch (Exception ex)
+        {
+            return new ClipboardTransactionResult(
+                Success: false,
+                RestoredOriginalClipboard: false,
+                FallbackToCopy: false,
+                ErrorMessage:
+                    $"Text was pasted, but the original clipboard could not be restored: {ex.Message}");
         }
 
         return new ClipboardTransactionResult(
             Success: true,
-            RestoredOriginalClipboard: _getClipboardSequenceFunc != null || snapshotFormats.Count > 0 || !OperatingSystem.IsWindows(),
-            FallbackToCopy: false,
-            ErrorMessage: null
-        );
+            RestoredOriginalClipboard: true,
+            FallbackToCopy: false);
+    }
 
+    private async Task<ClipboardTransactionResult> ExecuteSimulationAsync(CancellationToken ct)
+    {
+        uint before = _getClipboardSequenceFunc!.Invoke();
+        await Task.Delay(10, ct);
+        uint after = _getClipboardSequenceFunc.Invoke();
+        if (before != 0 && after != before)
+        {
+            return Failure(
+                "Clipboard sequence number mismatch detected; concurrent modification aborted the transaction.",
+                restored: false);
+        }
 
+        return new ClipboardTransactionResult(true, true, false);
+    }
 
+    private ClipboardTransactionResult RestoreThenFail(
+        ClipboardSnapshotService.Snapshot snapshot,
+        uint ownedSequence,
+        string error)
+    {
+        if (Win32Native.GetClipboardSequenceNumber() != ownedSequence)
+        {
+            return Failure(
+                $"{error} The clipboard also changed, so newer clipboard content was left untouched.",
+                restored: false);
+        }
+
+        try
+        {
+            _clipboard.Restore(snapshot);
+            return Failure(error, restored: true);
+        }
+        catch (Exception ex)
+        {
+            return Failure($"{error} Clipboard restore also failed: {ex.Message}", restored: false);
+        }
+    }
+
+    private static ClipboardTransactionResult Failure(string error, bool restored) =>
+        new(false, restored, true, error);
+
+    private static string? ValidateExactTarget(TargetContext target)
+    {
+        IntPtr foreground = Win32Native.GetForegroundWindow();
+        if (foreground == IntPtr.Zero || foreground != target.WindowHandle)
+        {
+            return "The original window lost focus. Automatic replacement was cancelled; use Copy.";
+        }
+
+        Win32Native.GetWindowThreadProcessId(foreground, out uint processId);
+        if (processId != target.ProcessId)
+        {
+            return "The foreground process no longer matches the captured source.";
+        }
+
+#if HAS_WPF
+        if (string.IsNullOrWhiteSpace(target.AutomationRuntimeId))
+        {
+            return "The original field identity is unavailable; automatic paste is not safe.";
+        }
+
+        try
+        {
+            AutomationElement? focused = AutomationElement.FocusedElement;
+            if (focused == null || focused.Current.IsPassword)
+            {
+                return "The original editable field is no longer focused or is sensitive.";
+            }
+
+            string runtimeId = string.Join(".", focused.GetRuntimeId());
+            if (!string.Equals(runtimeId, target.AutomationRuntimeId, StringComparison.Ordinal))
+            {
+                return "The focused field changed after capture. Automatic paste was cancelled.";
+            }
+        }
+        catch
+        {
+            return "The original field could not be revalidated. Automatic paste was cancelled.";
+        }
+#endif
+
+        return null;
     }
 }

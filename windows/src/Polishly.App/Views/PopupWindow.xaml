@@ -10,6 +10,7 @@
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
+        AutomationProperties.Name="Polishly rewrite review"
         SizeToContent="Height"
         Width="470" MaxWidth="560">
 
@@ -22,7 +23,8 @@
         </ResourceDictionary>
     </Window.Resources>
 
-    <Border Background="{StaticResource SurfaceBrush}"
+    <Border x:Name="PopupBorder"
+            Background="{StaticResource SurfaceBrush}"
             CornerRadius="16"
             BorderBrush="{StaticResource BorderStrongBrush}"
             BorderThickness="1"
@@ -83,13 +85,13 @@
                 <TextBlock Text="Ctrl + Shift + P" Foreground="{StaticResource TextMutedBrush}" FontSize="10.5" VerticalAlignment="Center"/>
                 <StackPanel Grid.Column="1" Orientation="Horizontal">
                     <Button Content="Revise" Command="{Binding OpenReviseCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="12,7" MinHeight="34"/>
+                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="12,7" MinHeight="34" AutomationProperties.Name="Revise with custom instructions"/>
                     <Button Content="Copy" Command="{Binding CopyCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="12,7" MinHeight="34"/>
+                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="12,7" MinHeight="34" AutomationProperties.Name="Copy rewrite without replacing"/>
                     <Button Content="Retry" Command="{Binding RetryCommand}"
-                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="12,7" MinHeight="34"/>
+                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="12,7" MinHeight="34" AutomationProperties.Name="Regenerate rewrite"/>
                     <Button Content="Accept" Command="{Binding AcceptCommand}"
-                            Style="{StaticResource PrimaryButtonStyle}" Padding="15,7" MinHeight="34"/>
+                            Style="{StaticResource PrimaryButtonStyle}" Padding="15,7" MinHeight="34" AutomationProperties.Name="Accept and replace selected text"/>
                 </StackPanel>
             </Grid>
         </StackPanel>

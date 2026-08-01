@@ -22,22 +22,14 @@ public class ElevationDetector
             hProcess = Win32Native.OpenProcess(Win32Native.PROCESS_QUERY_LIMITED_INFORMATION, false, (uint)processId);
             if (hProcess == IntPtr.Zero)
             {
-                int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == 5 || errorCode == 0x05)
-                {
-                    return true;
-                }
-                return false;
+                // If the target token cannot be inspected, automatic
+                // replacement is not safe. Treat the target as elevated.
+                return true;
             }
 
             if (!Win32Native.OpenProcessToken(hProcess, Win32Native.TOKEN_QUERY, out hToken))
             {
-                int errorCode = Marshal.GetLastWin32Error();
-                if (errorCode == 5 || errorCode == 0x05)
-                {
-                    return true;
-                }
-                return false;
+                return true;
             }
 
             int elevationSize = Marshal.SizeOf<Win32Native.TOKEN_ELEVATION>();
@@ -49,6 +41,7 @@ public class ElevationDetector
                     var elevation = Marshal.PtrToStructure<Win32Native.TOKEN_ELEVATION>(elevationPtr);
                     return elevation.TokenIsElevated != 0;
                 }
+                return true;
             }
             finally
             {
@@ -57,15 +50,12 @@ public class ElevationDetector
         }
         catch
         {
-            return false;
+            return true;
         }
         finally
         {
             if (hToken != IntPtr.Zero) Win32Native.CloseHandle(hToken);
             if (hProcess != IntPtr.Zero) Win32Native.CloseHandle(hProcess);
         }
-
-        return false;
     }
 }
-

@@ -2,6 +2,7 @@ using System;
 using Xunit;
 using Polishly.App.ViewModels;
 using Polishly.Core.Diff;
+using Polishly.Core.Models;
 using Polishly.Core.StateMachine;
 
 namespace Polishly.Platform.Tests;
@@ -83,7 +84,6 @@ public class PopupViewModelTests
 
         Assert.Equal(RewriteState.Replacing, stateMachine.CurrentState);
         Assert.Equal("banana", pastedText);
-        Assert.False(vm.IsVisible);
     }
 
     [Fact]
@@ -137,7 +137,11 @@ public class PopupViewModelTests
         var vm = new PopupViewModel(stateMachine, diffEngine);
 
         string? copiedText = null;
-        vm.RequestCopy += (s, text) => copiedText = text;
+        vm.RequestCopy += (s, text) =>
+        {
+            copiedText = text;
+            vm.CompleteCopy();
+        };
 
         vm.Reset("cat");
         stateMachine.Transition(RewriteEvent.TriggerHotkey);
@@ -178,5 +182,19 @@ public class PopupViewModelTests
 
         Assert.Equal(RewriteState.Cancelled, stateMachine.CurrentState);
         Assert.False(vm.IsVisible);
+    }
+
+    [Fact]
+    public void PopupViewModel_SelectMode_RaisesRequestedMode()
+    {
+        var stateMachine = new RewriteStateMachine();
+        var vm = new PopupViewModel(stateMachine, new WordDiffEngine());
+        RewriteMode? requestedMode = null;
+        vm.RequestModeChange += (_, mode) => requestedMode = mode;
+
+        vm.SelectMode("Friendly");
+
+        Assert.Equal(RewriteMode.Friendly, vm.SelectedMode);
+        Assert.Equal(RewriteMode.Friendly, requestedMode);
     }
 }

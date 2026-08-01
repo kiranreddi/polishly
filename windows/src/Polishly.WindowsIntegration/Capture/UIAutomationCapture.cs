@@ -1,14 +1,13 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Runtime.InteropServices;
 using Polishly.Core.Capabilities;
 using Polishly.Core.Models;
+using Polishly.WindowsIntegration.Clipboard;
 using Polishly.WindowsIntegration.Native;
 using Polishly.WindowsIntegration.Security;
 #if HAS_WPF
 using System.Windows.Automation;
+using System.Windows.Automation.Text;
 #endif
-
 
 namespace Polishly.WindowsIntegration.Capture;
 
@@ -16,90 +15,89 @@ public class UIAutomationCapture : ICaptureEngine
 {
     private readonly WindowTracker _windowTracker;
     private readonly AppCapabilityRules _capabilityRules;
-    private readonly SensitiveFieldDetector _sensitiveDetector = new();
+    private readonly SensitiveFieldDetector _sensitiveDetector;
+    private readonly ClipboardSnapshotService _clipboard = new();
 
     public string? TestFallbackText { get; set; }
 
-    public UIAutomationCapture(WindowTracker windowTracker, AppCapabilityRules capabilityRules)
-
+    public UIAutomationCapture(
+        WindowTracker windowTracker,
+        AppCapabilityRules capabilityRules,
+        IEnumerable<string>? additionalBlockedApplications = null)
     {
         _windowTracker = windowTracker;
         _capabilityRules = capabilityRules;
+        _sensitiveDetector = new SensitiveFieldDetector(additionalBlockedApplications);
     }
 
-    public Task<SelectionContext> CaptureSelectionAsync(CancellationToken ct = default)
+    public async Task<SelectionContext> CaptureSelectionAsync(CancellationToken ct = default)
     {
-        // Explicit test seam: bypass live UIA/clipboard when fallback text is provided
-        // (needed for headless Windows CI where the foreground window may be pwsh/cmd).
+        await Task.CompletedTask;
         if (!string.IsNullOrEmpty(TestFallbackText))
         {
-            var testWindow = new TargetWindow(IntPtr.Zero, 0, "notepad", "Untitled - Notepad", false);
             var testTarget = new TargetContext(
-                WindowHandle: testWindow.Handle,
-                ProcessId: testWindow.ProcessId,
-                ProcessName: testWindow.ProcessName,
-                AppTitle: testWindow.Title,
-                FieldId: "uia_field_1",
-                IsPassword: false,
-                IsElevated: false
-            );
-            return Task.FromResult(new SelectionContext(
-                SelectedText: TestFallbackText,
-                SurroundingText: TestFallbackText,
-                TargetContext: testTarget,
-                CapturedAt: DateTime.UtcNow,
-                DirectUiaCapture: true
-            ));
+                IntPtr.Zero, 0, "notepad", "Untitled - Notepad", "test-field",
+                false, false, "test-runtime-id", "Edit", TestFallbackText);
+            return new SelectionContext(
+                TestFallbackText, TestFallbackText, testTarget, DateTime.UtcNow, true,
+                new ScreenBounds(100, 100, 320, 24));
         }
 
         var window = _windowTracker.GetForegroundWindowInfo();
         var profile = _capabilityRules.GetProfile(window.ProcessName);
-
-        // Security Guard 1: Verify window elevation & sensitive application blocklist
         var sensitiveStatus = _sensitiveDetector.IsSensitiveField(window);
         if (sensitiveStatus.IsSensitive || window.IsElevated)
         {
-            throw new InvalidOperationException($"Selection capture blocked: target application '{window.ProcessName}' is sensitive or elevated ({sensitiveStatus.Reason}).");
+            throw new InvalidOperationException(
+                $"Selection capture blocked for '{window.ProcessName}': {sensitiveStatus.Reason}");
         }
 
-        bool isPassword = false;
         string capturedText = string.Empty;
-        bool isDirectUia = profile.PreferredCapture != CaptureMethod.GuardedClipboard;
+        string? runtimeId = null;
+        string? controlType = null;
+        ScreenBounds? bounds = null;
+        bool isPassword = false;
+        bool directUiaCapture = false;
 
         if (OperatingSystem.IsWindows())
         {
 #if HAS_WPF
+            AutomationElement? focusedElement = null;
             try
             {
-                var focusedElement = AutomationElement.FocusedElement;
+                focusedElement = AutomationElement.FocusedElement;
                 if (focusedElement != null)
                 {
-                    object isPassProp = focusedElement.GetCurrentPropertyValue(AutomationElement.IsPasswordProperty);
-                    if (isPassProp is bool b && b)
-                    {
-                        isPassword = true;
-                    }
-
-                    // Security Guard 2: Abort capture immediately if target element is a password field
+                    isPassword = focusedElement.Current.IsPassword;
                     if (isPassword)
                     {
-                        throw new InvalidOperationException("Selection capture blocked: focused target element is a password field (IsPassword=true).");
+                        throw new InvalidOperationException(
+                            "Selection capture blocked: the focused element is a password field.");
                     }
 
-                    if (isDirectUia)
-                    {
-                        if (focusedElement.TryGetCurrentPattern(TextPattern.Pattern, out object tpObj) && tpObj is TextPattern textPattern)
-                        {
-                            var selectionRanges = textPattern.GetSelection();
-                            if (selectionRanges != null && selectionRanges.Length > 0)
-                            {
-                                capturedText = selectionRanges[0].GetText(-1) ?? string.Empty;
-                            }
-                        }
+                    runtimeId = FormatRuntimeId(focusedElement.GetRuntimeId());
+                    controlType = focusedElement.Current.ControlType?.ProgrammaticName;
 
-                        if (string.IsNullOrEmpty(capturedText) && focusedElement.TryGetCurrentPattern(ValuePattern.Pattern, out object vpObj) && vpObj is ValuePattern valuePattern)
+                    if (profile.PreferredCapture != CaptureMethod.GuardedClipboard &&
+                        focusedElement.TryGetCurrentPattern(TextPattern.Pattern, out object pattern) &&
+                        pattern is TextPattern textPattern)
+                    {
+                        var selectedRanges = textPattern.GetSelection();
+                        var selectedRange = selectedRanges.FirstOrDefault();
+                        if (selectedRange != null)
                         {
-                            capturedText = valuePattern.Current.Value ?? string.Empty;
+                            capturedText = selectedRange.GetText(-1) ?? string.Empty;
+                            bounds = GetBounds(selectedRange);
+                            directUiaCapture = !string.IsNullOrEmpty(capturedText);
+                        }
+                    }
+
+                    if (bounds is null)
+                    {
+                        var rect = focusedElement.Current.BoundingRectangle;
+                        if (!rect.IsEmpty && rect.Width > 0 && rect.Height > 0)
+                        {
+                            bounds = new ScreenBounds(rect.Left, rect.Top, rect.Width, rect.Height);
                         }
                     }
                 }
@@ -110,96 +108,158 @@ public class UIAutomationCapture : ICaptureEngine
             }
             catch
             {
-                // UIA lookup exception fallback
+                // UIA may be unavailable for an application. Clipboard capture remains
+                // allowed only when the focused element identity was still obtained.
+            }
+
+            if (string.IsNullOrEmpty(capturedText))
+            {
+                if (focusedElement == null || string.IsNullOrWhiteSpace(runtimeId))
+                {
+                    throw new InvalidOperationException(
+                        "Selection capture could not prove the focused field. No clipboard shortcut was sent.");
+                }
+
+                capturedText = await CaptureWithRestoredClipboardAsync(window.Handle, ct);
+                directUiaCapture = false;
             }
 #endif
-
-            // Fall back to GuardedClipboard clipboard capture if UIA direct capture yielded empty text and field is not sensitive
-            if (string.IsNullOrEmpty(capturedText) && !isPassword)
-            {
-                try
-                {
-                    uint initialSeq = Win32Native.GetClipboardSequenceNumber();
-
-                    // Synthesize Ctrl+C to copy selected text to clipboard
-                    var inputs = new Win32Native.INPUT[4];
-                    inputs[0] = new Win32Native.INPUT { type = Win32Native.INPUT_KEYBOARD, ki = new Win32Native.KEYBDINPUT { wVk = Win32Native.VK_CONTROL } };
-                    inputs[1] = new Win32Native.INPUT { type = Win32Native.INPUT_KEYBOARD, ki = new Win32Native.KEYBDINPUT { wVk = Win32Native.VK_C } };
-                    inputs[2] = new Win32Native.INPUT { type = Win32Native.INPUT_KEYBOARD, ki = new Win32Native.KEYBDINPUT { wVk = Win32Native.VK_C, dwFlags = Win32Native.KEYEVENTF_KEYUP } };
-                    inputs[3] = new Win32Native.INPUT { type = Win32Native.INPUT_KEYBOARD, ki = new Win32Native.KEYBDINPUT { wVk = Win32Native.VK_CONTROL, dwFlags = Win32Native.KEYEVENTF_KEYUP } };
-                    Win32Native.SendInput(4, inputs, System.Runtime.InteropServices.Marshal.SizeOf<Win32Native.INPUT>());
-
-                    Thread.Sleep(50);
-
-                    uint newSeq = Win32Native.GetClipboardSequenceNumber();
-                    // Verify that Ctrl+C actually modified the clipboard sequence number before reading
-                    if (newSeq != initialSeq && Win32Native.OpenClipboard(window.Handle))
-                    {
-                        try
-                        {
-                            IntPtr hData = Win32Native.GetClipboardData(Win32Native.CF_UNICODETEXT);
-                            if (hData != IntPtr.Zero)
-                            {
-                                IntPtr pData = Win32Native.GlobalLock(hData);
-                                if (pData != IntPtr.Zero)
-                                {
-                                    try
-                                    {
-                                        capturedText = System.Runtime.InteropServices.Marshal.PtrToStringUni(pData) ?? string.Empty;
-                                    }
-                                    finally
-                                    {
-                                        Win32Native.GlobalUnlock(hData);
-                                    }
-                                }
-                            }
-                        }
-                        finally
-                        {
-                            Win32Native.CloseClipboard();
-                        }
-                    }
-                }
-                catch
-                {
-                    capturedText = string.Empty;
-                }
-            }
         }
 
         if (string.IsNullOrEmpty(capturedText))
         {
-            if (!OperatingSystem.IsWindows() || !string.IsNullOrEmpty(TestFallbackText))
+            if (!OperatingSystem.IsWindows())
             {
                 capturedText = TestFallbackText ?? "Sample selected text";
+                runtimeId ??= "headless-field";
             }
             else
             {
-                throw new InvalidOperationException("Selection capture failed: no text selected or active application did not return text selection.");
+                throw new InvalidOperationException(
+                    "Selection capture failed: no selected text was returned by the active field.");
             }
         }
 
-
-
-
+        string fieldId = runtimeId ?? $"window:{window.Handle.ToInt64():X}";
         var targetContext = new TargetContext(
             WindowHandle: window.Handle,
             ProcessId: window.ProcessId,
             ProcessName: window.ProcessName,
             AppTitle: window.Title,
-            FieldId: "uia_field_1",
+            FieldId: fieldId,
             IsPassword: isPassword,
-            IsElevated: window.IsElevated
-        );
+            IsElevated: window.IsElevated,
+            AutomationRuntimeId: runtimeId,
+            ControlType: controlType,
+            OriginalSelectedText: capturedText);
 
-        var result = new SelectionContext(
-            SelectedText: capturedText,
-            SurroundingText: capturedText,
-            TargetContext: targetContext,
-            CapturedAt: DateTime.UtcNow,
-            DirectUiaCapture: isDirectUia
-        );
-
-        return Task.FromResult(result);
+        return new SelectionContext(
+            capturedText,
+            capturedText,
+            targetContext,
+            DateTime.UtcNow,
+            directUiaCapture,
+            bounds);
     }
+
+#if HAS_WPF
+    private async Task<string> CaptureWithRestoredClipboardAsync(IntPtr targetWindow, CancellationToken ct)
+    {
+        var snapshot = _clipboard.Capture();
+        uint beforeCopy = Win32Native.GetClipboardSequenceNumber();
+
+        if (Win32Native.GetForegroundWindow() != targetWindow)
+        {
+            throw new InvalidOperationException("The source window changed before selection capture.");
+        }
+
+        if (Win32Native.SendCtrlShortcut(Win32Native.VK_C) != 4)
+        {
+            throw new InvalidOperationException(
+                $"Windows rejected the copy shortcut ({Marshal.GetLastWin32Error()}).");
+        }
+
+        uint afterCopy = beforeCopy;
+        for (int attempt = 0; attempt < 12 && afterCopy == beforeCopy; attempt++)
+        {
+            await Task.Delay(25, ct);
+            afterCopy = Win32Native.GetClipboardSequenceNumber();
+        }
+
+        if (afterCopy == beforeCopy)
+        {
+            throw new InvalidOperationException("The active application did not copy the selection.");
+        }
+
+        string selectedText = string.Empty;
+        Exception? readError = null;
+        try
+        {
+            selectedText = _clipboard.GetUnicodeText();
+        }
+        catch (Exception ex)
+        {
+            readError = ex;
+        }
+
+        if (Win32Native.GetClipboardSequenceNumber() != afterCopy)
+        {
+            throw new InvalidOperationException(
+                "The clipboard changed during capture; Polishly left the newer clipboard untouched.");
+        }
+
+        try
+        {
+            _clipboard.Restore(snapshot);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException(
+                "Selection capture stopped because the original clipboard could not be restored.",
+                ex);
+        }
+
+        if (readError != null)
+        {
+            throw new InvalidOperationException(
+                "The copied selection could not be read as Unicode text.", readError);
+        }
+        if (string.IsNullOrEmpty(selectedText))
+        {
+            throw new InvalidOperationException("The copied selection did not contain Unicode text.");
+        }
+
+        return selectedText;
+    }
+
+    private static string FormatRuntimeId(int[]? runtimeId) =>
+        runtimeId is { Length: > 0 } ? string.Join(".", runtimeId) : string.Empty;
+
+    private static ScreenBounds? GetBounds(TextPatternRange range)
+    {
+        System.Windows.Rect[] rectangles = range.GetBoundingRectangles();
+        if (rectangles.Length == 0)
+        {
+            return null;
+        }
+
+        double left = double.PositiveInfinity;
+        double top = double.PositiveInfinity;
+        double right = double.NegativeInfinity;
+        double bottom = double.NegativeInfinity;
+        foreach (System.Windows.Rect rectangle in rectangles)
+        {
+            double width = rectangle.Width;
+            double height = rectangle.Height;
+            if (width <= 0 || height <= 0) continue;
+            left = Math.Min(left, rectangle.Left);
+            top = Math.Min(top, rectangle.Top);
+            right = Math.Max(right, rectangle.Right);
+            bottom = Math.Max(bottom, rectangle.Bottom);
+        }
+
+        var result = new ScreenBounds(left, top, right - left, bottom - top);
+        return result.IsUsable ? result : null;
+    }
+#endif
 }

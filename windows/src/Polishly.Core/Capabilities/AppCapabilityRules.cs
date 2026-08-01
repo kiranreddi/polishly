@@ -8,8 +8,8 @@ public class AppCapabilityRules
             ProcessName: "notepad",
             DisplayName: "Windows Notepad",
             PreferredCapture: CaptureMethod.UIAutomationTextPattern,
-            PreferredInjection: InjectionMethod.UIAutomationSetText,
-            AutomaticTriggerSupported: true,
+            PreferredInjection: InjectionMethod.GuardedPasteTransaction,
+            AutomaticTriggerSupported: false,
             SelectionBoundsSupported: true,
             RequireClipboardFallback: false
         ),
@@ -22,12 +22,30 @@ public class AppCapabilityRules
             SelectionBoundsSupported: false,
             RequireClipboardFallback: true
         ),
+        ["teams"] = new AppProfile(
+            ProcessName: "teams",
+            DisplayName: "Microsoft Teams (classic)",
+            PreferredCapture: CaptureMethod.GuardedClipboard,
+            PreferredInjection: InjectionMethod.GuardedPasteTransaction,
+            AutomaticTriggerSupported: false,
+            SelectionBoundsSupported: false,
+            RequireClipboardFallback: true
+        ),
         ["outlook"] = new AppProfile(
             ProcessName: "outlook",
             DisplayName: "Outlook Desktop",
             PreferredCapture: CaptureMethod.UIAutomationTextPattern,
             PreferredInjection: InjectionMethod.GuardedPasteTransaction,
-            AutomaticTriggerSupported: true,
+            AutomaticTriggerSupported: false,
+            SelectionBoundsSupported: true,
+            RequireClipboardFallback: true
+        ),
+        ["olk"] = new AppProfile(
+            ProcessName: "olk",
+            DisplayName: "New Outlook",
+            PreferredCapture: CaptureMethod.UIAutomationTextPattern,
+            PreferredInjection: InjectionMethod.GuardedPasteTransaction,
+            AutomaticTriggerSupported: false,
             SelectionBoundsSupported: true,
             RequireClipboardFallback: true
         ),
@@ -35,8 +53,8 @@ public class AppCapabilityRules
             ProcessName: "winword",
             DisplayName: "Microsoft Word",
             PreferredCapture: CaptureMethod.UIAutomationTextPattern,
-            PreferredInjection: InjectionMethod.UIAutomationSetText,
-            AutomaticTriggerSupported: true,
+            PreferredInjection: InjectionMethod.GuardedPasteTransaction,
+            AutomaticTriggerSupported: false,
             SelectionBoundsSupported: true,
             RequireClipboardFallback: false
         ),
@@ -74,6 +92,15 @@ public class AppCapabilityRules
             PreferredInjection: InjectionMethod.GuardedPasteTransaction,
             AutomaticTriggerSupported: false,
             SelectionBoundsSupported: false,
+            RequireClipboardFallback: true
+        ),
+        ["onenote"] = new AppProfile(
+            ProcessName: "onenote",
+            DisplayName: "Microsoft OneNote",
+            PreferredCapture: CaptureMethod.UIAutomationTextPattern,
+            PreferredInjection: InjectionMethod.GuardedPasteTransaction,
+            AutomaticTriggerSupported: false,
+            SelectionBoundsSupported: true,
             RequireClipboardFallback: true
         )
     };

@@ -83,7 +83,7 @@ public class SettingsViewModelTests
     {
         var credentialStore = new TestCredentialStore();
         var settingsStore = new TestSettingsStore();
-        var vm = new SettingsViewModel(credentialStore, settingsStore);
+        var vm = new SettingsViewModel(credentialStore, settingsStore, null);
         vm.ActiveProviderId = "openai";
         vm.ApiKey = "sk-test-key-123456";
 
@@ -98,13 +98,13 @@ public class SettingsViewModelTests
     }
 
     [Fact]
-    public void AppSettingsStore_RoundTripsNonSecretSettings()
+    public async Task AppSettingsStore_RoundTripsNonSecretSettings()
     {
         var path = Path.Combine(Path.GetTempPath(), $"polishly-settings-{Guid.NewGuid():N}.json");
         try
         {
-            var store = new AppSettingsStore(path);
-            store.Save(new AppSettings
+            var store = new JsonAppSettingsStore(path);
+            await store.SaveAsync(new AppSettings
             {
                 ActiveProviderId = "openai",
                 Theme = "Dark",
@@ -112,7 +112,7 @@ public class SettingsViewModelTests
                 LaunchAtStartup = true
             });
 
-            var loaded = store.Load();
+            var loaded = await store.LoadAsync();
             Assert.Equal("openai", loaded.ActiveProviderId);
             Assert.Equal("Dark", loaded.Theme);
             Assert.Equal("Ctrl+Alt+K", loaded.HotkeyShortcut);
@@ -128,9 +128,14 @@ public class SettingsViewModelTests
     {
         public AppSettings? SavedSettings { get; private set; }
 
-        public AppSettings Load() => new();
+        public Task<AppSettings> LoadAsync(CancellationToken ct = default) =>
+            Task.FromResult(new AppSettings());
 
-        public void Save(AppSettings settings) => SavedSettings = settings;
+        public Task SaveAsync(AppSettings settings, CancellationToken ct = default)
+        {
+            SavedSettings = settings;
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class TestCredentialStore : ICredentialStore
