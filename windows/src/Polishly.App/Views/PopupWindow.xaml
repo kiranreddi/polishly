@@ -4,94 +4,94 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Polishly Diff"
+        Title="Polishly"
         WindowStyle="None"
         AllowsTransparency="True"
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="False"
-        AutomationProperties.Name="Polishly rewrite review"
-        SizeToContent="WidthAndHeight"
-        MinWidth="320" MaxWidth="520">
+        SizeToContent="Height"
+        Width="470" MaxWidth="560">
+
     <Window.Resources>
-        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Polishly.App;component/Themes/PolishlyTheme.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        </ResourceDictionary>
     </Window.Resources>
-    <Border x:Name="PopupBorder" Background="{DynamicResource Polishly.Surface}" CornerRadius="8" BorderBrush="{DynamicResource Polishly.Muted}" BorderThickness="1" Padding="12" Margin="4">
+
+    <Border Background="{StaticResource SurfaceBrush}"
+            CornerRadius="16"
+            BorderBrush="{StaticResource BorderStrongBrush}"
+            BorderThickness="1"
+            Padding="18">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="10" ShadowDepth="2" Opacity="0.3" Color="Black"/>
+            <DropShadowEffect BlurRadius="24" ShadowDepth="7" Opacity="0.46" Color="#020914"/>
         </Border.Effect>
+
         <StackPanel>
-            <!-- Header Bar with State and Dismiss -->
-            <Grid Margin="0,0,0,8">
-                <TextBlock Text="{Binding StateDescription}" Foreground="{DynamicResource Polishly.Muted}" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                <Button Content="✕" Command="{Binding DismissCommand}" AutomationProperties.Name="Dismiss rewrite"
-                        HorizontalAlignment="Right" Background="Transparent" Foreground="{DynamicResource Polishly.Muted}" BorderThickness="0" Cursor="Hand" Width="20" Height="20"/>
+            <Grid Margin="0,0,0,16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="34" Height="34" CornerRadius="9" Background="{StaticResource AccentSoftBrush}"
+                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1" Margin="0,0,11,0">
+                    <Grid>
+                        <TextBlock Text="P" Foreground="{StaticResource AccentBrush}" FontFamily="{StaticResource DisplayFont}"
+                                   FontSize="21" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   Margin="0,1,0,0"/>
+                        <TextBlock Text="✦" Foreground="{StaticResource AccentHoverBrush}" FontSize="8"
+                                   HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,3,0"/>
+                    </Grid>
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="Polishly" FontFamily="{StaticResource DisplayFont}" FontWeight="SemiBold" FontSize="14"/>
+                    <TextBlock Text="{Binding StateDescription}" Foreground="{StaticResource TextMutedBrush}" FontSize="10.5"/>
+                </StackPanel>
+                <Button Grid.Column="2" Content="×" Command="{Binding DismissCommand}"
+                        Style="{StaticResource TitleBarButtonStyle}" Width="34" Height="34"/>
             </Grid>
 
-            <!-- Diff Display Area -->
-            <ScrollViewer MaxHeight="250" VerticalScrollBarVisibility="Auto">
-                <ItemsControl ItemsSource="{Binding DiffSegments}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <WrapPanel Orientation="Horizontal"/>
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding Text}" FontSize="13" Margin="1,0">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="{DynamicResource Polishly.Text}"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Type}" Value="Addition">
-                                                <Setter Property="Foreground" Value="{DynamicResource Polishly.Accent}"/>
-                                                <Setter Property="FontWeight" Value="Medium"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding Type}" Value="Deletion">
-                                                <Setter Property="Foreground" Value="{DynamicResource Polishly.Danger}"/>
-                                                <Setter Property="TextDecorations" Value="Strikethrough"/>
-                                                <Setter Property="Opacity" Value="0.8"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+            <Border Background="{StaticResource SurfaceRaisedBrush}"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="11"
+                    Padding="15">
+                <ScrollViewer MaxHeight="260" VerticalScrollBarVisibility="Auto">
+                    <TextBlock x:Name="DiffTextBlock"
+                               FontSize="13.5"
+                               LineHeight="21"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource TextPrimaryBrush}"/>
+                </ScrollViewer>
+            </Border>
 
-            <!-- Error Notification -->
-            <TextBlock Text="{Binding ErrorMessage}" Foreground="{DynamicResource Polishly.Danger}" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"
-                       Visibility="{Binding HasError, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}"/>
+            <Border Background="{StaticResource DangerSoftBrush}" CornerRadius="9" Padding="12,9" Margin="0,12,0,0"
+                    Visibility="{Binding HasError, Converter={StaticResource BooleanToVisibilityConverter}, FallbackValue=Collapsed}">
+                <TextBlock Text="{Binding ErrorMessage}" Foreground="{StaticResource DangerBrush}" FontSize="11.5" TextWrapping="Wrap"/>
+            </Border>
 
-            <StackPanel Orientation="Horizontal" Margin="0,12,0,0"
-                        AutomationProperties.Name="Rewrite mode">
-                <Button Content="Improve" Command="{Binding SelectModeCommand}" CommandParameter="Improve"
-                        AutomationProperties.Name="Rewrite for clarity" Padding="9,3" Margin="0,0,4,0"/>
-                <Button Content="Concise" Command="{Binding SelectModeCommand}" CommandParameter="Concise"
-                        AutomationProperties.Name="Make rewrite concise" Padding="9,3" Margin="0,0,4,0"/>
-                <Button Content="Friendly" Command="{Binding SelectModeCommand}" CommandParameter="Friendly"
-                        AutomationProperties.Name="Make rewrite friendly" Padding="9,3" Margin="0,0,4,0"/>
-                <Button Content="Expand" Command="{Binding SelectModeCommand}" CommandParameter="Expand"
-                        AutomationProperties.Name="Expand rewrite" Padding="9,3"/>
-            </StackPanel>
-
-            <!-- Action Toolbar -->
-            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                <Border CornerRadius="4" Margin="4,0" Background="{DynamicResource Polishly.ActionSurface}">
-                    <Button Content="Accept" Command="{Binding AcceptCommand}" AutomationProperties.Name="Accept and replace selected text" Padding="12,4" Background="Transparent" Foreground="{DynamicResource Polishly.ActionText}" BorderThickness="0"/>
-                </Border>
-                <Border CornerRadius="4" Margin="4,0" Background="{DynamicResource Polishly.SecondarySurface}">
-                    <Button Content="Copy" Command="{Binding CopyCommand}" AutomationProperties.Name="Copy rewrite without replacing" Padding="12,4" Background="Transparent" Foreground="{DynamicResource Polishly.SecondaryText}" BorderThickness="0"/>
-                </Border>
-                <Border CornerRadius="4" Margin="4,0" Background="{DynamicResource Polishly.SecondarySurface}">
-                    <Button Content="Retry" Command="{Binding RetryCommand}" AutomationProperties.Name="Regenerate rewrite" Padding="12,4" Background="Transparent" Foreground="{DynamicResource Polishly.SecondaryText}" BorderThickness="0"/>
-                </Border>
-                <Border CornerRadius="4" Margin="4,0" Background="{DynamicResource Polishly.SecondarySurface}">
-                    <Button Content="Revise..." Command="{Binding OpenReviseCommand}" AutomationProperties.Name="Revise with custom instructions" Padding="12,4" Background="Transparent" Foreground="{DynamicResource Polishly.SecondaryText}" BorderThickness="0"/>
-                </Border>
-            </StackPanel>
+            <Grid Margin="0,16,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="Ctrl + Shift + P" Foreground="{StaticResource TextMutedBrush}" FontSize="10.5" VerticalAlignment="Center"/>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="Revise" Command="{Binding OpenReviseCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="12,7" MinHeight="34"/>
+                    <Button Content="Copy" Command="{Binding CopyCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="12,7" MinHeight="34"/>
+                    <Button Content="Retry" Command="{Binding RetryCommand}"
+                            Style="{StaticResource SecondaryButtonStyle}" Margin="0,0,8,0" Padding="12,7" MinHeight="34"/>
+                    <Button Content="Accept" Command="{Binding AcceptCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}" Padding="15,7" MinHeight="34"/>
+                </StackPanel>
+            </Grid>
         </StackPanel>
     </Border>
 </Window>
