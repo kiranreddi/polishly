@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Contact — Polishly</title>
-<meta name="description" content="Get help with Polishly. Email support@polishly.info for setup questions, bug reports, and privacy or security concerns, or open an issue on GitHub.">
+<title>Contact Polishly Support &amp; Help</title>
+<meta name="description" content="Get help with Polishly on Mac or Windows. Email support@polishly.info for setup questions, bug reports, and privacy concerns, or open a GitHub issue.">
 <link rel="canonical" href="https://polishly.info/contact">
-<meta property="og:title" content="Contact — Polishly">
-<meta property="og:description" content="Get help with Polishly. Email support@polishly.info, or open an issue on GitHub.">
+<meta property="og:title" content="Contact Polishly Support &amp; Help">
+<meta property="og:description" content="Get help with Polishly on Mac or Windows. Email support@polishly.info or open an issue on GitHub.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://polishly.info/contact">
 <meta property="og:site_name" content="Polishly">
@@ -16,26 +16,39 @@
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Polishly, private AI rewriting for Mac and Windows">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Contact — Polishly">
-<meta name="twitter:description" content="Get help with Polishly. Email support@polishly.info, or open an issue on GitHub.">
+<meta name="twitter:title" content="Contact Polishly Support &amp; Help">
+<meta name="twitter:description" content="Get help with Polishly on Mac or Windows. Email support@polishly.info or open an issue on GitHub.">
 <meta name="twitter:image" content="https://polishly.info/assets/og-cover.png">
+<meta name="twitter:image:alt" content="Polishly, private AI rewriting for Mac and Windows">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "ContactPage",
-  "url": "https://polishly.info/contact",
-  "name": "Contact Polishly",
-  "mainEntity": {
-    "@type": "Organization",
-    "name": "Polishly",
-    "url": "https://polishly.info/",
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "contactType": "customer support",
-      "email": "support@polishly.info",
-      "availableLanguage": "English"
+  "@graph": [
+    {
+      "@type": "ContactPage",
+      "@id": "https://polishly.info/contact#page",
+      "url": "https://polishly.info/contact",
+      "name": "Contact Polishly",
+      "mainEntity": {
+        "@type": "Organization",
+        "name": "Polishly",
+        "url": "https://polishly.info/",
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer support",
+          "email": "support@polishly.info",
+          "availableLanguage": "English"
+        }
+      }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://polishly.info/" },
+        { "@type": "ListItem", "position": 2, "name": "Contact", "item": "https://polishly.info/contact" }
+      ]
     }
-  }
+  ]
 }
 </script>
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32">
@@ -64,9 +77,8 @@
     </a>
     <div class="nav-links">
       <a href="/#how-it-works">How it works</a>
+      <a href="/windows">Windows</a>
       <a href="/#privacy">Privacy</a>
-      <a href="/#examples">Examples</a>
-      <a href="/#compare">Compare</a>
       <a href="/#faq">FAQ</a>
       <a href="/contact" aria-current="page">Contact</a>
     </div>
@@ -209,7 +221,8 @@
   <div class="wrap footer-wrap">
     <span>© 2026 Polishly · MIT licensed</span>
     <div class="foot-links">
-      <a href="/#privacy">Privacy</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/windows">Windows</a>
       <a href="/contact">Contact</a>
       <a href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/kiranreddi/polishly/blob/main/README.md" target="_blank" rel="noopener">Docs</a>

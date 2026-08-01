@@ -11,6 +11,7 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://polishly.info/">
 <meta property="og:site_name" content="Polishly">
+<meta property="og:locale" content="en_US">
 <meta property="og:image" content="https://polishly.info/assets/og-cover.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -19,20 +20,64 @@
 <meta name="twitter:title" content="Polishly — Private AI rewriting for Mac and Windows">
 <meta name="twitter:description" content="Rewrite selected text on Mac and Windows with your own AI provider. Free and open source.">
 <meta name="twitter:image" content="https://polishly.info/assets/og-cover.png">
+<meta name="twitter:image:alt" content="Polishly, private AI rewriting for Mac and Windows">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "name": "Polishly",
-  "url": "https://polishly.info/",
-  "image": "https://polishly.info/assets/og-cover.png",
-  "operatingSystem": "macOS 14 or later, Windows 10 or later",
-  "softwareVersion": "1.0.0",
-  "applicationCategory": "ProductivityApplication",
-  "license": "https://github.com/kiranreddi/polishly/blob/main/LICENSE",
-  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
-  "downloadUrl": "https://polishly.info/assets/releases/Polishly-1.0.0.dmg",
-  "sameAs": "https://github.com/kiranreddi/polishly"
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": "https://polishly.info/#organization",
+      "name": "Polishly",
+      "url": "https://polishly.info/",
+      "logo": "https://polishly.info/assets/icon-256.png",
+      "sameAs": ["https://github.com/kiranreddi/polishly"],
+      "email": "support@polishly.info"
+    },
+    {
+      "@type": "WebSite",
+      "@id": "https://polishly.info/#website",
+      "url": "https://polishly.info/",
+      "name": "Polishly",
+      "description": "Private AI rewriting for Mac and Windows. Bring your own API key.",
+      "publisher": { "@id": "https://polishly.info/#organization" },
+      "inLanguage": "en"
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://polishly.info/#macos-app",
+      "name": "Polishly for macOS",
+      "url": "https://polishly.info/#download",
+      "image": "https://polishly.info/assets/og-cover.png",
+      "operatingSystem": "macOS 14 or later",
+      "softwareVersion": "1.0.0",
+      "applicationCategory": "ProductivityApplication",
+      "license": "https://github.com/kiranreddi/polishly/blob/main/LICENSE",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "downloadUrl": "https://polishly.info/assets/releases/Polishly-1.0.0.dmg",
+      "isAccessibleForFree": true,
+      "publisher": { "@id": "https://polishly.info/#organization" }
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://polishly.info/#windows-app",
+      "name": "Polishly for Windows",
+      "url": "https://polishly.info/windows",
+      "image": "https://polishly.info/assets/windows-settings.jpg",
+      "operatingSystem": "Windows 11",
+      "applicationCategory": "ProductivityApplication",
+      "license": "https://github.com/kiranreddi/polishly/blob/main/LICENSE",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/PreOrder"
+      },
+      "isAccessibleForFree": true,
+      "sameAs": "https://github.com/kiranreddi/polishly/tree/main/windows",
+      "publisher": { "@id": "https://polishly.info/#organization" }
+    }
+  ]
 }
 </script>
 <script type="application/ld+json">
@@ -52,6 +97,16 @@
     },
     {
       "@type": "Question",
+      "name": "Is Polishly available for Windows?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Polishly for Windows is in private beta qualification. The signed download is not published yet. See polishly.info/windows for status and beta access." }
+    },
+    {
+      "@type": "Question",
+      "name": "Which apps does it work with?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Polishly works with accessible text fields on both platforms. Mac uses Accessibility, while Windows uses UI Automation and guarded clipboard fallback where needed." }
+    },
+    {
+      "@type": "Question",
       "name": "Which AI providers can I use?",
       "acceptedAnswer": { "@type": "Answer", "text": "Polishly supports OpenAI, Anthropic, Groq, and Cerebras." }
     },
@@ -59,6 +114,11 @@
       "@type": "Question",
       "name": "Do I need an API key to try it?",
       "acceptedAnswer": { "@type": "Answer", "text": "No. Demo mode lets you try the selection, review, and accept workflow without sending text off your device." }
+    },
+    {
+      "@type": "Question",
+      "name": "Why does Polishly need Accessibility access?",
+      "acceptedAnswer": { "@type": "Answer", "text": "Mac and Windows require text-access permissions for Polishly to read what you explicitly select and place an accepted rewrite back into the active field. Polishly does not continuously scan what you type." }
     }
   ]
 }
@@ -90,9 +150,9 @@
     <div class="nav-links">
       <a href="#how-it-works">How it works</a>
       <a href="#platforms">Platforms</a>
+      <a href="/windows">Windows</a>
       <a href="#privacy">Privacy</a>
       <a href="#examples">Examples</a>
-      <a href="#compare">Compare</a>
       <a href="#faq">FAQ</a>
       <a href="/contact">Contact</a>
     </div>
@@ -112,13 +172,13 @@
         <p class="hero-sub">Polishly is a private AI rewriting tool for Mac and Windows. Select your words, press one shortcut, and review the change before anything is replaced.</p>
         <div class="hero-actions">
           <a class="btn btn-primary btn-lg" href="assets/releases/Polishly-1.0.0.dmg" download="Polishly-1.0.0.dmg">Download for Mac</a>
-          <a class="btn btn-ghost btn-lg" href="#download-windows">Windows preview</a>
+          <a class="btn btn-ghost btn-lg" href="/windows">Windows beta status</a>
           <a class="btn btn-ghost btn-lg" href="#how-it-works">See how it works</a>
         </div>
         <div class="trust-line" aria-label="Product highlights">
           <span>No subscription</span>
           <span>No Polishly server</span>
-          <span>macOS 14+ or Windows 10+</span>
+          <span>macOS 14+ or Windows 11 beta</span>
         </div>
       </div>
 
@@ -159,6 +219,7 @@
           <div class="platform-visual platform-visual-windows"><img src="assets/windows-settings.jpg" alt="Polishly Windows companion settings window" loading="lazy"></div>
           <div class="platform-detail-shot"><img src="assets/windows-popup-clean.jpg" alt="Polishly Windows inline rewrite diff" loading="lazy"></div>
           <p>Use <code>Ctrl + Shift + P</code> from Windows text fields, review the teal-and-red diff, and accept the replacement in place.</p>
+          <p style="margin: 12px 5px 5px;"><a href="/windows" style="color:var(--teal);text-decoration:underline;text-underline-offset:3px;">Windows companion details →</a></p>
         </article>
       </div>
     </div>
@@ -231,7 +292,7 @@
     <div class="wrap">
       <div class="section-head">
         <div class="kicker">Download</div>
-        <h2>Ready on Mac or Windows.</h2>
+        <h2>Ready on Mac. Windows in private beta.</h2>
         <p>No Polishly account and no subscription required. Bring the platform you already work in.</p>
       </div>
       <div class="download-grid">
@@ -261,15 +322,15 @@
       <div id="download-windows" class="platform-download-card platform-download-card-windows">
         <div class="download-title-row">
           <img src="assets/icon-256.png" alt="Polishly icon" width="58" height="58">
-          <div><span class="version">Windows preview</span><h3>Polishly for Windows</h3></div>
+          <div><span class="version">Windows private beta</span><h3>Polishly for Windows</h3></div>
         </div>
         <p>A native tray companion with Windows Credential Manager storage, a redesigned settings surface, and <code>Ctrl + Shift + P</code> rewrite review.</p>
         <div class="download-actions">
-          <a class="btn btn-primary btn-lg" href="https://github.com/kiranreddi/polishly/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download source ZIP</a>
-          <a class="btn btn-ghost" href="https://github.com/kiranreddi/polishly/tree/main/windows" target="_blank" rel="noopener">Build instructions</a>
+          <a class="btn btn-primary btn-lg" href="/windows">Windows beta status</a>
+          <a class="btn btn-ghost" href="mailto:support@polishly.info?subject=Polishly%20Windows%20private%20beta">Request beta access</a>
         </div>
-        <span class="file-note">Windows 10+ · source preview · free · MIT licensed</span>
-        <p class="download-note">A signed Windows installer will be linked here when the Windows release package is published.</p>
+        <span class="file-note">Windows 11 x64 · signed download not published yet · free · MIT licensed</span>
+        <p class="download-note">Private beta qualification is underway. See <a href="/windows">/windows</a> for release gates and beta access.</p>
       </div>
       </div>
     </div>
@@ -347,6 +408,10 @@
           <div class="faq-answer"><p>Polishly reads the selection only after you press its hotkey. The text then goes directly from your Mac or Windows device to the provider configured in Settings. Polishly has no cloud service in the middle.</p></div>
         </div>
         <div class="faq-item">
+          <button aria-expanded="false">Is Polishly available for Windows?<span class="plus">+</span></button>
+          <div class="faq-answer"><p>The Windows tray companion is in private beta qualification — see <a href="/windows">polishly.info/windows</a>. The signed download is not published yet; you can request beta access there.</p></div>
+        </div>
+        <div class="faq-item">
           <button aria-expanded="false">Which apps does it work with?<span class="plus">+</span></button>
           <div class="faq-answer"><p>Polishly works with accessible text fields on both platforms. Mac uses Accessibility, while Windows uses UI Automation and guarded clipboard fallback where needed.</p></div>
         </div>
@@ -383,7 +448,8 @@
   <div class="wrap footer-wrap">
     <span>© 2026 Polishly · MIT licensed</span>
     <div class="foot-links">
-      <a href="#privacy">Privacy</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/windows">Windows</a>
       <a href="/contact">Contact</a>
       <a href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/kiranreddi/polishly/blob/main/README.md" target="_blank" rel="noopener">Docs</a>

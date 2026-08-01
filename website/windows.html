@@ -3,21 +3,119 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Polishly for Windows — Private beta status</title>
-<meta name="description" content="Follow Polishly for Windows private-beta qualification, compatibility, and signed release availability.">
+<title>Polishly for Windows — Private AI rewrite beta</title>
+<meta name="description" content="Private AI rewriting for Windows. Native tray companion with review-first diffs. Join the private beta — signed download not published yet.">
 <link rel="canonical" href="https://polishly.info/windows">
-<meta property="og:title" content="Polishly for Windows">
-<meta property="og:description" content="Native, private AI rewriting for Windows 11. The signed build is completing compatibility and release qualification.">
+<meta property="og:title" content="Polishly for Windows — Private AI rewrite beta">
+<meta property="og:description" content="Native tray companion for private AI rewriting on Windows. Review-first diffs, your own API key, and a signed download that is not published yet.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://polishly.info/windows">
+<meta property="og:site_name" content="Polishly">
+<meta property="og:locale" content="en_US">
 <meta property="og:image" content="https://polishly.info/assets/og-cover.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Polishly for Windows — private AI rewriting with review-first diffs">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Polishly for Windows — Private AI rewrite beta">
+<meta name="twitter:description" content="Native tray companion for private AI rewriting on Windows. Signed download not published yet — join the private beta.">
+<meta name="twitter:image" content="https://polishly.info/assets/og-cover.png">
+<meta name="twitter:image:alt" content="Polishly for Windows — private AI rewriting with review-first diffs">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "SoftwareApplication",
+      "@id": "https://polishly.info/windows#app",
+      "name": "Polishly for Windows",
+      "url": "https://polishly.info/windows",
+      "image": "https://polishly.info/assets/windows-settings.jpg",
+      "operatingSystem": "Windows 11",
+      "applicationCategory": "ProductivityApplication",
+      "license": "https://github.com/kiranreddi/polishly/blob/main/LICENSE",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/PreOrder"
+      },
+      "softwareHelp": "https://polishly.info/groq-setup",
+      "isAccessibleForFree": true,
+      "sameAs": "https://github.com/kiranreddi/polishly/tree/main/windows"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://polishly.info/" },
+        { "@type": "ListItem", "position": 2, "name": "Windows", "item": "https://polishly.info/windows" }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Is Polishly available for Windows?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Polishly for Windows is a native tray companion in private beta qualification. The signed download is not published yet. Join the private beta at polishly.info/windows, or follow release status there."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Is there a signed Windows installer yet?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Not yet. The app is completing compatibility, multi-monitor, signing, and installer qualification. The download will be enabled only after those safety gates pass."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "What is the Windows hotkey?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "The default Windows shortcut is Ctrl+Shift+P. After you select text, Polishly captures the selection, streams a rewrite, shows a word-level diff, and lets you accept or copy."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "How does Windows capture text safely?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Polishly prefers UI Automation when the target app supports it, and falls back to a guarded clipboard transaction with sequence checks for Electron and other apps that need it. Password fields and elevated admin windows are blocked."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Where are API keys stored on Windows?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "API keys are stored in Windows Credential Manager. Polishly does not upload keys to a Polishly server."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32">
+<link rel="icon" href="assets/favicon-48.png" sizes="48x48">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" sizes="180x180">
 <meta name="theme-color" content="#0b0e14">
 <link rel="stylesheet" href="styles.css">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-E1J05GQCCQ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-E1J05GQCCQ');
+</script>
+<script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
+
 <nav class="topbar" aria-label="Main navigation">
   <div class="wrap nav-wrap">
     <a class="brand" href="/" aria-label="Polishly home">
@@ -28,27 +126,28 @@
       <a href="/#how-it-works">How it works</a>
       <a href="/#privacy">Privacy</a>
       <a href="/windows" aria-current="page">Windows</a>
+      <a href="#faq">FAQ</a>
       <a href="/contact">Contact</a>
     </div>
     <div class="nav-actions">
       <a class="btn btn-ghost btn-sm" href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">GitHub</a>
-      <a class="btn btn-primary btn-sm" href="/#download">macOS download</a>
+      <a class="btn btn-primary btn-sm" href="mailto:support@polishly.info?subject=Polishly%20Windows%20private%20beta">Join private beta</a>
     </div>
   </div>
 </nav>
 
 <main>
-  <header class="hero windows-hero">
+  <header class="hero windows-hero" id="top">
     <div class="wrap hero-grid">
       <div class="hero-copy">
         <span class="eyebrow"><span class="status-dot"></span>Private beta qualification</span>
         <h1>Polishly for<br><span>Windows 11.</span></h1>
-        <p class="hero-sub">A native tray companion that captures only the text you explicitly select, shows a local diff, and replaces it only after you accept.</p>
+        <p class="hero-sub">A native tray companion that captures only the text you explicitly select, shows a local word-level diff, and replaces it only after you accept — with your own API key.</p>
         <div class="hero-actions">
           <a class="btn btn-primary btn-lg" href="mailto:support@polishly.info?subject=Polishly%20Windows%20private%20beta">Join the private beta</a>
-          <a class="btn btn-ghost btn-lg" href="https://github.com/kiranreddi/polishly/releases" target="_blank" rel="noopener">Release history</a>
+          <a class="btn btn-ghost btn-lg" href="/#download">macOS download</a>
         </div>
-        <div class="trust-line">
+        <div class="trust-line" aria-label="Windows product highlights">
           <span>Windows 11 x64</span>
           <span>Bring your own API key</span>
           <span>No background text scanning</span>
@@ -69,7 +168,16 @@
     </div>
   </header>
 
-  <section>
+  <section class="proof-strip" aria-label="Windows companion facts">
+    <div class="wrap proof-grid">
+      <div><strong>$0</strong><span>App price</span></div>
+      <div><strong>Ctrl+Shift+P</strong><span>Default hotkey</span></div>
+      <div><strong>Local</strong><span>Credential storage</span></div>
+      <div><strong>0</strong><span>Polishly servers</span></div>
+    </div>
+  </section>
+
+  <section id="gates">
     <div class="wrap">
       <div class="section-head">
         <p class="kicker">Safety before shipping</p>
@@ -96,13 +204,172 @@
     </div>
   </section>
 
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">What’s shipping</div>
+        <h2>Built for real Windows apps.</h2>
+        <p>The Windows companion mirrors the Mac workflow, with native Win32 integrations where they matter.</p>
+      </div>
+      <div class="steps">
+        <article class="step-card">
+          <div class="num">01</div>
+          <h3>Tray companion</h3>
+          <p>Runs from the system tray with rewrite, pause, settings, and exit actions — no Dock-style distraction.</p>
+        </article>
+        <article class="step-card">
+          <div class="num">02</div>
+          <h3>Safe capture</h3>
+          <p>Prefers UI Automation TextPattern. Falls back to a guarded clipboard transaction with sequence checks for Teams, Slack, and similar apps.</p>
+        </article>
+        <article class="step-card">
+          <div class="num">03</div>
+          <h3>Review before paste</h3>
+          <p>Streams tokens from your provider, computes a local word-level diff, then accepts in place or copies instead.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="platform-section">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">Product captures</div>
+        <h2>Settings and inline review.</h2>
+      </div>
+      <div class="platform-grid">
+        <article class="platform-card featured">
+          <div class="platform-card-head"><span class="platform-badge">Windows</span><strong>Settings</strong></div>
+          <div class="platform-visual platform-visual-windows">
+            <img src="assets/windows-settings.jpg" alt="Polishly Windows settings with provider selection" loading="lazy" width="640" height="400">
+          </div>
+          <p>Choose OpenAI, Anthropic, Groq, Cerebras, or Demo mode. Keys stay in Windows Credential Manager.</p>
+        </article>
+        <article class="platform-card">
+          <div class="platform-card-head"><span class="platform-badge">Windows</span><strong>Rewrite popup</strong></div>
+          <div class="platform-visual platform-visual-windows">
+            <img src="assets/windows-popup-clean.jpg" alt="Polishly Windows rewrite popup with teal and red word-level diff" loading="lazy" width="640" height="360">
+          </div>
+          <p>Non-activating popup placement near the selection so focus stays in the app you’re editing.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="safety" class="privacy-section">
+    <div class="wrap privacy-grid">
+      <div class="privacy-copy">
+        <div class="kicker">Safety guards</div>
+        <h2>Wrong-window pastes are treated as failures.</h2>
+        <p>Polishly for Windows is designed around a zero-trust paste guarantee: never paste unless it can prove it is returning to the exact source application and field.</p>
+        <ul class="check-list">
+          <li>Password fields and password managers are blocked.</li>
+          <li>Elevated admin windows fall back to copy-only.</li>
+          <li>Clipboard sequence mismatches abort paste.</li>
+          <li>Diagnostic logs redact keys and selected text.</li>
+        </ul>
+      </div>
+      <div class="route-card" aria-label="Windows rewrite path">
+        <div class="route-node">
+          <span class="route-label">01</span>
+          <strong>Selection</strong>
+          <small>UIA or guarded clipboard</small>
+        </div>
+        <span class="route-arrow" aria-hidden="true">→</span>
+        <div class="route-node featured">
+          <img src="assets/icon-256.png" alt="" width="30" height="30">
+          <strong>Polishly tray app</strong>
+          <small>Local key + local diff</small>
+        </div>
+        <span class="route-arrow" aria-hidden="true">→</span>
+        <div class="route-node">
+          <span class="route-label">03</span>
+          <strong>Your provider</strong>
+          <small>Direct HTTPS, no middleman</small>
+        </div>
+        <div class="no-server"><span aria-hidden="true">×</span> No Polishly cloud in the middle</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="status" class="download-section">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">Release path</div>
+        <h2>Private beta first. Signed download later.</h2>
+        <p>Tell us which applications and monitor setup you use. Beta access is shared when the build is ready for that configuration. Developers can also browse the open source <code>windows/</code> tree.</p>
+      </div>
+      <div class="download-grid">
+        <div class="platform-download-card platform-download-card-windows">
+          <div class="download-title-row">
+            <img src="assets/icon-256.png" alt="Polishly icon" width="58" height="58">
+            <div><span class="version">Windows private beta</span><h3>Polishly for Windows</h3></div>
+          </div>
+          <p>Native .NET / WPF tray app with UI Automation capture, guarded clipboard paste, Credential Manager storage, and <code>Ctrl + Shift + P</code>.</p>
+          <div class="download-actions">
+            <a class="btn btn-primary btn-lg" href="mailto:support@polishly.info?subject=Polishly%20Windows%20private%20beta">Request beta access</a>
+            <a class="btn btn-ghost" href="https://github.com/kiranreddi/polishly/tree/main/windows" target="_blank" rel="noopener">Browse source</a>
+          </div>
+          <span class="file-note">Windows 11 x64 · signed installer not published yet · free · MIT licensed</span>
+          <div class="install-card">
+            <h3>For developers</h3>
+            <ol>
+              <li><span>1</span>Install the .NET 10 SDK.</li>
+              <li><span>2</span><code>dotnet build windows/Polishly.Windows.sln</code></li>
+              <li><span>3</span>Run the app project, or use <code>--demo-rewrite</code> for a headless check.</li>
+              <li><span>4</span>Connect Groq/Cerebras/OpenAI/Anthropic in Settings, or stay in Demo mode.</li>
+            </ol>
+            <p>Need a free provider key? <a href="/groq-setup">Follow the Groq setup guide</a>.</p>
+          </div>
+        </div>
+        <div class="platform-download-card platform-download-card-mac">
+          <div class="download-title-row">
+            <img src="assets/icon-256.png" alt="Polishly icon" width="58" height="58">
+            <div><span class="version">Also available</span><h3>Polishly for macOS</h3></div>
+          </div>
+          <p>Signed and notarized menu-bar app for macOS 14+. Same review-first rewrite model.</p>
+          <div class="download-actions">
+            <a class="btn btn-primary btn-lg" href="/#download">Download for Mac</a>
+            <a class="btn btn-ghost" href="/">Back to homepage</a>
+          </div>
+          <span class="file-note">macOS 14+ · free · MIT licensed</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="section-head"><div class="kicker">Windows FAQ</div><h2>Good to know.</h2></div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button aria-expanded="false">Is there a signed Windows installer yet?<span class="plus">+</span></button>
+          <div class="faq-answer"><p>Not yet. The app is completing compatibility, multi-monitor, signing, and installer qualification. The download will be enabled only after those safety gates pass. <a href="mailto:support@polishly.info?subject=Polishly%20Windows%20private%20beta">Join the private beta</a> if you want early access.</p></div>
+        </div>
+        <div class="faq-item">
+          <button aria-expanded="false">What is the default hotkey?<span class="plus">+</span></button>
+          <div class="faq-answer"><p><code>Ctrl + Shift + P</code>. Select text first, then press the shortcut to capture, rewrite, and review.</p></div>
+        </div>
+        <div class="faq-item">
+          <button aria-expanded="false">Which Windows apps are supported?<span class="plus">+</span></button>
+          <div class="faq-answer"><p>Apps with accessible text fields. Notepad and similar apps prefer UI Automation. Electron apps such as Teams and Slack typically use the guarded clipboard path. Qualification covers Notepad, Teams, Outlook, Word, Slack, Chrome, Edge, Gmail, VS Code, and OneNote.</p></div>
+        </div>
+        <div class="faq-item">
+          <button aria-expanded="false">Where are my API keys stored?<span class="plus">+</span></button>
+          <div class="faq-answer"><p>In Windows Credential Manager on your machine. Polishly has no rewrite backend and does not receive your keys.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="cta-band">
     <div class="wrap">
-      <img src="assets/icon-256.png" alt="" width="62" height="62">
+      <img src="assets/icon-256.png" alt="" width="58" height="58">
       <h2>Help test Polishly on your Windows workflow.</h2>
       <p>Tell us which applications and monitor setup you use. Beta access is shared only when the build is ready for that configuration.</p>
       <div class="hero-actions">
         <a class="btn btn-primary btn-lg" href="mailto:support@polishly.info?subject=Polishly%20Windows%20private%20beta">Email support@polishly.info</a>
+        <a class="btn btn-ghost btn-lg" href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">View source</a>
       </div>
     </div>
   </section>
@@ -110,14 +377,19 @@
 
 <footer>
   <div class="wrap footer-wrap">
-    <span>© 2026 Polishly</span>
+    <span>© 2026 Polishly · MIT licensed</span>
     <div class="foot-links">
       <a href="/">macOS</a>
       <a href="/privacy">Privacy</a>
       <a href="/contact">Contact</a>
-      <a href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">Source</a>
+      <a href="/windows">Windows</a>
+      <a href="/groq-setup">Groq setup</a>
+      <a href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://github.com/kiranreddi/polishly/blob/main/LICENSE" target="_blank" rel="noopener">License</a>
     </div>
   </div>
 </footer>
+
+<script src="script.js"></script>
 </body>
 </html>

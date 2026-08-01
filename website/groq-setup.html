@@ -23,25 +23,38 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "HowTo",
-  "name": "How to get a free Groq API key and connect it to Polishly",
-  "description": "Step-by-step guide on how to get a free Groq API key and configure it in Polishly to unlock lightning-fast, free AI rewrites on Mac and Windows.",
-  "totalTime": "PT2M",
-  "step": [
+  "@graph": [
     {
-      "@type": "HowToStep",
-      "name": "Get your free Groq API key",
-      "text": "Go to console.groq.com/keys, sign in or create a free account (no credit card required), click Create API Key, name it, and copy the generated key — it starts with gsk_ and is shown only once."
+      "@type": "HowTo",
+      "@id": "https://polishly.info/groq-setup#howto",
+      "name": "How to get a free Groq API key and connect it to Polishly",
+      "description": "Step-by-step guide on how to get a free Groq API key and configure it in Polishly to unlock lightning-fast, free AI rewrites on Mac and Windows.",
+      "totalTime": "PT2M",
+      "isPartOf": { "@type": "WebSite", "name": "Polishly", "url": "https://polishly.info/" },
+      "step": [
+        {
+          "@type": "HowToStep",
+          "name": "Get your free Groq API key",
+          "text": "Go to console.groq.com/keys, sign in or create a free account (no credit card required), click Create API Key, name it, and copy the generated key — it starts with gsk_ and is shown only once."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Configure Polishly",
+          "text": "Open Polishly Settings on Mac or Windows, choose Groq under AI Provider, paste the gsk_... key into the API Key field, and click Save."
+        },
+        {
+          "@type": "HowToStep",
+          "name": "Try it out",
+          "text": "Select some text in any app, press ⌃⌥Space on Mac or Ctrl+Shift+P on Windows, and watch the rewrite stream in."
+        }
+      ]
     },
     {
-      "@type": "HowToStep",
-      "name": "Configure Polishly",
-      "text": "Open Polishly Settings on Mac or Windows, choose Groq under AI Provider, paste the gsk_... key into the API Key field, and click Save."
-    },
-    {
-      "@type": "HowToStep",
-      "name": "Try it out",
-      "text": "Select some text in any app, press the hotkey ⌃⌥Space, and watch the rewrite stream in."
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://polishly.info/" },
+        { "@type": "ListItem", "position": 2, "name": "Groq setup", "item": "https://polishly.info/groq-setup" }
+      ]
     }
   ]
 }
@@ -49,7 +62,7 @@
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32">
 <link rel="icon" href="assets/favicon-48.png" sizes="48x48">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" sizes="180x180">
-<meta name="theme-color" content="#0d0f16">
+<meta name="theme-color" content="#0b0e14">
 <link rel="stylesheet" href="styles.css">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-E1J05GQCCQ"></script>
@@ -75,10 +88,10 @@
     </a>
     <div class="nav-links">
       <a href="/#download">Download</a>
+      <a href="/windows">Windows</a>
       <a href="/#how-it-works">How it works</a>
-      <a href="/#features">Features</a>
-      <a href="/#compare">Compare</a>
       <a href="/#faq">FAQ</a>
+      <a href="/contact">Contact</a>
     </div>
     <div class="nav-right">
       <a class="btn btn-primary btn-sm" href="/#download">Download</a>
@@ -150,6 +163,7 @@
     <span>© 2026 Polishly — MIT licensed</span>
     <div class="foot-links">
       <a href="/#download">Download</a>
+      <a href="/windows">Windows</a>
       <a href="/contact">Contact</a>
       <a href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">GitHub</a>
       <a href="https://github.com/kiranreddi/polishly/blob/main/README.md" target="_blank" rel="noopener">Docs</a>

@@ -11,13 +11,13 @@ await mkdir(resolve(output, "server"), { recursive: true });
 await mkdir(client, { recursive: true });
 
 for (const file of [
-  "index.html", 
-  "styles.css", 
-  "script.js", 
-  "assets", 
-  "robots.txt", 
-  "sitemap.xml", 
-  "groq-setup.html", 
+  "index.html",
+  "styles.css",
+  "script.js",
+  "assets",
+  "robots.txt",
+  "sitemap.xml",
+  "groq-setup.html",
   "privacy.html",
   "ai-writing-alternative.html",
   "contact.html",
