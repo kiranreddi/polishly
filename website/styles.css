@@ -123,6 +123,21 @@ button { font: inherit; }
 .demo-window img { width: 100%; height: auto; }
 .demo-frame figcaption { margin-top: 13px; text-align: center; color: var(--quiet); font-size: 12px; }
 
+.platform-section { background: linear-gradient(180deg, rgba(255,255,255,0.012), transparent 65%); }
+.platform-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; max-width: 1080px; margin: 0 auto; }
+.platform-card { overflow: hidden; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: linear-gradient(145deg, var(--panel), #111720); }
+.platform-card.featured { border-color: rgba(32,199,181,0.42); box-shadow: inset 0 3px 0 var(--teal); }
+.platform-card-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 5px 5px 16px; }
+.platform-card-head strong { color: var(--muted); font-size: 13px; font-weight: 600; }
+.platform-badge { padding: 5px 9px; border: 1px solid rgba(32,199,181,0.35); border-radius: 999px; color: var(--teal); background: var(--teal-wash); font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }
+.platform-visual { overflow: hidden; border: 1px solid var(--line); border-radius: 13px; background: #0b1218; }
+.platform-visual img { width: 100%; height: auto; }
+.platform-visual-windows { max-height: 385px; }
+.platform-visual-windows img { object-fit: cover; object-position: top; }
+.platform-detail-shot { width: 72%; margin: -72px 10px 0 auto; position: relative; border: 5px solid var(--panel); border-radius: 13px; box-shadow: 0 18px 32px rgba(0,0,0,0.42); }
+.platform-detail-shot img { width: 100%; border-radius: 8px; }
+.platform-card > p { margin: 18px 5px 5px; color: var(--muted); font-size: 14px; }
+
 .proof-strip { border-block: 1px solid var(--line); background: rgba(255,255,255,0.018); }
 .proof-grid { display: grid; grid-template-columns: repeat(4, 1fr); }
 .proof-grid div { display: flex; flex-direction: column; gap: 1px; padding: 24px 28px; text-align: center; border-right: 1px solid var(--line); }
@@ -162,22 +177,25 @@ code { padding: 2px 6px; border-radius: 5px; color: var(--teal); background: var
 .no-server span { display: inline-grid; width: 17px; height: 17px; margin-right: 5px; place-items: center; border-radius: 50%; color: var(--bg); background: var(--quiet); font-weight: 900; }
 
 .download-section { background: rgba(255,255,255,0.012); }
-.download-panel { display: grid; grid-template-columns: 1.08fr 0.92fr; gap: 18px; }
-.download-main, .install-card { padding: 32px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); }
-.download-main { background: linear-gradient(145deg, rgba(32,199,181,0.12), var(--panel) 58%); border-color: rgba(32,199,181,0.32); }
+.download-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.platform-download-card { display: flex; flex-direction: column; padding: 30px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: var(--panel); }
+.platform-download-card-mac { background: linear-gradient(145deg, rgba(32,199,181,0.12), var(--panel) 58%); border-color: rgba(32,199,181,0.32); }
+.platform-download-card-windows { background: linear-gradient(145deg, rgba(120,145,255,0.12), var(--panel) 58%); border-color: rgba(120,145,255,0.34); }
 .download-title-row { display: flex; align-items: center; gap: 16px; }
 .download-title-row img { border-radius: 14px; }
 .version { color: var(--teal); font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
-.download-main h3 { margin-top: 1px; font-size: 25px; letter-spacing: -0.025em; }
-.download-main > p { max-width: 52ch; margin-top: 22px; color: var(--muted); }
+.platform-download-card h3 { margin-top: 1px; font-size: 25px; letter-spacing: -0.025em; }
+.platform-download-card > p { max-width: 52ch; margin-top: 22px; color: var(--muted); }
 .download-actions { display: flex; flex-wrap: wrap; gap: 11px; margin-top: 25px; }
 .file-note { display: block; margin-top: 17px; color: var(--quiet); font-size: 12px; }
 .install-card h3 { font-size: 18px; }
+.platform-download-card .install-card { margin-top: 28px; padding: 24px 0 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; background: transparent; }
 .install-card ol { display: grid; gap: 13px; margin-top: 20px; list-style: none; }
 .install-card li { display: flex; align-items: flex-start; gap: 11px; color: var(--muted); font-size: 14px; }
 .install-card li > span { flex: 0 0 24px; display: grid; width: 24px; height: 24px; place-items: center; border-radius: 7px; color: var(--teal); background: var(--teal-wash); font-size: 11px; font-weight: 800; }
 .install-card > p { margin-top: 22px; padding-top: 17px; border-top: 1px solid var(--line); color: var(--quiet); font-size: 12.5px; }
 .install-card a { color: var(--teal); text-decoration: underline; text-underline-offset: 3px; }
+.download-note { margin-top: auto !important; padding-top: 17px; border-top: 1px solid var(--line); color: var(--quiet) !important; font-size: 12.5px; }
 
 .example-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; max-width: 960px; margin: 0 auto; }
 .example-card { padding: 25px; border: 1px solid var(--line); border-radius: var(--radius-md); background: var(--panel); }
@@ -304,7 +322,7 @@ footer { padding: 34px 0; border-top: 1px solid var(--line); color: var(--quiet)
 
 @media (max-width: 780px) {
   section { padding: 68px 0; }
-  .steps, .download-panel, .compare-grid, .contact-grid { grid-template-columns: 1fr; }
+  .steps, .download-grid, .compare-grid, .contact-grid, .platform-grid { grid-template-columns: 1fr; }
   .proof-grid { grid-template-columns: repeat(2, 1fr); }
   .proof-grid div:nth-child(2) { border-right: 0; }
   .proof-grid div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
@@ -322,12 +340,13 @@ footer { padding: 34px 0; border-top: 1px solid var(--line); color: var(--quiet)
   .hero-actions .btn { width: 100%; }
   .trust-line { gap: 9px 16px; }
   .demo-window { border-radius: 14px; }
+  .platform-detail-shot { width: 82%; margin-top: -48px; }
   .window-bar { height: 34px; }
   .proof-grid div { padding: 19px 10px; }
   .proof-grid strong { font-size: 21px; }
   .section-head { margin-bottom: 32px; }
   .section-head h2, .privacy-copy h2 { font-size: 31px; }
-  .step-card, .download-main, .install-card, .example-card, .contact-card, .contact-aside { padding: 23px; }
+  .step-card, .download-main, .platform-download-card, .install-card, .example-card, .contact-card, .contact-aside { padding: 23px; }
   .release-status-card { padding: 24px; }
   .mail-card { display: grid; width: 100%; padding: 18px 20px; }
   .contact-copy h2 { font-size: 28px; }

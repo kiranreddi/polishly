@@ -1,5 +1,9 @@
 using System.Windows;
+using System.ComponentModel;
 using Polishly.App.ViewModels;
+#if HAS_WPF
+using System.Windows.Threading;
+#endif
 
 namespace Polishly.App.Views;
 
@@ -14,13 +18,16 @@ public partial class SettingsWindow : Window
     {
         DataContext = viewModel;
         viewModel.SettingsSaved += (s, e) => Close();
+        viewModel.PropertyChanged += ViewModel_PropertyChanged;
+        Closed += (s, e) => viewModel.PropertyChanged -= ViewModel_PropertyChanged;
 #if HAS_WPF
         Loaded += (s, e) =>
         {
-            if (ApiKeyBox != null && !string.IsNullOrEmpty(viewModel.ApiKey))
-            {
-                ApiKeyBox.Password = viewModel.ApiKey;
-            }
+            SyncApiKeyBox(viewModel);
+
+            Dispatcher.BeginInvoke(
+                () => SettingsScrollViewer.ScrollToTop(),
+                DispatcherPriority.ContextIdle);
         };
         viewModel.PropertyChanged += (s, e) =>
         {
@@ -30,6 +37,24 @@ public partial class SettingsWindow : Window
                 ApiKeyBox.Password = viewModel.ApiKey;
             }
         };
+#endif
+    }
+
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(SettingsViewModel.ApiKey) && sender is SettingsViewModel viewModel)
+        {
+            SyncApiKeyBox(viewModel);
+        }
+    }
+
+    private void SyncApiKeyBox(SettingsViewModel viewModel)
+    {
+#if HAS_WPF
+        if (ApiKeyBox != null && ApiKeyBox.Password != viewModel.ApiKey)
+        {
+            ApiKeyBox.Password = viewModel.ApiKey;
+        }
 #endif
     }
 
@@ -46,6 +71,25 @@ public partial class SettingsWindow : Window
 #if !HAS_WPF
     private void InitializeComponent()
     {
+    }
+#endif
+
+#if HAS_WPF
+    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void MaximizeButton_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized
+            ? WindowState.Normal
+            : WindowState.Maximized;
+    }
+
+    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
     }
 #endif
 }

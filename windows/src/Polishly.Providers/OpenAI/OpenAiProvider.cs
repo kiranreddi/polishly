@@ -24,7 +24,10 @@ public class OpenAiProvider : IAiProvider
         HttpClient? httpClient = null)
     {
         _apiKey = apiKey;
-        _httpClient = httpClient ?? new HttpClient();
+        _httpClient = httpClient ?? new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(45)
+        };
 
         Config = new ProviderConfig(
             ProviderId: "openai",

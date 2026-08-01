@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Polishly — Private AI rewriting for Mac</title>
-<meta name="description" content="Rewrite selected text in supported Mac apps with your own OpenAI, Anthropic, Groq, or Cerebras key. Free, open source, and invoked only when you ask.">
+<title>Polishly — Private AI rewriting for Mac and Windows</title>
+<meta name="description" content="Rewrite selected text on Mac and Windows with your own OpenAI, Anthropic, Groq, or Cerebras key. Free, open source, and invoked only when you ask.">
 <link rel="canonical" href="https://polishly.info/">
-<meta property="og:title" content="Polishly — Private AI rewriting for Mac">
-<meta property="og:description" content="Rewrite selected text in supported Mac apps with your own AI provider. Free, open source, and invoked only when you ask.">
+<meta property="og:title" content="Polishly — Private AI rewriting for Mac and Windows">
+<meta property="og:description" content="Rewrite selected text on Mac and Windows with your own AI provider. Free, open source, and invoked only when you ask.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://polishly.info/">
 <meta property="og:site_name" content="Polishly">
 <meta property="og:image" content="https://polishly.info/assets/og-cover.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Polishly, private AI rewriting for Mac">
+<meta property="og:image:alt" content="Polishly, private AI rewriting for Mac and Windows">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Polishly — Private AI rewriting for Mac">
-<meta name="twitter:description" content="Rewrite selected text in supported Mac apps with your own AI provider. Free and open source.">
+<meta name="twitter:title" content="Polishly — Private AI rewriting for Mac and Windows">
+<meta name="twitter:description" content="Rewrite selected text on Mac and Windows with your own AI provider. Free and open source.">
 <meta name="twitter:image" content="https://polishly.info/assets/og-cover.png">
 <script type="application/ld+json">
 {
@@ -26,7 +26,7 @@
   "name": "Polishly",
   "url": "https://polishly.info/",
   "image": "https://polishly.info/assets/og-cover.png",
-  "operatingSystem": "macOS 14 or later",
+  "operatingSystem": "macOS 14 or later, Windows 10 or later",
   "softwareVersion": "1.0.0",
   "applicationCategory": "ProductivityApplication",
   "license": "https://github.com/kiranreddi/polishly/blob/main/LICENSE",
@@ -48,7 +48,7 @@
     {
       "@type": "Question",
       "name": "What happens to my text?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Polishly reads the selection only after you press its hotkey. The selected text is sent directly from your Mac to the provider you configured. Polishly has no cloud service in the middle." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Polishly reads the selection only after you press its hotkey. The selected text is sent directly from your Mac or Windows device to the provider you configured. Polishly has no cloud service in the middle." }
     },
     {
       "@type": "Question",
@@ -58,7 +58,7 @@
     {
       "@type": "Question",
       "name": "Do I need an API key to try it?",
-      "acceptedAnswer": { "@type": "Answer", "text": "No. Demo mode lets you try the selection, review, and accept workflow without sending text off your Mac." }
+      "acceptedAnswer": { "@type": "Answer", "text": "No. Demo mode lets you try the selection, review, and accept workflow without sending text off your device." }
     }
   ]
 }
@@ -89,6 +89,7 @@
     </a>
     <div class="nav-links">
       <a href="#how-it-works">How it works</a>
+      <a href="#platforms">Platforms</a>
       <a href="#privacy">Privacy</a>
       <a href="#examples">Examples</a>
       <a href="#compare">Compare</a>
@@ -108,15 +109,16 @@
       <div class="hero-copy">
         <span class="eyebrow"><span class="status-dot"></span>Free and open source</span>
         <h1>Rewrite selected text.<br><span>Right where you type.</span></h1>
-        <p class="hero-sub">Polishly is a private AI rewriting tool for supported Mac apps. Select your words, press one shortcut, and review the change before anything is replaced.</p>
+        <p class="hero-sub">Polishly is a private AI rewriting tool for Mac and Windows. Select your words, press one shortcut, and review the change before anything is replaced.</p>
         <div class="hero-actions">
-          <a class="btn btn-primary btn-lg" href="assets/releases/Polishly-1.0.0.dmg" download="Polishly-1.0.0.dmg">Download for macOS</a>
+          <a class="btn btn-primary btn-lg" href="assets/releases/Polishly-1.0.0.dmg" download="Polishly-1.0.0.dmg">Download for Mac</a>
+          <a class="btn btn-ghost btn-lg" href="#download-windows">Windows preview</a>
           <a class="btn btn-ghost btn-lg" href="#how-it-works">See how it works</a>
         </div>
         <div class="trust-line" aria-label="Product highlights">
           <span>No subscription</span>
           <span>No Polishly server</span>
-          <span>macOS 14+</span>
+          <span>macOS 14+ or Windows 10+</span>
         </div>
       </div>
 
@@ -139,6 +141,29 @@
     </div>
   </section>
 
+  <section id="platforms" class="platform-section">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="kicker">Choose your workspace</div>
+        <h2>One private workflow. Two native companions.</h2>
+        <p>Polishly feels at home in the system UI you already use, while keeping the same explicit, review-first rewrite flow.</p>
+      </div>
+      <div class="platform-grid">
+        <article class="platform-card">
+          <div class="platform-card-head"><span class="platform-badge">macOS</span><strong>Menu bar companion</strong></div>
+          <div class="platform-visual platform-visual-mac"><img src="assets/polishly-demo.gif" alt="Polishly rewriting selected text on macOS" loading="lazy"></div>
+          <p>Select text in Notes, Mail, Teams, Slack, or another accessible Mac app, then review the word-level diff before accepting it.</p>
+        </article>
+        <article class="platform-card featured">
+          <div class="platform-card-head"><span class="platform-badge">Windows</span><strong>Tray companion</strong></div>
+          <div class="platform-visual platform-visual-windows"><img src="assets/windows-settings.jpg" alt="Polishly Windows companion settings window" loading="lazy"></div>
+          <div class="platform-detail-shot"><img src="assets/windows-popup-clean.jpg" alt="Polishly Windows inline rewrite diff" loading="lazy"></div>
+          <p>Use <code>Ctrl + Shift + P</code> from Windows text fields, review the teal-and-red diff, and accept the replacement in place.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
   <section id="how-it-works">
     <div class="wrap">
       <div class="section-head">
@@ -150,12 +175,12 @@
         <article class="step-card">
           <div class="num">01</div>
           <h3>Select your text</h3>
-          <p>Highlight a sentence or paragraph in a supported Mac app such as Notes, Mail, Teams, or Slack.</p>
+          <p>Highlight a sentence or paragraph in a supported Mac or Windows text field.</p>
         </article>
         <article class="step-card">
           <div class="num">02</div>
-          <h3>Press <code>⌃⌥Space</code></h3>
-          <p>Polishly opens beside the selection. Choose Improve, Concise, Friendly, Expand, or write your own instruction.</p>
+          <h3>Press one shortcut</h3>
+          <p>Use <code>⌃⌥Space</code> on Mac or <code>Ctrl + Shift + P</code> on Windows. Polishly opens beside the selection.</p>
         </article>
         <article class="step-card">
           <div class="num">03</div>
@@ -171,15 +196,15 @@
       <div class="privacy-copy">
         <div class="kicker">Privacy by architecture</div>
         <h2>Your text goes where you choose. Nowhere else.</h2>
-        <p>Polishly does not run a rewriting backend. When you invoke a rewrite, the selected text travels from your Mac directly to the provider configured in Settings.</p>
+        <p>Polishly does not run a rewriting backend. When you invoke a rewrite, the selected text travels directly from your Mac or Windows device to the provider configured in Settings.</p>
         <ul class="check-list">
           <li>Nothing is read or sent until you press the hotkey.</li>
-          <li>Your API key is stored in macOS Keychain.</li>
-          <li>Demo mode keeps the full workflow on your Mac.</li>
+          <li>Your API key is stored in macOS Keychain or Windows Credential Manager.</li>
+          <li>Demo mode keeps the full workflow on your device.</li>
           <li>The source is public and MIT licensed.</li>
         </ul>
       </div>
-      <div class="route-card" aria-label="Selected text travels from your Mac directly to your chosen AI provider">
+      <div class="route-card" aria-label="Selected text travels from your Mac or Windows device directly to your chosen AI provider">
         <div class="route-node">
           <span class="route-label">01</span>
           <strong>Your selection</strong>
@@ -188,8 +213,8 @@
         <span class="route-arrow" aria-hidden="true">→</span>
         <div class="route-node featured">
           <img src="assets/icon-256.png" alt="" width="30" height="30">
-          <strong>Polishly on your Mac</strong>
-          <small>Key stored in Keychain</small>
+          <strong>Polishly on Mac or Windows</strong>
+          <small>Key stored locally</small>
         </div>
         <span class="route-arrow" aria-hidden="true">→</span>
         <div class="route-node">
@@ -206,11 +231,11 @@
     <div class="wrap">
       <div class="section-head">
         <div class="kicker">Download</div>
-        <h2>Ready in a few minutes.</h2>
-        <p>A signed, notarized Mac app. No Polishly account and no subscription required.</p>
+        <h2>Ready on Mac or Windows.</h2>
+        <p>No Polishly account and no subscription required. Bring the platform you already work in.</p>
       </div>
-      <div class="download-panel">
-        <div class="download-main">
+      <div class="download-grid">
+        <div class="platform-download-card platform-download-card-mac">
           <div class="download-title-row">
             <img src="assets/icon-256.png" alt="Polishly icon" width="58" height="58">
             <div><span class="version">Version 1.0.0</span><h3>Polishly for macOS</h3></div>
@@ -222,7 +247,6 @@
             <a class="btn btn-ghost" href="/windows">Windows beta status</a>
           </div>
           <span class="file-note">macOS 14+ · free · MIT licensed</span>
-        </div>
         <div class="install-card">
           <h3>Install and start</h3>
           <ol>
@@ -233,6 +257,20 @@
           </ol>
           <p>Need a free provider key? <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Create a Groq key</a> or read the <a href="https://github.com/kiranreddi/polishly/blob/main/README.md" target="_blank" rel="noopener">setup guide</a>.</p>
         </div>
+        </div>
+      <div id="download-windows" class="platform-download-card platform-download-card-windows">
+        <div class="download-title-row">
+          <img src="assets/icon-256.png" alt="Polishly icon" width="58" height="58">
+          <div><span class="version">Windows preview</span><h3>Polishly for Windows</h3></div>
+        </div>
+        <p>A native tray companion with Windows Credential Manager storage, a redesigned settings surface, and <code>Ctrl + Shift + P</code> rewrite review.</p>
+        <div class="download-actions">
+          <a class="btn btn-primary btn-lg" href="https://github.com/kiranreddi/polishly/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download source ZIP</a>
+          <a class="btn btn-ghost" href="https://github.com/kiranreddi/polishly/tree/main/windows" target="_blank" rel="noopener">Build instructions</a>
+        </div>
+        <span class="file-note">Windows 10+ · source preview · free · MIT licensed</span>
+        <p class="download-note">A signed Windows installer will be linked here when the Windows release package is published.</p>
+      </div>
       </div>
     </div>
   </section>
@@ -306,11 +344,11 @@
         </div>
         <div class="faq-item">
           <button aria-expanded="false">What happens to my text?<span class="plus">+</span></button>
-          <div class="faq-answer"><p>Polishly reads the selection only after you press its hotkey. The text then goes directly from your Mac to the provider configured in Settings. Polishly has no cloud service in the middle.</p></div>
+          <div class="faq-answer"><p>Polishly reads the selection only after you press its hotkey. The text then goes directly from your Mac or Windows device to the provider configured in Settings. Polishly has no cloud service in the middle.</p></div>
         </div>
         <div class="faq-item">
           <button aria-expanded="false">Which apps does it work with?<span class="plus">+</span></button>
-          <div class="faq-answer"><p>Polishly works with Mac apps whose text fields expose selections through the macOS Accessibility API, including common workflows in Notes, Mail, Teams, and Slack. Some custom editors may not expose their selection or allow in-place replacement.</p></div>
+          <div class="faq-answer"><p>Polishly works with accessible text fields on both platforms. Mac uses Accessibility, while Windows uses UI Automation and guarded clipboard fallback where needed.</p></div>
         </div>
         <div class="faq-item">
           <button aria-expanded="false">Which AI providers can I use?<span class="plus">+</span></button>
@@ -318,11 +356,11 @@
         </div>
         <div class="faq-item">
           <button aria-expanded="false">Do I need an API key to try it?<span class="plus">+</span></button>
-          <div class="faq-answer"><p>No. Demo mode lets you try the selection, review, and accept workflow without sending text off your Mac.</p></div>
+          <div class="faq-answer"><p>No. Demo mode lets you try the selection, review, and accept workflow without sending text off your device.</p></div>
         </div>
         <div class="faq-item">
           <button aria-expanded="false">Why does Polishly need Accessibility access?<span class="plus">+</span></button>
-          <div class="faq-answer"><p>macOS requires this permission for Polishly to read the text you explicitly select and place an accepted rewrite back into the active field. Polishly does not continuously scan what you type.</p></div>
+          <div class="faq-answer"><p>Mac and Windows require text-access permissions for Polishly to read what you explicitly select and place an accepted rewrite back into the active field. Polishly does not continuously scan what you type.</p></div>
         </div>
       </div>
     </div>
@@ -334,7 +372,7 @@
       <h2>Write better without changing where you write.</h2>
       <p>Free, open source, and connected to the model you choose.</p>
       <div class="hero-actions">
-        <a class="btn btn-primary btn-lg" href="assets/releases/Polishly-1.0.0.dmg" download="Polishly-1.0.0.dmg">Download for macOS</a>
+        <a class="btn btn-primary btn-lg" href="#download">Choose your platform</a>
         <a class="btn btn-ghost btn-lg" href="https://github.com/kiranreddi/polishly" target="_blank" rel="noopener">View source</a>
       </div>
     </div>

@@ -44,6 +44,7 @@ public static class Program
 #endif
     private static readonly StartupRegistrationService StartupRegistration = new();
     private static int _rewriteWorkflowActive;
+    private static bool _uiTestMode;
 
     [STAThread]
     public static void Main(string[] args)
@@ -64,6 +65,7 @@ public static class Program
         }
 
         bool demoRewrite = args.Any(a => string.Equals(a, "--demo-rewrite", StringComparison.OrdinalIgnoreCase));
+        _uiTestMode = args.Any(a => string.Equals(a, "--ui-test", StringComparison.OrdinalIgnoreCase));
         string? providerSmoke = null;
         string? demoText = null;
         for (int i = 0; i < args.Length - 1; i++)
@@ -381,6 +383,8 @@ public static class Program
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 popupWin = new PopupWindow(popupVm);
+                popupWin.IsComputerUseTestMode = _uiTestMode;
+                popupWin.ShowInTaskbar = _uiTestMode;
                 popupWin.Closed += (_, _) => popupVm.Dispose();
 
                 popupWin.Show();

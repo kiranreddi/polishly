@@ -1,7 +1,7 @@
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { createServer } from "node:http";
-import { extname, join, normalize, resolve } from "node:path";
+import { extname, isAbsolute, normalize, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(fileURLToPath(new URL("../dist/client/", import.meta.url)));
@@ -9,8 +9,14 @@ const port = Number(process.env.PORT || 4173);
 const contentTypes = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
+  ".gif": "image/gif",
+  ".ico": "image/x-icon",
+  ".jpeg": "image/jpeg",
+  ".jpg": "image/jpeg",
   ".js": "text/javascript; charset=utf-8",
   ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".webp": "image/webp",
 };
 
 createServer(async (request, response) => {
@@ -18,7 +24,8 @@ createServer(async (request, response) => {
   const requestedPath = url.pathname === "/" ? "/index.html" : url.pathname;
   const file = resolve(root, `.${normalize(requestedPath)}`);
 
-  if (!file.startsWith(`${root}/`)) {
+  const relativeFile = relative(root, file);
+  if (relativeFile.startsWith("..") || isAbsolute(relativeFile)) {
     response.writeHead(403).end();
     return;
   }
