@@ -305,6 +305,24 @@ code { padding: 2px 6px; border-radius: 5px; color: var(--teal); background: var
 .release-status-card h2 { margin-top: 8px; font-size: clamp(25px, 3vw, 34px); line-height: 1.15; letter-spacing: -0.03em; }
 .release-status-card > p { margin-top: 16px; color: var(--muted); }
 
+.github-callout {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 24px;
+  padding: 18px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.02);
+  transition: border-color 150ms ease, background 150ms ease, transform 140ms ease;
+}
+.github-callout:hover { border-color: rgba(32,199,181,0.4); background: var(--teal-wash); transform: translateY(-1px); }
+.github-callout-icon { flex: 0 0 auto; display: grid; width: 40px; height: 40px; place-items: center; border-radius: 11px; color: var(--text); background: rgba(255,255,255,0.06); }
+.github-callout-text { display: grid; gap: 2px; margin-right: auto; }
+.github-callout-text strong { font-size: 14.5px; font-weight: 700; }
+.github-callout-text span { color: var(--muted); font-size: 13px; }
+.github-callout-cta { flex: 0 0 auto; color: var(--teal); font-size: 14px; font-weight: 800; white-space: nowrap; }
+
 footer { padding: 34px 0; border-top: 1px solid var(--line); color: var(--quiet); font-size: 13px; }
 .footer-wrap { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
 .foot-links { display: flex; flex-wrap: wrap; gap: 20px; }
@@ -349,6 +367,8 @@ footer { padding: 34px 0; border-top: 1px solid var(--line); color: var(--quiet)
   .step-card, .download-main, .platform-download-card, .install-card, .example-card, .contact-card, .contact-aside { padding: 23px; }
   .release-status-card { padding: 24px; }
   .mail-card { display: grid; width: 100%; padding: 18px 20px; }
+  .github-callout { flex-wrap: wrap; }
+  .github-callout-cta { margin-left: 56px; }
   .contact-copy h2 { font-size: 28px; }
   .route-card { grid-template-columns: 1fr; padding: 18px; }
   .route-arrow { transform: rotate(90deg); }

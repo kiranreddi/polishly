@@ -18,6 +18,7 @@ export default {
       }
     }
 
-    return env.ASSETS.fetch(new Request(new URL("/index.html", request.url), request));
+    const notFound = await env.ASSETS.fetch(new Request(new URL("/404.html", request.url), request));
+    return new Response(notFound.body, { status: 404, headers: notFound.headers });
   },
 };
