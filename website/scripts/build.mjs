@@ -22,7 +22,8 @@ for (const file of [
   "ai-writing-alternative.html",
   "contact.html",
   "windows.html",
-  "404.html"
+  "404.html",
+  "download.html"
 ]) {
   await cp(resolve(root, file), resolve(client, file), { recursive: true });
 }

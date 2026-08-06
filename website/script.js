@@ -1,3 +1,16 @@
+document.querySelectorAll(".js-download-mac").forEach((link) => {
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    const trigger = document.createElement("a");
+    trigger.href = link.getAttribute("href");
+    trigger.download = link.getAttribute("download") || "";
+    document.body.appendChild(trigger);
+    trigger.click();
+    trigger.remove();
+    window.location.href = "/download";
+  });
+});
+
 document.querySelectorAll(".faq-item").forEach((item) => {
   const button = item.querySelector("button");
   const answer = item.querySelector(".faq-answer");

@@ -73,12 +73,63 @@ spctl --assess --type execute --verbose=4 "$DIST_DIR/$APP_NAME" 2>&1 || true
 
 echo "==> Creating $DMG_NAME"
 rm -f "$DIST_DIR/$DMG_NAME"
+STAGING_DIR="$DIST_DIR/dmg-staging"
+rm -rf "$STAGING_DIR"
+mkdir -p "$STAGING_DIR"
+cp -R "$DIST_DIR/$APP_NAME" "$STAGING_DIR/$APP_NAME"
+ln -s /Applications "$STAGING_DIR/Applications"
+
+DMG_VOLNAME="Polishly"
+TMP_DMG="$DIST_DIR/.polishly-layout-tmp.dmg"
+MOUNT_POINT="/Volumes/$DMG_VOLNAME"
+rm -f "$TMP_DMG"
+
+# Detach a stale mount from a prior failed run before reusing the volume name.
+if [[ -d "$MOUNT_POINT" ]]; then
+  hdiutil detach "$MOUNT_POINT" -force >/dev/null 2>&1 || true
+fi
+
 hdiutil create \
-  -volname "Polishly" \
-  -srcfolder "$DIST_DIR/$APP_NAME" \
-  -ov \
-  -format UDZO \
-  "$DIST_DIR/$DMG_NAME"
+  -volname "$DMG_VOLNAME" \
+  -srcfolder "$STAGING_DIR" \
+  -fs HFS+ \
+  -format UDRW \
+  -size 200m \
+  "$TMP_DMG"
+
+hdiutil attach "$TMP_DMG" -noautoopen -mountpoint "$MOUNT_POINT"
+
+echo "==> Laying out drag-to-Applications installer window"
+# Requires Finder Automation permission the first time this runs interactively;
+# grant it in System Settings > Privacy & Security > Automation if it fails.
+osascript <<APPLESCRIPT || echo "warning: Finder layout automation failed — DMG will still work, just without the styled install window. Grant Automation access to your terminal for Finder and re-run." >&2
+tell application "Finder"
+    tell disk "$DMG_VOLNAME"
+        open
+        set current view of container window to icon view
+        set toolbar visible of container window to false
+        set statusbar visible of container window to false
+        set the bounds of container window to {200, 120, 760, 480}
+        set viewOptions to the icon view options of container window
+        set arrangement of viewOptions to not arranged
+        set icon size of viewOptions to 128
+        set position of item "$APP_NAME" of container window to {140, 180}
+        set position of item "Applications" of container window to {420, 180}
+        close
+        open
+        update without registering applications
+        delay 1
+    end tell
+end tell
+APPLESCRIPT
+
+hdiutil detach "$MOUNT_POINT" || hdiutil detach "$MOUNT_POINT" -force
+
+echo "==> Compressing $DMG_NAME"
+rm -f "$DIST_DIR/$DMG_NAME"
+hdiutil convert "$TMP_DMG" -format UDZO -ov -o "$DIST_DIR/$DMG_NAME"
+rm -f "$TMP_DMG"
+rm -rf "$STAGING_DIR"
 
 if [[ "$NOTARIZE" == "1" ]]; then
   if ! xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
