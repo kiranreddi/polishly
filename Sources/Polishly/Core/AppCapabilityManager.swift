@@ -53,13 +53,24 @@ struct AppCapabilityManager {
         return AppGroup(rawValue: bundleIdentifier)?.prefersClipboardInteraction ?? false
     }
     
+    /// Password managers and native finance/banking apps. This is a bundle-ID
+    /// denylist, so it can only cover apps that are inherently sensitive —
+    /// it cannot protect a bank's *website* open in Safari/Chrome, since the
+    /// browser itself is not sensitive, only certain pages within it are.
+    /// Covering that would require page-level detection (URL/title), which
+    /// is not implemented.
     private let sensitiveAppDenylist: Set<String> = [
+        // Password managers
         "com.agilebits.onepassword7",
         "com.agilebits.onepassword-osx",
         "com.bitwarden.desktop",
         "com.apple.keychainaccess",
         "com.apple.Passwords",
-        "com.lastpass.LastPass"
+        "com.lastpass.LastPass",
+        // Native finance / banking apps
+        "com.quicken.mac",
+        "com.iggsoftware.banktivity",
+        "com.moneymoney-app.retail"
     ]
     
     private let userDefaults: UserDefaults

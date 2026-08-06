@@ -45,6 +45,8 @@ windows/
 | M4 | Non-Activating Diff Popup & WPF UI | Polishly.App WPF UI, WS_EX_NOACTIVATE popup, tray icon, settings, DPI, onboarding | M1, M2, M3 | DONE | 649a237b-7cf2-4062-921e-566d43b22a88 |
 | M5 | Final E2E Test Integration & Hardening | 100% E2E test pass (Tiers 1-4) + Tier 5 Adversarial Coverage Hardening & Forensic Audit | M0, M1-M4 | DONE | 96e8aeed-680d-4f63-8137-1935eac17105 |
 
+"DONE" above means the milestone's implementation and automated-test scope landed. It does not mean interactive Windows qualification is complete — see [`docs/WINDOWS-IMPLEMENTATION-STATUS.md`](docs/WINDOWS-IMPLEMENTATION-STATUS.md) for what's actually been run on real hardware versus still required before the Windows MVP is release-qualified.
+
 ## Interface Contracts
 
 ### `Polishly.Core` ↔ `Polishly.WindowsIntegration`

@@ -43,6 +43,18 @@ class AccessibilityManager {
         return nil
     }
 
+    /// Reads the field's full value (not just the selection). Used to confirm
+    /// a synthesized paste actually landed, when the target app supports AX.
+    func getValue(from element: AXUIElement) -> String? {
+        var value: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &value)
+
+        if result == .success, let text = value as? String {
+            return text
+        }
+        return nil
+    }
+
     func replaceSelectedText(in element: AXUIElement, with newText: String) -> Bool {
         let result = AXUIElementSetAttributeValue(element, kAXSelectedTextAttribute as CFString, newText as CFTypeRef)
         return result == .success
