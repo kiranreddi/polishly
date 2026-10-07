@@ -30,7 +30,7 @@ enum LLMProvider: String, CaseIterable, Identifiable {
     var defaultModel: String {
         switch self {
         case .demo: return "Local rules"
-        case .openAI: return "gpt-4.1-mini"
+        case .openAI: return "luna"
         case .groq: return "llama-3.3-70b-versatile"
         case .cerebras: return "gpt-oss-120b"
         case .anthropic: return "claude-haiku-4-5"
@@ -80,9 +80,9 @@ enum LLMProvider: String, CaseIterable, Identifiable {
             if lower.hasPrefix("claude") {
                 return "OpenAI models do not use Claude ids. Try something like \(defaultModel)."
             }
-            if !(lower.hasPrefix("gpt-") || lower.hasPrefix("o1") || lower.hasPrefix("o3")
+            if !(lower.hasPrefix("luna") || lower.hasPrefix("gpt-") || lower.hasPrefix("o1") || lower.hasPrefix("o3")
                     || lower.hasPrefix("o4") || lower.hasPrefix("chatgpt-") || lower.hasPrefix("text-")) {
-                return "OpenAI model ids usually start with gpt- or o1/o3/o4. Try \(defaultModel)."
+                return "OpenAI model ids usually start with luna, gpt- or o1/o3/o4. Try \(defaultModel)."
             }
         case .anthropic:
             if !lower.hasPrefix("claude") {

@@ -51,14 +51,14 @@ public class WindowsPlanCompletionTests
                 LaunchAtStartup = true,
                 OnboardingCompleted = true
             };
-            settings.ProviderPreferences["openai"] = "gpt-4.1-mini";
+            settings.ProviderPreferences["openai"] = "luna";
 
             await store.SaveAsync(settings);
             AppSettings loaded = await store.LoadAsync();
             string json = await File.ReadAllTextAsync(path);
 
             Assert.Equal("openai", loaded.ActiveProviderId);
-            Assert.Equal("gpt-4.1-mini", loaded.ProviderPreferences["openai"]);
+            Assert.Equal("luna", loaded.ProviderPreferences["openai"]);
             Assert.True(loaded.OnboardingCompleted);
             Assert.DoesNotContain("apiKey", json);
             Assert.DoesNotContain("sk-", json);
@@ -73,7 +73,7 @@ public class WindowsPlanCompletionTests
     }
 
     [Theory]
-    [InlineData("openai", "gpt-4.1-mini")]
+    [InlineData("openai", "luna")]
     [InlineData("anthropic", "claude-3-5-haiku-latest")]
     [InlineData("groq", "llama-3.3-70b-versatile")]
     [InlineData("cerebras", "llama-3.3-70b")]

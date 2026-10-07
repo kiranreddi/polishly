@@ -31,8 +31,8 @@ public class OpenAiProvider : IAiProvider
 
         Config = new ProviderConfig(
             ProviderId: "openai",
-            DisplayName: "OpenAI GPT-4o",
-            Model: model ?? "gpt-4o",
+            DisplayName: "OpenAI Luna",
+            Model: model ?? "luna",
             BaseUrl: baseUrl ?? "https://api.openai.com/v1",
             IsEnabled: true
         );

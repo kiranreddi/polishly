@@ -8,7 +8,7 @@ public static class ProviderFactory
         new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
         {
             ["demo"] = new[] { "local-demo" },
-            ["openai"] = new[] { "gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini" },
+            ["openai"] = new[] { "luna" },
             ["anthropic"] = new[] { "claude-3-5-haiku-latest", "claude-3-7-sonnet-latest" },
             ["groq"] = new[] { "llama-3.3-70b-versatile", "llama-3.1-8b-instant" },
             ["cerebras"] = new[] { "llama-3.3-70b", "llama3.1-8b" }

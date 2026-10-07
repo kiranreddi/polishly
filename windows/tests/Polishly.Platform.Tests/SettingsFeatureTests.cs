@@ -38,13 +38,13 @@ public class SettingsFeatureTests
             ActiveProviderId = "openai",
             ProviderPreferences = new Dictionary<string, string>
             {
-                ["openai_model"] = "gpt-4o",
+                ["openai_model"] = "luna",
                 ["anthropic_model"] = "claude-3-5-sonnet"
             }
         };
 
         Assert.Equal("openai", settings.ActiveProviderId);
-        Assert.Equal("gpt-4o", settings.ProviderPreferences["openai_model"]);
+        Assert.Equal("luna", settings.ProviderPreferences["openai_model"]);
         Assert.True(settings.IsValid());
     }
 

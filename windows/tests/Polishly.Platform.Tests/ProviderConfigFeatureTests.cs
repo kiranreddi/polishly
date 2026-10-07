@@ -17,8 +17,8 @@ public class ProviderConfigFeatureTests
         var config = provider.Config;
 
         Assert.Equal("openai", config.ProviderId);
-        Assert.Equal("OpenAI GPT-4o", config.DisplayName);
-        Assert.Equal("gpt-4o", config.Model);
+        Assert.Equal("OpenAI Luna", config.DisplayName);
+        Assert.Equal("luna", config.Model);
         Assert.Equal("https://api.openai.com/v1", config.BaseUrl);
         Assert.True(config.IsEnabled);
     }

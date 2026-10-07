@@ -32,7 +32,7 @@ public class ProviderStreamingTests
         });
 
         var client = new HttpClient(handler);
-        var provider = new OpenAiProvider("sk-test-key", "gpt-4o", "https://api.openai.com/v1", client);
+        var provider = new OpenAiProvider("sk-test-key", "luna", "https://api.openai.com/v1", client);
 
         var request = new RewriteRequest("Test text", RewriteMode.Improve);
         var tokens = new List<RewriteToken>();
@@ -278,8 +278,8 @@ public class ProviderStreamingTests
     [Fact]
     public void CustomModelAndEndpoint_ReflectedInConfig()
     {
-        var customOpenAi = new OpenAiProvider("key", "gpt-4-turbo", "https://custom.openai.proxy/v1");
-        Assert.Equal("gpt-4-turbo", customOpenAi.Config.Model);
+        var customOpenAi = new OpenAiProvider("key", "luna", "https://custom.openai.proxy/v1");
+        Assert.Equal("luna", customOpenAi.Config.Model);
         Assert.Equal("https://custom.openai.proxy/v1", customOpenAi.Config.BaseUrl);
 
         var customAnthropic = new AnthropicProvider("key", "claude-3-opus-20240229", "https://custom.anthropic.proxy/v1");

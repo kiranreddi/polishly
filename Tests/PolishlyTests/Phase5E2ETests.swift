@@ -102,7 +102,7 @@ final class Phase5E2ETests: XCTestCase {
         }
 
         state.selectedProvider = .openAI
-        state.modelName = "gpt-4.1-mini"
+        state.modelName = "luna"
         state.apiKey = "sk-phase5-temp-key"
         XCTAssertTrue(state.saveAPIKey(testAfterSave: false))
         XCTAssertTrue(state.hasRememberedAPIKey)
@@ -246,7 +246,7 @@ final class Phase5E2ETests: XCTestCase {
 
         state.selectedProvider = .openAI
         state.apiKey = ""
-        state.modelName = "gpt-4.1-mini"
+        state.modelName = "luna"
 
         do {
             try await RewriteClient.shared.rewriteStream(

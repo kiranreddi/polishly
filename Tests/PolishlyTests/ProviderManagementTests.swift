@@ -34,6 +34,7 @@ final class ProviderManagementTests: XCTestCase {
     // MARK: - Model validation
 
     func testOpenAIModelValidation() {
+        XCTAssertNil(LLMProvider.openAI.modelValidationError(for: "luna"))
         XCTAssertNil(LLMProvider.openAI.modelValidationError(for: "gpt-5.2"))
         XCTAssertNil(LLMProvider.openAI.modelValidationError(for: "o3-mini"))
         XCTAssertNotNil(LLMProvider.openAI.modelValidationError(for: ""))
@@ -69,7 +70,7 @@ final class ProviderManagementTests: XCTestCase {
         let state = AppState.shared
         state.selectedProvider = .openAI
         state.apiKey = ""
-        state.modelName = "gpt-5.2"
+        state.modelName = "luna"
         XCTAssertFalse(state.providerIsReady)
         XCTAssertNotNil(state.providerConfigurationError)
 
@@ -78,7 +79,7 @@ final class ProviderManagementTests: XCTestCase {
         XCTAssertFalse(state.providerIsReady)
         XCTAssertTrue(state.providerConfigurationError?.localizedCaseInsensitiveContains("claude") == true)
 
-        state.modelName = "gpt-5.2"
+        state.modelName = "luna"
         XCTAssertTrue(state.providerIsReady)
     }
 
@@ -95,7 +96,7 @@ final class ProviderManagementTests: XCTestCase {
     func testKeySaveLoadUpdateForgetAndRotation() {
         let state = AppState.shared
         state.selectedProvider = .openAI
-        state.modelName = "gpt-5.2"
+        state.modelName = "luna"
 
         state.apiKey = "sk-original-key-value"
         XCTAssertTrue(state.saveAPIKey(testAfterSave: false))
