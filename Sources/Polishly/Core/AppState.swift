@@ -30,7 +30,7 @@ enum LLMProvider: String, CaseIterable, Identifiable {
     var defaultModel: String {
         switch self {
         case .demo: return "Local rules"
-        case .openAI: return "luna"
+        case .openAI: return "gpt-4.1-mini"
         case .groq: return "llama-3.3-70b-versatile"
         case .cerebras: return "gpt-oss-120b"
         case .anthropic: return "claude-haiku-4-5"
@@ -80,9 +80,9 @@ enum LLMProvider: String, CaseIterable, Identifiable {
             if lower.hasPrefix("claude") {
                 return "OpenAI models do not use Claude ids. Try something like \(defaultModel)."
             }
-            if !(lower.hasPrefix("luna") || lower.hasPrefix("gpt-") || lower.hasPrefix("o1") || lower.hasPrefix("o3")
+            if !(lower.hasPrefix("gpt-") || lower.hasPrefix("o1") || lower.hasPrefix("o3")
                     || lower.hasPrefix("o4") || lower.hasPrefix("chatgpt-") || lower.hasPrefix("text-")) {
-                return "OpenAI model ids usually start with luna, gpt- or o1/o3/o4. Try \(defaultModel)."
+                return "OpenAI model ids usually start with gpt-, o1, o3 or o4. Try \(defaultModel)."
             }
         case .anthropic:
             if !lower.hasPrefix("claude") {
@@ -570,6 +570,11 @@ class AppState: ObservableObject {
 
     private static func storedModel(for provider: LLMProvider) -> String {
         let value = UserDefaults.standard.string(forKey: modelKey(for: provider)) ?? ""
+        // Earlier builds shipped "luna", which is not an OpenAI API model.
+        // Migrate that invalid default so existing installs can use the provider.
+        if provider == .openAI && value == "luna" {
+            return provider.defaultModel
+        }
         return value.isEmpty ? provider.defaultModel : value
     }
 

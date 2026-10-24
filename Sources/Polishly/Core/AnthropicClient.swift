@@ -252,7 +252,7 @@ final class RewriteClient {
         request.httpMethod = "POST"
         request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: [
+        var body: [String: Any] = [
             "model": model,
             "stream": true,
             "max_output_tokens": maxTokens,
@@ -260,7 +260,14 @@ final class RewriteClient {
                 ["role": "system", "content": "You are a precise writing assistant. Return only the rewritten text."],
                 ["role": "user", "content": prompt]
             ]
-        ])
+        ]
+        // Rewrites are direct text transformations. GPT-6 Luna supports
+        // `none`, which keeps a small output budget available for the rewrite.
+        // Other models may reject this reasoning setting, so scope it to Luna.
+        if model.lowercased() == "gpt-6-luna" {
+            body["reasoning"] = ["effort": "none"]
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (bytes, response) = try await URLSession.shared.bytes(for: request)
         try await validate(response: response, bytes: bytes, providerName: "OpenAI")

@@ -34,13 +34,25 @@ final class ProviderManagementTests: XCTestCase {
     // MARK: - Model validation
 
     func testOpenAIModelValidation() {
-        XCTAssertNil(LLMProvider.openAI.modelValidationError(for: "luna"))
+        XCTAssertNil(LLMProvider.openAI.modelValidationError(for: "gpt-4.1-mini"))
+        XCTAssertNotNil(LLMProvider.openAI.modelValidationError(for: "luna"))
         XCTAssertNil(LLMProvider.openAI.modelValidationError(for: "gpt-5.2"))
         XCTAssertNil(LLMProvider.openAI.modelValidationError(for: "o3-mini"))
         XCTAssertNotNil(LLMProvider.openAI.modelValidationError(for: ""))
         XCTAssertNotNil(LLMProvider.openAI.modelValidationError(for: "claude-haiku-4-5"))
         XCTAssertNotNil(LLMProvider.openAI.modelValidationError(for: "sk-abc123"))
         XCTAssertNotNil(LLMProvider.openAI.modelValidationError(for: "gpt 4"))
+    }
+
+    func testLegacyLunaModelMigratesToPublicOpenAIModel() {
+        let state = AppState.shared
+        state.selectedProvider = .anthropic
+        UserDefaults.standard.set("luna", forKey: "model.openAI")
+
+        state.selectedProvider = .openAI
+
+        XCTAssertEqual(state.modelName, LLMProvider.openAI.defaultModel)
+        XCTAssertEqual(UserDefaults.standard.string(forKey: "model.openAI"), LLMProvider.openAI.defaultModel)
     }
 
     func testAnthropicModelValidation() {
@@ -59,6 +71,9 @@ final class ProviderManagementTests: XCTestCase {
     func testDemoNeedsNoModelOrKey() {
         XCTAssertNil(LLMProvider.demo.modelValidationError(for: "anything"))
         XCTAssertNil(LLMProvider.demo.apiKeyFormatError(for: ""))
+        // Force the provider transition so the test is independent of the
+        // account's previously selected provider in UserDefaults.
+        AppState.shared.selectedProvider = .openAI
         AppState.shared.selectedProvider = .demo
         XCTAssertTrue(AppState.shared.providerIsReady)
         XCTAssertEqual(AppState.shared.providerConnectionState, .connected)
@@ -70,7 +85,7 @@ final class ProviderManagementTests: XCTestCase {
         let state = AppState.shared
         state.selectedProvider = .openAI
         state.apiKey = ""
-        state.modelName = "luna"
+        state.modelName = "gpt-4.1-mini"
         XCTAssertFalse(state.providerIsReady)
         XCTAssertNotNil(state.providerConfigurationError)
 
@@ -79,7 +94,7 @@ final class ProviderManagementTests: XCTestCase {
         XCTAssertFalse(state.providerIsReady)
         XCTAssertTrue(state.providerConfigurationError?.localizedCaseInsensitiveContains("claude") == true)
 
-        state.modelName = "luna"
+        state.modelName = "gpt-4.1-mini"
         XCTAssertTrue(state.providerIsReady)
     }
 
@@ -96,7 +111,7 @@ final class ProviderManagementTests: XCTestCase {
     func testKeySaveLoadUpdateForgetAndRotation() {
         let state = AppState.shared
         state.selectedProvider = .openAI
-        state.modelName = "luna"
+        state.modelName = "gpt-4.1-mini"
 
         state.apiKey = "sk-original-key-value"
         XCTAssertTrue(state.saveAPIKey(testAfterSave: false))
